@@ -1,5 +1,5 @@
-﻿using API.Context.Table;
-using API.Models;
+﻿using API.Models;
+using API.Services;
 using API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -16,6 +16,8 @@ namespace MitraKaryaSystem.Controllers
             _customerService = customerService;
         }
         public IActionResult Index() => View();
+        public IActionResult Print() => View();
+
         public async Task<IActionResult> FillForm(int id)
         {
             var customers = await _customerService.GetListModel();
@@ -31,6 +33,8 @@ namespace MitraKaryaSystem.Controllers
         public async Task<JsonResult> Save(SalesOrderModel salesOrder) => Json(await _salesOrderService.Save(salesOrder));
         public async Task<JsonResult> FillGrid() => Json(await _salesOrderService.GetSearchList());
         public async Task<JsonResult> GetDetailListById(int id) => Json(await _salesOrderService.GetSalesOrderDetailById(id));
+        public async Task<object> DeleteItem(int id) => Json(await _salesOrderService.DeleteProductById(id));
+        public async Task<object> Delete(int id) => Json(await _salesOrderService.Delete(id));
 
     }
 }

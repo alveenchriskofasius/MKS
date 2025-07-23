@@ -16,16 +16,16 @@ namespace API.Context.SP
         Task<List<GetProductListResult>> GetProductListAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<GetSalesOrderListResult>> GetSalesOrderListAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<GetStockInListResult>> GetStockInListAsync(OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspBarcodeScanResult>> uspBarcodeScanAsync(string Barcode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspGenerateNoResult>> uspGenerateNoAsync(string TradeTypePrefix, DateTime? Date, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspGetDetailListByIdResult>> uspGetDetailListByIdAsync(int? TradeID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspGetPermissionListResult>> uspGetPermissionListAsync(int? RoleID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspGetProductComboListResult>> uspGetProductComboListAsync(string Name, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspGetSalesOrderItemListResult>> uspGetSalesOrderItemListAsync(int? TradeID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspGetUserPermissionListResult>> uspGetUserPermissionListAsync(string UserName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspUserAddResult>> uspUserAddAsync(string Name, string PhoneNumber, string Username, string Email, string Password, bool? Active, string KTP, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspUserGetResult>> uspUserGetAsync(int? ID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<List<uspUserLoginResult>> uspUserLoginAsync(string Username, string Password, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
-        Task<int> uspUserUpdateAsync(int? ID, string Name, string PhoneNumber, string Username, string Email, string Password, bool? Active, string KTP, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspBarcodeScanResult>> uspBarcodeScanAsync(string barcode, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspGenerateNoResult>> uspGenerateNoAsync(string tradeTypePrefix, DateTime? date, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspGetDetailListByIdResult>> uspGetDetailListByIdAsync(int? tradeID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspGetPermissionListResult>> uspGetPermissionListAsync(int? roleID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspGetProductComboListResult>> uspGetProductComboListAsync(string name, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspGetSalesOrderItemListResult>> uspGetSalesOrderItemListAsync(int? tradeID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspGetUserPermissionListResult>> uspGetUserPermissionListAsync(string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspUserAddResult>> uspUserAddAsync(string name, string phoneNumber, string username, string email, string password, bool? active, string kTP, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspUserGetResult>> uspUserGetAsync(int? iD, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspUserLoginResult>> uspUserLoginAsync(string username, string password, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<int> uspUserUpdateAsync(int? iD, string name, string phoneNumber, string username, string email, string password, bool? active, string kTP, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
     }
 }

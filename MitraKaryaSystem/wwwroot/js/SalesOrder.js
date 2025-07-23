@@ -16,7 +16,16 @@ let Button = {
                 toastr.info('Insert at least 1 product', "Cannot save");
                 return;
             }
-            Form.Save();
+            Form.Save(false);
+        });
+        $('#buttonPay').click(function (event) {
+            event.preventDefault();
+            let table = $('#tableProduct').DataTable();
+            if (table.rows().count() <= 0) {
+                toastr.info('Insert at least 1 product', "Cannot save");
+                return;
+            }
+            Form.Save(true);
         });
         $('#buttonSearch').click(function (event) {
             Table.FillGridSearch();
@@ -355,7 +364,7 @@ let Form = {
             }
         });
     },
-    Save: function () {
+    Save: function (isPay) {
 
         // Create an object to store the form data and detail data
         var postData = {
@@ -380,31 +389,42 @@ let Form = {
                 postData.SalesOrderDetails.push({ productID: productID, quantity: quantity, ID: id, subTotal: rowData.subTotal });
             }
         });
+        if (isPay) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, pay it',
+                showLoaderOnConfirm: true,
 
-        // Show loading indicator
-        $('#buttonSave').prop('disabled', true); // Disable the button
-        $('#buttonSave .spinner-border').show(); // Show the spinner
-        $.ajax({
-            url: '/SalesOrder/Save',
-            type: 'POST',
-            data: postData,
-            success: function (result) {
-                toastr.options.onShown = function () {
+                allowOutsideClick: () => !Swal.isLoading()
+            });
+            // Show loading indicator
+            let buttonName = isPay ? 'buttonPay' : 'buttonSave';
+            $(buttonName).prop('disabled', true); // Disable the button
+            $(buttonName + ' .spinner-border').show(); // Show the spinner
+            $.ajax({
+                url: '/SalesOrder/Save',
+                type: 'POST',
+                data: postData,
+                success: function (result) {
+                    toastr.options.onShown = function () {
+                    }
+                    result.success ? toastr.success('Data saved') : toastr.error('Data not saved');
+                    // Close loading indicator
+                    $(buttonName).prop('disabled', false); // Enable the button
+                    $(buttonName + ' .spinner-border').hide(); // Hide the spinner
+                },
+                error: function (error) {
+                    toastr.error(error, 'Data not saved');
+                    // Close loading indicator
+                    $(buttonName).prop('disabled', false); // Enable the button
+                    $(buttonName + ' .spinner-border').hide(); // Hide the spinner
                 }
-                result.success ? toastr.success('Data saved') : toastr.error('Data not saved');
-                // Close loading indicator
-                $('#buttonSave').prop('disabled', false); // Enable the button
-                $('#buttonSave .spinner-border').hide(); // Hide the spinner
-            },
-            error: function (error) {
-                toastr.error(error, 'Data not saved');
-                // Close loading indicator
-                $('#buttonSave').prop('disabled', false); // Enable the button
-                $('#buttonSave .spinner-border').hide(); // Hide the spinner
-            }
-        });
-    },
-    Reset: function () {
-        Form.FillForm(0, true);
-    },
-}
+            });
+        },
+        Reset: function () {
+            Form.FillForm(0, true);
+        },
+    }

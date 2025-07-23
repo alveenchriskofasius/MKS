@@ -144,6 +144,7 @@ namespace API.Repository
 
                 if (salesOrderDetailModel.ID == 0)
                 {
+                    // New sales order item
                     var newProduct = new SalesOrderItem
                     {
                         TradeID = tradeID,
@@ -152,18 +153,28 @@ namespace API.Repository
                     };
 
                     await _context.SalesOrderItems.AddAsync(newProduct);
+                    product.StockQuantity -= salesOrderDetailModel.Quantity;
                 }
                 else
                 {
+                    // Existing sales order item
                     var existingProduct = await _context.SalesOrderItems.FindAsync(salesOrderDetailModel.ID);
                     if (existingProduct == null)
                     {
-                        return new { success = false, result = "Stock In item not found." };
+                        return new { success = false, result = "Sales Order Item not found." };
                     }
 
+                    // Calculate the difference between old and new quantity
+                    var quantityDifference = salesOrderDetailModel.Quantity - existingProduct.Quantity;
+
+                    // Adjust stock based on the difference
+                    product.StockQuantity -= quantityDifference;
+
+                    // Update the existing product's quantity
+                    existingProduct.Quantity = salesOrderDetailModel.Quantity;
                     _context.SalesOrderItems.Update(existingProduct);
                 }
-                product.StockQuantity -= salesOrderDetailModel.Quantity;
+
                 _context.Products.Update(product);
                 await _context.SaveChangesAsync();
 
@@ -174,5 +185,6 @@ namespace API.Repository
                 return new { success = false, result = e.Message };
             }
         }
+
     }
 }

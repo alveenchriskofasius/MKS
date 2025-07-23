@@ -14,6 +14,7 @@ let Table = {
             "filter": true,
             "searching": false,
             "responsive": true,
+            "destroy": true,
             "columns": [
                 { "data": "name" },
                 { "data": "categoryName" },

@@ -1,6 +1,4 @@
-﻿using API.Context.Table;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using MitraKaryaSystem.Models;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace API.Models
 {
