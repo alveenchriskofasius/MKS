@@ -1,14 +1,13 @@
 ﻿$(document).ready(function () {
-    Control.Init();
-    Button.Init();
-    Form.FillForm(0, true);
+    ControlStockIn.Init();
+    ButtonStockIn.Init();
+    FormStockIn.FillForm(0, true);
 });
-let Button = {
+let ButtonStockIn = {
     Init: function () {
         $('#buttonAdd').click(function (event) {
             event.preventDefault();
-
-            Control.AddProduct();
+            ControlStockIn.AddProduct();
         });
         $('#buttonSave').click(function (event) {
             event.preventDefault();
@@ -17,18 +16,18 @@ let Button = {
                 toastr.info('Insert at least 1 product', "Cannot save");
                 return;
             }
-            Form.Save();
+            FormStockIn.Save();
         });
         $('#buttonNew').click(function (event) {
-            Form.ResetProductForm();
-            Form.Reset();
+            FormStockIn.ResetProductForm();
+            FormStockIn.Reset();
         });
         $('#buttonSearch').click(function (event) {
-            Table.FillGridSearch();
+            TableStockIn.FillGridSearch();
         });
     }
 }
-let Table = {
+let TableStockIn = {
     FillGridProduct: function (id, isReset) {
         let tableID = $("#tableProduct");
         if (isReset) {
@@ -88,6 +87,7 @@ let Table = {
             let rowIndex = table.cell($(this).closest('td')).index().row;
             let newData = parseInt($(this).val());
             table.cell(rowIndex, 2).data(newData).draw();
+            ControlStockIn.UpdateSummary();
         });
         tableID.find('tbody').on('click', '.delete', function (e) {
             let row = table.row($(this).parents('tr')).data();
@@ -110,7 +110,8 @@ let Table = {
                         })
                             .then(response => {
                                 toastr.options.onShown = function () {
-                                    Table.FillGridProduct(id);
+                                    TableStockIn.FillGridProduct(id);
+                                    ControlStockIn.UpdateSummary();
                                 }
                                 response.ok ? toastr.success('Data has been deleted') : toastr.error('Data not deleted');
                             })
@@ -122,8 +123,11 @@ let Table = {
                 });
             } else {
                 table.row($(this).parents('tr')).remove().draw();
+                ControlStockIn.UpdateSummary();
             }
         });
+        // Update summary after table is loaded
+        ControlStockIn.UpdateSummary();
     },
     FillGridSearch: function () {
         let tableID = $("#tableSearch");
@@ -168,7 +172,7 @@ let Table = {
 
         tableID.find('tbody').on('click', '.edit', function (e) {
             let row = table.row($(this).parents('tr')).data();
-            Form.FillForm(row.id, true);
+            FormStockIn.FillForm(row.id, true);
             $('#searchModal').modal('hide');
         });
         tableID.find('tbody').on('click', '.delete', function (e) {
@@ -191,8 +195,8 @@ let Table = {
                         .then(response => {
                             toastr.options.onShown = function () {
                                 Table.FillGridSearch();
-                                Form.ResetProductForm();
-                                Form.Reset();
+                                FormStockIn.ResetProductForm();
+                                FormStockIn.Reset();
                             }
                             response.ok ? toastr.success('Data has been deleted') : toastr.error('Data not deleted');
                         })
@@ -205,20 +209,20 @@ let Table = {
         });
     }
 }
-let Control = {
+let ControlStockIn = {
     Init: function () {
         $('.js-example-basic-single').select2({ width: '100%' });
-        Control.Product();
-        Control.ProductSelect();
-        Control.Barcode();
-        Control.Quantity();
+        ControlStockIn.Product();
+        ControlStockIn.ProductSelect();
+        ControlStockIn.Barcode();
+        ControlStockIn.Quantity();
 
     },
     Quantity: function () {
         $('#quantity').keypress(function (event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                Control.AddProduct();
+                ControlStockIn.AddProduct();
                 $('#quantity').blur();
             }
         });
@@ -228,8 +232,8 @@ let Control = {
             if (event.keyCode === 13) {
                 event.preventDefault();
                 let barcodeValue = $(this).val();
-                Control.CheckProduct(barcodeValue, true);
-                Form.ResetProductForm();
+                ControlStockIn.CheckProduct(barcodeValue, true);
+                FormStockIn.ResetProductForm();
             }
         });
     },
@@ -246,13 +250,12 @@ let Control = {
                     // If the product already exists, update the quantity
                     updatedQuantity = parseInt(rowData.quantity) + 1;
                     table.cell(this, 2).data(updatedQuantity).draw();
-
                 } else {
-
                     updatedQuantity = parseInt(rowData.quantity) + quantity;
                 }
                 table.cell(this, 2).data(updatedQuantity).draw();
                 barcodeFound = true; // Set flag to true if product is found
+                ControlStockIn.UpdateSummary();
                 return false; // Exit the loop early
             }
         });
@@ -263,11 +266,11 @@ let Control = {
                 type: 'POST',
                 data: { barcode: result },
                 success: function (result) {
-
                     if (result == undefined || result == null) {
                         return toastr.error('Data not found', "Cannot add product");
                     }
-                    Control.AddRow(result.id, result.name, isScan ? 1 : quantity, result.unitPrice, result.barcode, result.supplierID, result.supplierName);
+                    ControlStockIn.AddRow(result.id, result.name, isScan ? 1 : quantity, result.unitPrice, result.barcode, result.supplierID, result.supplierName);
+                    ControlStockIn.UpdateSummary();
                 },
                 error: function (error) {
                     toastr.error(error, 'Error scan barcode');
@@ -286,6 +289,7 @@ let Control = {
             barcode: barcode,
             supplier: supplier
         }).draw();
+        ControlStockIn.UpdateSummary();
     },
     Product: function () {
         let id = '#selectProduct';
@@ -294,18 +298,14 @@ let Control = {
         $(id).append('<option selected value="">' + 'Select product' + '</option>');
         if (data.result != null && data.result.length > 0) {
             $.each(data.result, function (i, item) {
-                if (productID == item.id) {
-                    $(id).append('<option selected value="' + item.id + '" data-barcode="' + item.barcode + '">' + item.name + '</option>');
-                } else {
-                    $(id).append('<option value="' + item.id + '" data-barcode="' + item.barcode + '">' + item.name + '</option>');
-                }
+                $(id).append('<option value="' + item.id + '" data-barcode="' + item.barcode + '">' + item.name + '</option>');
             });
         }
     },
     ProductSelect: function () {
         $('#selectProduct').on('select2:select', function (e) {
             let data = e.params.data;
-            Form.FillFormProductBySelect(data);
+            FormStockIn.FillFormProductBySelect(data);
         });
     },
     AddProduct: function () {
@@ -329,8 +329,8 @@ let Control = {
             quantityInput.removeClass('is-invalid');
         }
 
-        // Manually trigger the form validation
-        if (!form.checkValidity()) {
+        // Manually trigger the form validation if form exists
+        if (form && !form.checkValidity()) {
             event.preventDefault();
             event.stopPropagation();
             form.classList.add('was-validated');
@@ -342,13 +342,31 @@ let Control = {
         event.stopPropagation();
 
         let barcode = selectedProduct.find('option:selected').data('barcode');
-        Control.CheckProduct(barcode, false);
+        ControlStockIn.CheckProduct(barcode, false);
         // Remove 'was-validated' class to reset validation styling
-        form.classList.remove('was-validated');
-        Form.ResetProductForm()
+        if (form) form.classList.remove('was-validated');
+        FormStockIn.ResetProductForm()
+    },
+
+    UpdateSummary: function () {
+        let table = $("#tableProduct").DataTable();
+        let data = table.rows().data();
+        let totalQty = 0;
+        let totalValue = 0;
+        for (let i = 0; i < data.length; i++) {
+            let qty = parseInt(data[i].quantity) || 0;
+            let price = parseFloat(data[i].unitPrice) || 0;
+            totalQty += qty;
+            totalValue += qty * price;
+        }
+        $('#totalQty').text(totalQty);
+        $('#totalUnitPrice').text(totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     }
+
 }
-let Form = {
+
+
+let FormStockIn = {
     FillFormProductBySelect: function (product) {
         $.ajax({
             url: '/StockIn/FillFormProduct',
@@ -356,7 +374,8 @@ let Form = {
             data: { id: product.id },
             success: function (result) {
                 $('#stockInDetailForm').html(result);
-                Control.Quantity();
+                ControlStockIn.Quantity();
+                ControlStockIn.UpdateSummary();
             },
             error: function (error) {
                 toastr.error(error, 'Error loading user data');
@@ -373,7 +392,8 @@ let Form = {
         selectedProduct.removeClass('is-invalid');
     },
     Reset: function () {
-        Form.FillForm(0, true);
+        FormStockIn.FillForm(0, true);
+        ControlStockIn.UpdateSummary();
     },
     Save: function () {
 
@@ -407,8 +427,8 @@ let Form = {
             data: postData,
             success: function (result) {
                 toastr.options.onShown = function () {
-                    Form.ResetProductForm();
-                    Form.Reset();
+                    FormStockIn.ResetProductForm();
+                    FormStockIn.Reset();
                 }
                 result.success ? toastr.success('Data saved') : toastr.error('Data not saved');
                 // Close loading indicator
@@ -430,7 +450,7 @@ let Form = {
             data: { id: id },
             success: function (result) {
                 $('#stockInHeaderBody').html(result);
-                Table.FillGridProduct(id, isReset);
+                TableStockIn.FillGridProduct(id, isReset);
             },
             error: function (error) {
                 toastr.error(error, 'Error load data');
