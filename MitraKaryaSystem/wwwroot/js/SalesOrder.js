@@ -2,12 +2,12 @@
     $('.js-example-basic-responsive').select2({
         width: 'resolve' // need to override the changed default
     });
-    Form.FillForm(0, true);
-    Control.Init();
-    Button.Init();
+    FormSalesOrder.FillForm(0, true);
+    ControlSalesOrder.Init();
+    ButtonSalesOrder.Init();
 });
 
-let Button = {
+let ButtonSalesOrder = {
     Init: function () {
         $('#buttonSave').click(function (event) {
             event.preventDefault();
@@ -110,7 +110,7 @@ let Table = {
             if (newQuantity > row.stockQuantity) { return toastr.info('Quantity reach stock quantity'); }
 
             // Update the quantity in the row data
-            table.cell(rowIndex, 5).data(newQuantity).draw(); // Assuming column 5 is quantity
+            table.cell(rowIndex, 3).data(newQuantity).draw(); // Assuming column 5 is quantity
 
             // Get the unit price from the row data (which is read-only)
             let unitPrice = parseFloat(row.unitPrice); // unitPrice should already be part of the row data
@@ -121,7 +121,7 @@ let Table = {
                 let subTotal = newQuantity * unitPrice;
 
                 // Update the subTotal column in the table (assuming subTotal is in column 8)
-                table.cell(rowIndex, 8).data(subTotal).draw();
+                table.cell(rowIndex, 5).data(subTotal).draw();
             }
             Control.CalculateGrandTotal();
 
@@ -243,7 +243,7 @@ let Table = {
         });
     }
 }
-let Control = {
+let ControlSalesOrder = {
     SelectProduct: function () {
         let id = '#selectProduct';
         $(id).select2({
@@ -287,7 +287,7 @@ let Control = {
     ProductSelect: function () {
         $('#selectProduct').on('select2:select', function (e) {
             let data = e.params.data;
-            Control.CheckProduct(data);
+            ControlSalesOrder.CheckProduct(data);
 
             $(this).val(null).trigger('change');
             $(this).select2('close');
@@ -308,7 +308,8 @@ let Control = {
         }).draw();
     },
     Init: function () {
-        Control.ProductSelect();
+        ControlSalesOrder.ProductSelect();
+        ControlSalesOrder.SelectProduct();
     },
     // Check if the selected product is already in the table
     CheckProduct: function (selectedProduct) {
@@ -330,7 +331,7 @@ let Control = {
         });
         // If the product doesn't exist in the table, add a new row with default quantity 1
         if (!exists) {
-            Control.AddRow(selectedProduct.id, selectedProduct.supplierID, selectedProduct.stockQuantity, selectedProduct.name, selectedProduct.supplierName, 1, selectedProduct.unit, selectedProduct.unitPrice, selectedProduct.stockQuantity);
+            ControlSalesOrder.AddRow(selectedProduct.id, selectedProduct.supplierID, selectedProduct.stockQuantity, selectedProduct.name, selectedProduct.supplierName, 1, selectedProduct.unit, selectedProduct.unitPrice, selectedProduct.stockQuantity);
         }
         this.CalculateGrandTotal();
     },
@@ -347,7 +348,7 @@ let Control = {
         $('#total').text(totalSum.toFixed(2)); // Update the footer with the calculated grand total
     }
 }
-let Form = {
+let FormSalesOrder = {
     FillForm: function (id, isReset = false) {
         $.ajax({
             url: '/SalesOrder/FillForm',
@@ -355,9 +356,9 @@ let Form = {
             data: { id: id },
             success: function (result) {
                 $('#salesOrderHeaderBody').html(result);
-                Control.SelectProduct();
+                ControlSalesOrder.SelectProduct();
                 Table.FillGridProduct(id, isReset);
-                Control.CalculateGrandTotal();
+                ControlSalesOrder.CalculateGrandTotal();
             },
             error: function (error) {
                 toastr.error(error, 'Error load data');
@@ -423,8 +424,9 @@ let Form = {
                     $(buttonName + ' .spinner-border').hide(); // Hide the spinner
                 }
             });
-        },
-        Reset: function () {
-            Form.FillForm(0, true);
-        },
+        }
+    },
+    Reset: function () {
+        Form.FillForm(0, true);
     }
+}
