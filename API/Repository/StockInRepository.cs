@@ -92,7 +92,8 @@ namespace API.Repository
                         ID = product.ID,
                         Quantity = 1
                     };
-                };
+                }
+                ;
             }
             catch (Exception e)
             {
@@ -107,41 +108,44 @@ namespace API.Repository
         {
             try
             {
-                int tradeID = 0;
+                int tradeID;
+                Trade tradeEntity;
                 if (stockInModel.ID == 0)
                 {
-                    var newTrade = new Trade
+                    var noResult = await _procedure.uspGenerateNoAsync("SI", stockInModel.Date);
+                    var generatedNo = noResult.FirstOrDefault()?.NewPONumber ?? string.Empty;
+                    tradeEntity = new Trade
                     {
                         Date = stockInModel.Date,
-                        StatusID = 1,
-                        No = _procedure.uspGenerateNoAsync("SI", stockInModel.Date).Result.FirstOrDefault().NewPONumber,
-                        CreatedBy = _httpContextAccessor.HttpContext.User.Identity.Name,
-                        TradeTypeID = 3
+                        StatusID = 1, // Draft
+                        No = generatedNo,
+                        CreatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name,
+                        TradeTypeID = 3,
+                        CreatedAt = DateTime.Now
                     };
-                    await _context.Trades.AddAsync(newTrade);
+                    await _context.Trades.AddAsync(tradeEntity);
                     await _context.SaveChangesAsync();
-                    tradeID = newTrade.ID;
                 }
                 else
                 {
-                    var existingTrade = await _context.Trades.FindAsync(stockInModel.ID);
-                    if (existingTrade != null)
+                    tradeEntity = await _context.Trades.FindAsync(stockInModel.ID);
+                    if (tradeEntity == null)
                     {
-                        existingTrade.Date = stockInModel.Date;
-                        existingTrade.UpdatedBy = _httpContextAccessor.HttpContext.User.Identity.Name;
-                        existingTrade.UpdatedAt = DateTime.Now;
-                        await _context.SaveChangesAsync();
+                        return new { success = false, result = "Stock In not found." };
                     }
-                    else
-                    {
-                        return new { success = false, result = "Purchase order not found." };
-                    }
+                    tradeEntity.Date = stockInModel.Date;
+                    tradeEntity.UpdatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
+                    tradeEntity.UpdatedAt = DateTime.Now;
+                    await _context.SaveChangesAsync();
                 }
+
+                tradeID = tradeEntity.ID;
+
                 foreach (var product in stockInModel.StockInDetails)
                 {
-                    await SaveProduct(product, stockInModel.ID == 0 ? tradeID : stockInModel.ID);
+                    await SaveProduct(product, tradeID);
                 }
-                return new { success = true };
+                return new { success = true, id = tradeEntity.ID, no = tradeEntity.No, statusID = tradeEntity.StatusID };
             }
             catch (Exception e)
             {
