@@ -2,17 +2,17 @@
 
 <form id="stockInForm">
     <input type="text" id="stockInID" hidden asp-for="@Model.ID" />
-
+    <input type="hidden" id="stockInStatusID" value="@Model.StatusID" />
     <div class="row mb-3">
         <label for="stockInNumber" class="form-label col-sm-2">No</label>
-        <div class="col-md-3 col-lg-3">
-            <input type="text" asp-for=No autofocus class="form-control" placeholder="Auto" readonly id="stockInNumber" name="stockInNumber">
+        <div class="col-md-6 col-lg-6">
+            <input type="text" asp-for=No autofocus class="form-control" placeholder="Auto" readonly id="stockInNumber">
         </div>
     </div>
     <div class="row mb-3">
         <label for="stockInDate" class="form-label col-sm-2">Date</label>
-        <div class="col-sm-3">
-            <input type="date" asp-for=Date class="form-control" id="stockInDate" name="stockInDate">
+        <div class="col-sm-6">
+            <input type="date" asp-for=Date class="form-control" id="stockInDate">
         </div>
     </div>
 </form>

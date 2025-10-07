@@ -1,64 +1,54 @@
 ﻿@{
     ViewData["Title"] = "Stock In";
 }
-<div class="container-fluid p-3">
-    <div class="row mb-3 align-items-center">
-        <div class="col-md-6">
-            <h2 class="mb-0">Stock In</h2>
+<div class="card">
+    <div class="card-header" style="background-color:#f0f0f0">
+        <div class="card-title">
+            <h5>Stock In</h5>
         </div>
-        <div class="col-md-6 text-end">
-            <button type="button" id="buttonNew" class="btn btn-primary btn-lg me-2"><i class="fa-solid fa-file-circle-plus"></i> New</button>
-            <button type="button" id="buttonSearch" class="btn btn-warning btn-lg" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-        </div>
-    </div>
-    <div class="row g-3">
-        <div class="col-12">
-            <div class="card mb-3">
-                <div class="card-body p-3">
-                    <partial name="_FormHeader" model="new StockInModel()" />
-                </div>
-            </div>
-            <div class="card mb-3">
-                <div class="card-header bg-light d-flex align-items-center mb-2">
-                    <span class="fw-bold">Add Product</span>
-                </div>
-                <div class="card-body">
-                    <div class="col-md-12">
-                        <label for="barcode" class="form-label">Barcode</label>
-                        <input type="text" class="form-control form-control-lg" placeholder="Scan barcode or type here..." id="barcode" autofocus />
-                    </div>
-                    <br />
-                    <p class="text-center">OR</p>
-                    <div class="col-md-12">
-                        <label for="selectProduct" class="form-label mb-1">Product</label>
-                        <select class="form-control form-control-lg js-example-basic-single" id="selectProduct"></select>
-                    </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-12">
-                            <label for="quantity" class="form-label mb-1">Quantity</label>
-                            <input type="number" class="form-control form-control-lg w-100" id="quantity" min="1" value="1" />
-                        </div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-md-12 d-grid">
-                            <button type="button" class="btn btn-success btn-lg w-100" id="buttonAdd"><i class="fa-solid fa-plus"></i> Add Product</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card mb-3">
-                <div class="card-body p-2">
-                    <partial name="_Table" />
-                </div>
-            </div>
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-3">
-                <button type="submit" class="btn btn-primary btn-sm me-2" id="buttonSave"><i class="fa-solid fa-floppy-disk"></i> Save</button>
-                <a class="btn btn-secondary btn-sm" asp-action="Index" asp-controller="Home" id="buttonCancel"><i class="fa-solid fa-xmark"></i> Cancel</a>
-            </div>
+        <div class="card-tools">
+            <button type="button" id="buttonNew" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-circle-plus"></i> Add</button>
+            <button type="button" id="buttonSearch" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
         </div>
     </div>
-    <partial name="_TableSearch" />
+    <div class="card-body">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="badge rounded-pill text-bg-warning" id="stockInStatus">Draft</span>
+                </div>
+            </div>
+            <div class="card-body" id="stockInHeaderBody">
+                <partial name="_FormHeader" model="new StockInModel()" />
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="row mb-3">
+                    <label for="selectProduct" class="form-label col-sm-2">Select Product</label>
+                    <div class="col-md-10 col-lg-10">
+                        <select class="form-control select2" id="selectProduct" autofocus></select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="quantity" class="form-label col-sm-2">Quantity</label>
+                    <div class="col-md-4 col-lg-4">
+                        <input type="number" class="form-control" id="quantity" min="1" value="1" />
+                    </div>
+                    <div class="col-md-6 col-lg-6">
+                        <button type="button" class="btn btn-success" id="buttonAdd"><i class="fa-solid fa-plus"></i> Add Product</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <partial name="_Table" />
+    </div>
+    <div class="card-footer">
+        <button type="submit" class="btn btn-primary" id="buttonSave">Save</button>
+        <a class="btn btn-secondary" asp-action="Index" asp-controller="Home" id="buttonCancel">Cancel</a>
+    </div>
 </div>
+<partial name="_TableSearch" />
 
 @section Scripts {
     <script src="~/js/StockIn.js" asp-append-version="true"></script>
