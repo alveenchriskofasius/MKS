@@ -265,6 +265,11 @@ let ControlSalesOrder = {
         ControlSalesOrder.SelectProduct();
     },
     CheckProduct: function (selectedProduct) {
+        // If stock is zero, notify and stop
+        if (selectedProduct.stockQuantity === 0) {
+            toastr.info('Stock is empty');
+            return; // do not add or increase
+        }
         let table = $('#tableProduct').DataTable();
         let exists = false;
         let rows = table.rows().nodes();

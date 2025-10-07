@@ -155,7 +155,12 @@ namespace API.Repository
 
                 foreach (SalesOrderDetailModel salesOrderDetail in salesOrder.SalesOrderDetails)
                 {
-                    await SaveProduct(salesOrderDetail, tradeID);
+                    var saveResult = await SaveProduct(salesOrderDetail, tradeID);
+                    dynamic dyn = saveResult;
+                    if (dyn.success == false)
+                    {
+                        return saveResult; // return validation error (e.g., insufficient stock)
+                    }
                 }
 
                 return new
@@ -185,7 +190,12 @@ namespace API.Repository
 
                 if (salesOrderDetailModel.ID == 0)
                 {
-                    // New sales order item
+                    // New sales order item -> validate stock first
+                    if (salesOrderDetailModel.Quantity > product.StockQuantity)
+                    {
+                        return new { success = false, result = $"Insufficient stock for product. Available: {product.StockQuantity}" };
+                    }
+
                     var newProduct = new SalesOrderItem
                     {
                         TradeID = tradeID,
@@ -198,20 +208,21 @@ namespace API.Repository
                 }
                 else
                 {
-                    // Existing sales order item
                     var existingProduct = await _context.SalesOrderItems.FindAsync(salesOrderDetailModel.ID);
                     if (existingProduct == null)
                     {
                         return new { success = false, result = "Sales Order Item not found." };
                     }
 
-                    // Calculate the difference between old and new quantity
-                    var quantityDifference = salesOrderDetailModel.Quantity - existingProduct.Quantity;
+                    // Stock currently available including what was previously reserved by this line
+                    var availableStock = product.StockQuantity + existingProduct.Quantity;
+                    if (salesOrderDetailModel.Quantity > availableStock)
+                    {
+                        return new { success = false, result = $"Insufficient stock for product. Available: {availableStock}" };
+                    }
 
-                    // Adjust stock based on the difference
-                    product.StockQuantity -= quantityDifference;
-
-                    // Update the existing product's quantity
+                    var quantityDifference = salesOrderDetailModel.Quantity - existingProduct.Quantity; // can be negative
+                    product.StockQuantity -= quantityDifference; // subtract if increased, add back if decreased (difference negative)
                     existingProduct.Quantity = salesOrderDetailModel.Quantity;
                     _context.SalesOrderItems.Update(existingProduct);
                 }
