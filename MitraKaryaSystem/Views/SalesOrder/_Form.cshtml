@@ -2,25 +2,25 @@
 @model SalesOrderViewModel
 <form id="salesOrderForm">
     <input type="text" id="salesOrderID" hidden asp-for="SalesOrder.ID" />
+    <input type="hidden" id="salesOrderStatusID" value="@Model.SalesOrder.StatusID" />
     <div class="row">
         <div class="col-6">
             <div class="row mb-3">
                 <label for="salesOrderNumber" class="form-label col-sm-2">No</label>
-                <div class="col-md-3 col-lg-3">
-                    <input type="text" asp-for=SalesOrder.No autofocus class="form-control" readonly id="salesOrderNumber" name="salesOrderNumber" placeholder="Auto">
+                <div class="col-md-6 col-lg-6">
+                    <input type="text" asp-for=SalesOrder.No autofocus class="form-control" readonly id="salesOrderNumber" placeholder="Auto">
                 </div>
             </div>
             <div class="row mb-3">
                 <label for="salesOrderDate" class="form-label col-sm-2">Date</label>
-                <div class="col-sm-3">
-                    <input type="date" asp-for=SalesOrder.Date class="form-control" id="date" name="salesOrderDate">
+                <div class="col-sm-6">
+                    <input type="date" asp-for=SalesOrder.Date class="form-control" id="salesOrderDate">
                 </div>
             </div>
-
         </div>
         <div class="col-6">
             <div class="row mb-3">
-                <label for="customerId" class="form-label col-sm-2">Customer</label>
+                <label for="selectCustomer" class="form-label col-sm-2">Customer</label>
                 <div class="col-sm-10">
                     @Html.DropDownListFor(m => m.SalesOrder.CustomerID, Model.Customers, "Select a customer", new { @class = "form-control js-example-basic-responsive", id = "selectCustomer" })
                 </div>
@@ -28,11 +28,9 @@
             <div class="row mb-3">
                 <label for="salesOrderNote" class="form-label col-sm-2">Note</label>
                 <div class="col-sm-10">
-                    <textarea class="form-control" id="salesOrderNote" asp-for="SalesOrder.Note">
-                    </textarea>
+                    <textarea class="form-control" id="salesOrderNote" asp-for="SalesOrder.Note"></textarea>
                 </div>
             </div>
         </div>
-
     </div>
 </form>

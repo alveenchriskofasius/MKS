@@ -11,7 +11,12 @@ namespace API.Repository
         private readonly MKSTableContext _context;
         private readonly MKSSPContextProcedures _procedure;
         private readonly IHttpContextAccessor _httpContextAccessor;
-
+        private enum TradeStatus
+        {
+            Draft = 1,
+            Paid = 2,
+            Debt = 3
+        }
         public SalesOrderRepository(MKSTableContext context, MKSSPContextProcedures procedures, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
@@ -81,49 +86,86 @@ namespace API.Repository
             return salesOrder;
         }
         public async Task<object> GetSalesOrderDetailById(int id) => await _procedure.uspGetSalesOrderItemListAsync(id);
+        public async Task<List<SalesOrderDetailModel>> GetSalesOrderDetailModelById(int id)
+        {
+            var salesOrderDetails = await _procedure.uspGetSalesOrderItemListAsync(id);
+            List<SalesOrderDetailModel> salesOrderDetailModels = new List<SalesOrderDetailModel>();
+            foreach (var detail in salesOrderDetails)
+            {
+                salesOrderDetailModels.Add(new SalesOrderDetailModel
+                {
+                    ID = detail.ID,
+                    ProductName = detail.Product,
+                    Quantity = detail.Quantity,
+                    Subtotal = (decimal)detail.SubTotal,
+                    UnitPrice = detail.UnitPrice
+
+                });
+            }
+            return salesOrderDetailModels;
+        }
         public async Task<object> GetSearchList() => await _procedure.GetSalesOrderListAsync();
         public async Task<object> Save(SalesOrderModel salesOrder)
         {
             try
             {
-                int tradeID = 0;
+                // Guard clauses
+                salesOrder.SalesOrderDetails ??= new List<SalesOrderDetailModel>();
 
+                Trade tradeEntity;
                 if (salesOrder.ID == 0)
                 {
-                    var newTrade = new Trade
+                    // Generate number asynchronously (avoid .Result deadlock risk)
+                    var noResult = await _procedure.uspGenerateNoAsync("SO", salesOrder.Date);
+                    var generatedNo = noResult.FirstOrDefault()?.NewPONumber ?? string.Empty;
+
+                    tradeEntity = new Trade
                     {
-                        No = _procedure.uspGenerateNoAsync("SO", salesOrder.Date).Result.FirstOrDefault().NewPONumber,
+                        No = generatedNo,
                         Amount = salesOrder.SalesOrderDetails.Sum(x => x.Subtotal),
                         CustomerID = salesOrder.CustomerID,
-                        CreatedBy = _httpContextAccessor.HttpContext.User.Identity.Name,
+                        CreatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name,
                         Date = salesOrder.Date,
-                        StatusID = 1,
+                        StatusID = salesOrder.IsPaid ? (short)TradeStatus.Paid : (short)TradeStatus.Draft,
                         TradeTypeID = 2,
                         CreatedAt = DateTime.Now,
                         Note = salesOrder.Note
                     };
-                    await _context.Trades.AddAsync(newTrade);
+                    await _context.Trades.AddAsync(tradeEntity);
                     await _context.SaveChangesAsync();
-                    tradeID = newTrade.ID;
                 }
                 else
                 {
-                    var existingTrade = await _context.Trades.FindAsync(salesOrder.ID);
-
-                    existingTrade.Amount = salesOrder.SalesOrderDetails.Sum(x => x.Subtotal);
-                    existingTrade.CustomerID = salesOrder.CustomerID;
-                    existingTrade.UpdatedAt = DateTime.Now;
-                    existingTrade.UpdatedBy = _httpContextAccessor.HttpContext.User.Identity.Name;
-                    existingTrade.Date = salesOrder.Date;
-                    existingTrade.StatusID = salesOrder.StatusID;
-                    existingTrade.Note = salesOrder.Note;
+                    tradeEntity = await _context.Trades.FindAsync(salesOrder.ID);
+                    if (tradeEntity == null)
+                    {
+                        return new { success = false, result = "Sales Order (Trade) not found." };
+                    }
+                    tradeEntity.Amount = salesOrder.SalesOrderDetails.Sum(x => x.Subtotal);
+                    tradeEntity.CustomerID = salesOrder.CustomerID;
+                    tradeEntity.UpdatedAt = DateTime.Now;
+                    tradeEntity.UpdatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
+                    tradeEntity.Date = salesOrder.Date;
+                    tradeEntity.StatusID = salesOrder.IsPaid ? (short)TradeStatus.Paid : (short)TradeStatus.Draft;
+                    tradeEntity.Note = salesOrder.Note;
                     await _context.SaveChangesAsync();
                 }
+
+                int tradeID = tradeEntity.ID; // Ensure tradeID always set
+
                 foreach (SalesOrderDetailModel salesOrderDetail in salesOrder.SalesOrderDetails)
                 {
                     await SaveProduct(salesOrderDetail, tradeID);
                 }
-                return new { success = true };
+
+                return new
+                {
+                    success = true,
+                    id = tradeEntity.ID,
+                    no = tradeEntity.No,
+                    statusID = tradeEntity.StatusID,
+                    amount = tradeEntity.Amount
+                };
             }
             catch (Exception e)
             {
@@ -135,7 +177,6 @@ namespace API.Repository
             try
             {
                 var product = await _context.Products.FindAsync(salesOrderDetailModel.ProductID);
-                var trade = await _context.Trades.FindAsync(tradeID);
 
                 if (product == null)
                 {

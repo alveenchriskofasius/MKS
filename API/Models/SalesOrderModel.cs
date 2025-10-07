@@ -11,6 +11,7 @@
         public int? CustomerID { get; set; }
         public decimal Amount { get; set; }
         public string Note { get; set; }
+        public bool IsPaid { get; set; }
 
         public List<SalesOrderDetailModel> SalesOrderDetails { get; set; } = new List<SalesOrderDetailModel>();
     }
