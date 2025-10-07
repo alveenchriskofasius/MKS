@@ -16,7 +16,6 @@ namespace MitraKaryaSystem.Controllers
             _customerService = customerService;
         }
         public IActionResult Index() => View();
-        public IActionResult Print() => View();
 
         public async Task<IActionResult> FillForm(int id)
         {

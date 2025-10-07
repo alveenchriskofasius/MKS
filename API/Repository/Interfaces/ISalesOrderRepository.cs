@@ -10,5 +10,6 @@ namespace API.Repository.Interfaces
         Task<object> DeleteProductById(int id);
         Task<object> GetSearchList();
         Task<object> Delete(int id);
+        Task<List<SalesOrderDetailModel>> GetSalesOrderDetailModelById(int id);
     }
 }

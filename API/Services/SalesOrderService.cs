@@ -12,6 +12,9 @@ namespace API.Services
         public async Task<object> DeleteProductById(int id) => await _salesOrderRepository.DeleteProductById(id);
         public async Task<SalesOrderModel> FillForm(int id) => await _salesOrderRepository.FillForm(id);
         public async Task<object> GetSalesOrderDetailById(int id) => await _salesOrderRepository.GetSalesOrderDetailById(id);
+
+        public Task<List<SalesOrderDetailModel>> GetSalesOrderDetailModelById(int id) => _salesOrderRepository.GetSalesOrderDetailModelById(id);
+
         public async Task<object> GetSearchList() => await _salesOrderRepository.GetSearchList();
         public async Task<object> Save(SalesOrderModel salesOrder) => await _salesOrderRepository.Save(salesOrder);
     }
