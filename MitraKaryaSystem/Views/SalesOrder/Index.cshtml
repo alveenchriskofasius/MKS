@@ -13,7 +13,7 @@
         </div>
     </div>
     <div class="card-body">
-        <div class="card">
+        <div class="card mb-3">
             <div class="card-header">
                 <div class="card-title">
                     <span class="badge rounded-pill text-bg-warning" id="salesOrderStatus">Draft</span>
@@ -23,7 +23,7 @@
                 <partial name="_Form" model="new SalesOrderViewModel()" />
             </div>
         </div>
-        <div class="card">
+        <div class="card mb-3">
             <div class="card-body">
                 <div class="row mb-3">
                     <label for="barcode" class="form-label col-sm-2">Select Product</label>
@@ -33,6 +33,9 @@
                 </div>
             </div>
         </div>
+        <!-- Product detail table (was missing) -->
+        <partial name="_TableProduct" />
+        <!-- Search modal / other partials -->
         <partial name="_Table" />
 
     </div>

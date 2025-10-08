@@ -15,7 +15,11 @@ namespace API.Repository
         {
             Draft = 1,
             Paid = 2,
-            Debt = 3
+            Debt = 3,
+            PartialRefund = 4,
+            Refund = 5,
+            Exchange = 6,
+            PartialExchange = 7
         }
         public SalesOrderRepository(MKSTableContext context, MKSSPContextProcedures procedures, IHttpContextAccessor httpContextAccessor)
         {
@@ -85,7 +89,42 @@ namespace API.Repository
             }
             return salesOrder;
         }
-        public async Task<object> GetSalesOrderDetailById(int id) => await _procedure.uspGetSalesOrderItemListAsync(id);
+        // Enriched detail list including refunded qty and remaining qty (for return validation)
+        public async Task<object> GetSalesOrderDetailById(int id)
+        {
+            var raw = await _procedure.uspGetSalesOrderItemListAsync(id); // original SP results
+            var ids = raw.Select(r => r.ID).ToList();
+            var entities = await _context.SalesOrderItems.Where(x => ids.Contains(x.ID)).ToListAsync();
+            var enriched = raw.Select(r =>
+            {
+                var ent = entities.FirstOrDefault(e => e.ID == r.ID);
+                int qtySold = r.Quantity;
+                int qtyRefunded = ent?.QtyRefunded ?? 0;
+                int qtyExchanged = ent?.QtyExchanged ?? 0;
+                int remaining = qtySold - (qtyRefunded + qtyExchanged);
+                if (remaining < 0) remaining = 0;
+                // Try get product id from SP result (property naming may differ)
+                int productId = 0;
+                try
+                {
+                    productId = (int)(r.GetType().GetProperty("ProductID")?.GetValue(r) ?? r.GetType().GetProperty("ProductId")?.GetValue(r) ?? 0);
+                }
+                catch { }
+                return new
+                {
+                    id = r.ID,
+                    productID = productId,
+                    product = r.Product,
+                    quantity = qtySold,
+                    unitPrice = r.UnitPrice,
+                    subTotal = r.SubTotal,
+                    qtyRefunded,
+                    qtyExchanged,
+                    remainingQty = remaining
+                };
+            }).ToList();
+            return new { result = enriched };
+        }
         public async Task<List<SalesOrderDetailModel>> GetSalesOrderDetailModelById(int id)
         {
             var salesOrderDetails = await _procedure.uspGetSalesOrderItemListAsync(id);
@@ -109,13 +148,11 @@ namespace API.Repository
         {
             try
             {
-                // Guard clauses
                 salesOrder.SalesOrderDetails ??= new List<SalesOrderDetailModel>();
 
                 Trade tradeEntity;
                 if (salesOrder.ID == 0)
                 {
-                    // Generate number asynchronously (avoid .Result deadlock risk)
                     var noResult = await _procedure.uspGenerateNoAsync("SO", salesOrder.Date);
                     var generatedNo = noResult.FirstOrDefault()?.NewPONumber ?? string.Empty;
 
@@ -151,7 +188,7 @@ namespace API.Repository
                     await _context.SaveChangesAsync();
                 }
 
-                int tradeID = tradeEntity.ID; // Ensure tradeID always set
+                int tradeID = tradeEntity.ID;
 
                 foreach (SalesOrderDetailModel salesOrderDetail in salesOrder.SalesOrderDetails)
                 {
@@ -159,7 +196,7 @@ namespace API.Repository
                     dynamic dyn = saveResult;
                     if (dyn.success == false)
                     {
-                        return saveResult; // return validation error (e.g., insufficient stock)
+                        return saveResult;
                     }
                 }
 
@@ -190,7 +227,6 @@ namespace API.Repository
 
                 if (salesOrderDetailModel.ID == 0)
                 {
-                    // New sales order item -> validate stock first
                     if (salesOrderDetailModel.Quantity > product.StockQuantity)
                     {
                         return new { success = false, result = $"Insufficient stock for product. Available: {product.StockQuantity}" };
@@ -200,7 +236,9 @@ namespace API.Repository
                     {
                         TradeID = tradeID,
                         ProductID = salesOrderDetailModel.ProductID,
-                        Quantity = salesOrderDetailModel.Quantity
+                        Quantity = salesOrderDetailModel.Quantity,
+                        QtyRefunded = 0,
+                        QtyExchanged = 0
                     };
 
                     await _context.SalesOrderItems.AddAsync(newProduct);
@@ -214,15 +252,14 @@ namespace API.Repository
                         return new { success = false, result = "Sales Order Item not found." };
                     }
 
-                    // Stock currently available including what was previously reserved by this line
                     var availableStock = product.StockQuantity + existingProduct.Quantity;
                     if (salesOrderDetailModel.Quantity > availableStock)
                     {
                         return new { success = false, result = $"Insufficient stock for product. Available: {availableStock}" };
                     }
 
-                    var quantityDifference = salesOrderDetailModel.Quantity - existingProduct.Quantity; // can be negative
-                    product.StockQuantity -= quantityDifference; // subtract if increased, add back if decreased (difference negative)
+                    var quantityDifference = salesOrderDetailModel.Quantity - existingProduct.Quantity;
+                    product.StockQuantity -= quantityDifference;
                     existingProduct.Quantity = salesOrderDetailModel.Quantity;
                     _context.SalesOrderItems.Update(existingProduct);
                 }

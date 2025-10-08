@@ -7,7 +7,7 @@
     ButtonSalesOrder.Init();
 });
 
-const TradeStatus = { 1: 'Draft', 2: 'Paid', 3: 'Debt' };
+const TradeStatus = { 1: 'Draft', 2: 'Paid', 3: 'Debt', 4: 'PartialRefund', 5: 'Refund', 6: 'PartialExchange', 7: 'Exchange' };
 
 // utility to update main status badge
 function UpdateStatusBadge(statusID) {
