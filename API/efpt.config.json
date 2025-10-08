@@ -28,6 +28,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[DeliveryOrder]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DeliveryOrderItem]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Lookup]",
          "ObjectType": 0
       },

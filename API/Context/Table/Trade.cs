@@ -42,4 +42,8 @@ public partial class Trade
     public bool? CustomerPays { get; set; }
 
     public bool? IsFullQtyRefunded { get; set; }
+
+    public bool IsLocked { get; set; }
+
+    public virtual ICollection<DeliveryOrder> DeliveryOrders { get; set; } = new List<DeliveryOrder>();
 }

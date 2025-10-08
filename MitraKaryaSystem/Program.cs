@@ -61,7 +61,9 @@ builder.Services.AddScoped<ISalesReturnRepository, SalesReturnRepository>();
 builder.Services.AddScoped<ISalesReturnService, SalesReturnService>();
 builder.Services.AddScoped<IPurchaseReturnRepository, PurchaseReturnRepository>();
 builder.Services.AddScoped<IPurchaseReturnService, PurchaseReturnService>();
-
+// Delivry Order
+builder.Services.AddScoped<IDeliveryOrderRepository, DeliveryOrderRepository>();
+builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<MKSSPContextProcedures>();
 builder.Services.AddDbContext<MKSTableContext>(options =>

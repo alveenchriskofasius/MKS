@@ -19,6 +19,10 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<Debt> Debts { get; set; }
 
+    public virtual DbSet<DeliveryOrder> DeliveryOrders { get; set; }
+
+    public virtual DbSet<DeliveryOrderItem> DeliveryOrderItems { get; set; }
+
     public virtual DbSet<Lookup> Lookups { get; set; }
 
     public virtual DbSet<Permission> Permissions { get; set; }
@@ -104,6 +108,69 @@ public partial class MKSTableContext : DbContext
             entity.Property(e => e.AmountPaid).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.DueDate).HasColumnType("date");
             entity.Property(e => e.PaymentDate).HasColumnType("date");
+        });
+
+        modelBuilder.Entity<DeliveryOrder>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Delivery__3214EC2782E7BE42");
+
+            entity.ToTable("DeliveryOrder");
+
+            entity.HasIndex(e => e.SalesOrderID, "IX_DeliveryOrder_SalesOrderID");
+
+            entity.HasIndex(e => e.StatusID, "IX_DeliveryOrder_StatusID");
+
+            entity.Property(e => e.AssignedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.DeliveredAt).HasColumnType("datetime");
+            entity.Property(e => e.DeliveryAddress)
+                .HasMaxLength(255)
+                .IsUnicode(false);
+            entity.Property(e => e.No)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => e.StatusID).HasDefaultValue((short)1);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.DriverUser).WithMany(p => p.DeliveryOrders)
+                .HasForeignKey(d => d.DriverUserID)
+                .HasConstraintName("FK_DeliveryOrder_User");
+
+            entity.HasOne(d => d.SalesOrder).WithMany(p => p.DeliveryOrders)
+                .HasForeignKey(d => d.SalesOrderID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DeliveryOrder_SalesOrder");
+        });
+
+        modelBuilder.Entity<DeliveryOrderItem>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Delivery__3214EC2701702C15");
+
+            entity.ToTable("DeliveryOrderItem");
+
+            entity.HasIndex(e => e.DeliveryOrderID, "IX_DeliveryOrderItem_DeliveryOrderID");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.DeliveryOrder).WithMany(p => p.DeliveryOrderItems)
+                .HasForeignKey(d => d.DeliveryOrderID)
+                .HasConstraintName("FK_DeliveryOrderItem_DeliveryOrder");
         });
 
         modelBuilder.Entity<Lookup>(entity =>

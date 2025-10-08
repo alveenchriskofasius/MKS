@@ -22,4 +22,6 @@ public partial class User
     public string KTP { get; set; }
 
     public byte[] Password { get; set; }
+
+    public virtual ICollection<DeliveryOrder> DeliveryOrders { get; set; } = new List<DeliveryOrder>();
 }
