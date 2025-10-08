@@ -53,8 +53,15 @@ builder.Services.AddScoped<IStockInRepository, StockInRepository>();
 builder.Services.AddScoped<IStockInService, StockInService>();
 builder.Services.AddScoped<ISalesOrderService, SalesOrderService>();
 builder.Services.AddScoped<ISalesOrderRepository, SalesOrderRepository>();
+// Stock Count
 builder.Services.AddScoped<IStockCountRepository, StockCountRepository>();
 builder.Services.AddScoped<IStockCountService, StockCountService>();
+// Returns
+builder.Services.AddScoped<ISalesReturnRepository, SalesReturnRepository>();
+builder.Services.AddScoped<ISalesReturnService, SalesReturnService>();
+builder.Services.AddScoped<IPurchaseReturnRepository, PurchaseReturnRepository>();
+builder.Services.AddScoped<IPurchaseReturnService, PurchaseReturnService>();
+
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<MKSSPContextProcedures>();
 builder.Services.AddDbContext<MKSTableContext>(options =>

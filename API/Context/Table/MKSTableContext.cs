@@ -29,11 +29,15 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<PurchasePayment> PurchasePayments { get; set; }
 
+    public virtual DbSet<PurchaseReturnItem> PurchaseReturnItems { get; set; }
+
     public virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<RolePermission> RolePermissions { get; set; }
 
     public virtual DbSet<SalesOrderItem> SalesOrderItems { get; set; }
+
+    public virtual DbSet<SalesReturnItem> SalesReturnItems { get; set; }
 
     public virtual DbSet<StockCount> StockCounts { get; set; }
 
@@ -181,6 +185,13 @@ public partial class MKSTableContext : DbContext
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
         });
 
+        modelBuilder.Entity<PurchaseReturnItem>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Purchase__3214EC270CBA3842");
+
+            entity.ToTable("PurchaseReturnItem");
+        });
+
         modelBuilder.Entity<Role>(entity =>
         {
             entity.HasKey(e => e.ID).HasName("PK__Role__3214EC27592650AE");
@@ -207,6 +218,27 @@ public partial class MKSTableContext : DbContext
             entity.HasKey(e => e.ID).HasName("PK__SalesOrd__3214EC27E33F869F");
 
             entity.ToTable("SalesOrderItem");
+
+            entity.Property(e => e.QtyExchanged).HasDefaultValue(0);
+        });
+
+        modelBuilder.Entity<SalesReturnItem>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__SalesRet__3214EC272E27791C");
+
+            entity.ToTable("SalesReturnItem");
+
+            entity.HasIndex(e => e.ExchangeSourceItemID, "IX_SalesReturnItem_ExchangeSourceItemID");
+
+            entity.HasIndex(e => e.ProductID, "IX_SalesReturnItem_ProductID");
+
+            entity.HasIndex(e => e.TradeID, "IX_SalesReturnItem_TradeID");
+
+            entity.Property(e => e.RefundAmount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ReturnType)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
         });
 
         modelBuilder.Entity<StockCount>(entity =>
@@ -270,6 +302,7 @@ public partial class MKSTableContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.Date).HasColumnType("date");
+            entity.Property(e => e.NetDifference).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.No)
                 .IsRequired()
                 .HasMaxLength(50)
