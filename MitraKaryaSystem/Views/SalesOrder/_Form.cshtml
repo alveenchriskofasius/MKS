@@ -3,6 +3,7 @@
 <form id="salesOrderForm">
     <input type="text" id="salesOrderID" hidden asp-for="SalesOrder.ID" />
     <input type="hidden" id="salesOrderStatusID" value="@Model.SalesOrder.StatusID" />
+    <input type="hidden" id="salesOrderIsLocked" value="@Model.SalesOrder.IsLocked" />
     <div class="row">
         <div class="col-6">
             <div class="row mb-3">
@@ -10,11 +11,22 @@
                 <div class="col-md-6 col-lg-6">
                     <input type="text" asp-for=SalesOrder.No autofocus class="form-control" readonly id="salesOrderNumber" placeholder="Auto">
                 </div>
+                <div class="col-md-4 d-flex align-items-center">
+                    <span id="salesOrderStatus" class="badge text-bg-secondary">Draft</span>
+                </div>
             </div>
             <div class="row mb-3">
                 <label for="salesOrderDate" class="form-label col-sm-2">Date</label>
                 <div class="col-sm-6">
                     <input type="date" asp-for=SalesOrder.Date class="form-control" id="salesOrderDate">
+                </div>
+            </div>
+            <div class="row mb-3" id="deliveryOrderSection" style="display:none;">
+                <label class="form-label col-sm-2">DO</label>
+                <div class="col-sm-10 d-flex gap-2 align-items-center">
+                    <span id="deliveryOrderNo" class="fw-bold text-primary"></span>
+                    <span id="deliveryOrderStatusBadge" class="badge bg-secondary">-</span>
+                    <button type="button" id="btnViewDO" class="btn btn-sm btn-outline-primary d-none">View</button>
                 </div>
             </div>
         </div>
@@ -29,6 +41,11 @@
                 <label for="salesOrderNote" class="form-label col-sm-2">Note</label>
                 <div class="col-sm-10">
                     <textarea class="form-control" id="salesOrderNote" asp-for="SalesOrder.Note"></textarea>
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm-12 text-end">
+                    <button type="button" id="btnCreateDO" class="btn btn-sm btn-outline-success d-none"><i class="fa fa-truck"></i> Create Delivery Order</button>
                 </div>
             </div>
         </div>

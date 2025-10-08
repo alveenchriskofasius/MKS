@@ -9,6 +9,7 @@ namespace MitraKaryaSystem.Controllers
     {
         private readonly ISalesOrderService _salesOrderService;
         private readonly ICustomerService _customerService;
+        private static readonly HashSet<short> ReturnEligibleStatuses = new() { 2, 8 }; // Paid, Completed(Delivered)
         public SalesOrderController(ISalesOrderService salesOrderService, ICustomerService customerService)
         {
             _salesOrderService = salesOrderService;
@@ -34,5 +35,32 @@ namespace MitraKaryaSystem.Controllers
         public async Task<object> DeleteItem(int id) => Json(await _salesOrderService.DeleteProductById(id));
         public async Task<object> Delete(int id) => Json(await _salesOrderService.Delete(id));
 
+        [HttpGet]
+        public async Task<JsonResult> ReturnSourceList()
+        {
+            var raw = await _salesOrderService.GetSearchList();
+            // raw may be an IEnumerable of anonymous objects or already a list
+            var list = new List<object>();
+            if (raw is System.Collections.IEnumerable enumerable)
+            {
+                foreach (var item in enumerable)
+                {
+                    if (item == null) continue;
+                    short statusId = 0;
+                    var type = item.GetType();
+                    var statusProp = type.GetProperty("StatusID") ?? type.GetProperty("statusID") ?? type.GetProperty("StatusId") ?? type.GetProperty("statusId");
+                    if (statusProp != null)
+                    {
+                        var val = statusProp.GetValue(item);
+                        if (val != null && short.TryParse(val.ToString(), out var parsed)) statusId = parsed;
+                    }
+                    if (ReturnEligibleStatuses.Contains(statusId))
+                    {
+                        list.Add(item);
+                    }
+                }
+            }
+            return Json(list);
+        }
     }
 }
