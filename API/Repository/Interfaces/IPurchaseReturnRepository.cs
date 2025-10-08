@@ -1,0 +1,13 @@
+using API.Models;
+
+namespace API.Repository.Interfaces;
+
+public interface IPurchaseReturnRepository
+{
+    Task<PurchaseReturnModel> FillForm(int id);
+    Task<object> GetSearchList();
+    Task<object> GetDetailList(int id);
+    Task<object> Save(PurchaseReturnModel model);
+    Task<object> Delete(int id);
+    Task<object> DeleteItem(int id);
+}
