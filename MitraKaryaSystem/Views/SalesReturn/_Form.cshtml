@@ -1,0 +1,60 @@
+@model API.Models.SalesReturnModel
+<div class="card shadow-sm">
+ <div class="card-body row g-3 align-items-end">
+  <input type="hidden" id="srID" value="@Model.ID" />
+  <input type="hidden" id="srLinkedSOID" value="@(Model.LinkedSalesOrderID ?? 0)" />
+  <div class="col-auto">
+    <label class="form-label small mb-0">No</label>
+    <input id="srNo" class="form-control form-control-sm" value="@Model.No" readonly />
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-0">Date</label>
+    <input type="date" id="srDate" class="form-control form-control-sm" value="@Model.Date.ToString("yyyy-MM-dd")" />
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-0">Customer ID</label>
+    <input id="srCustomerID" class="form-control form-control-sm" value="@Model.CustomerID" />
+  </div>
+  <div class="col-3">
+    <label class="form-label small mb-0">Note</label>
+    <input id="srNote" class="form-control form-control-sm" value="@Model.Note" />
+  </div>
+  <div class="col-12"></div>
+  <div class="col-auto">
+    <label class="form-label small mb-0 d-block">Return Type</label>
+    <div class="btn-group btn-group-sm" role="group">
+      <input type="radio" class="btn-check" name="srReturnType" id="srReturnRefund" value="Refund" @(Model.ReturnType=="Exchange"?"": "checked")>
+      <label class="btn btn-outline-danger" for="srReturnRefund"><i class="fa fa-money-bill"></i> Refund</label>
+      <input type="radio" class="btn-check" name="srReturnType" id="srReturnExchange" value="Exchange" @(Model.ReturnType=="Exchange"?"checked": "")>
+      <label class="btn btn-outline-primary" for="srReturnExchange"><i class="fa fa-arrows-rotate"></i> Exchange</label>
+    </div>
+  </div>
+  <div class="col-auto" id="srReturnOriginalWrapper" style="display:@(Model.ReturnType=="Exchange"?"block":"none")">
+    <label class="form-label small mb-0">&nbsp;</label>
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="srReturnOriginalToStock" @(Model.ReturnOriginalToStock?"checked":"") />
+      <label class="form-check-label" for="srReturnOriginalToStock">Return original to stock</label>
+    </div>
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-0">Refund / Diff Amount</label>
+    <input type="number" min="0" step="0.01" id="srRefundAmount" class="form-control form-control-sm" value="@Model.RefundAmount" />
+  </div>
+  <div class="col-12"></div>
+  <div class="col-auto">
+    <div class="form-check mt-1">
+      <input class="form-check-input" type="checkbox" id="srLinkedMode" @(Model.IsLinked?"checked":"") />
+      <label class="form-check-label" for="srLinkedMode">Link to Sales Order</label>
+    </div>
+  </div>
+  <div class="col-auto" id="srLinkedSelectWrapper" style="display:@(Model.IsLinked?"block":"none")">
+    <label class="form-label small mb-0">Sales Order</label>
+    <div class="d-flex gap-2 align-items-center">
+        <input id="srLinkedSONo" class="form-control form-control-sm" value="@(Model.LinkedSalesOrderID.HasValue && Model.LinkedSalesOrderID > 0 ? Model.LinkedSalesOrderID.ToString() : "")" placeholder="Pick SO" readonly style="width:140px" />
+        <button class="btn btn-sm btn-outline-secondary" type="button" id="btnPickSO"><i class="fa fa-search"></i> Pick</button>
+        <button class="btn btn-sm btn-outline-danger" type="button" id="btnClearSO" title="Clear linked SO"><i class="fa fa-times"></i></button>
+    </div>
+    <small class="text-muted">Pilih nota penjualan untuk mode linked.</small>
+  </div>
+ </div>
+</div>
