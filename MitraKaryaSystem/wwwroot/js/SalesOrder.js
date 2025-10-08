@@ -1,23 +1,75 @@
 ﻿$(document).ready(function () {
-    $('.js-example-basic-responsive').select2({
-        width: 'resolve' // need to override the changed default
-    });
+    $('.js-example-basic-responsive').select2({ width: 'resolve' });
     FormSalesOrder.FillForm(0, true);
     ControlSalesOrder.Init();
     ButtonSalesOrder.Init();
 });
 
-const TradeStatus = { 1: 'Draft', 2: 'Paid', 3: 'Debt', 4: 'PartialRefund', 5: 'Refund', 6: 'PartialExchange', 7: 'Exchange' };
+const TradeStatus = { 1: 'Draft', 2: 'Paid', 3: 'Debt', 4: 'PartialRefund', 5: 'Refund', 6: 'PartialExchange', 7: 'Exchange', 8: 'Completed' };
+const DOStatus = { 1: 'Pending', 2: 'Assigned', 3: 'Out For Delivery', 4: 'Delivered', 5: 'Canceled' };
 
 // utility to update main status badge
 function UpdateStatusBadge(statusID) {
     const $badge = $('#salesOrderStatus');
     const text = TradeStatus[statusID] || 'Draft';
     $badge.text(text);
-    $badge.removeClass('text-bg-warning text-bg-success text-bg-secondary');
+    $badge.removeClass('text-bg-warning text-bg-success text-bg-secondary text-bg-info text-bg-primary');
     if (statusID === 2) $badge.addClass('text-bg-success');
     else if (statusID === 3) $badge.addClass('text-bg-warning');
+    else if (statusID === 8) $badge.addClass('text-bg-primary');
     else $badge.addClass('text-bg-secondary');
+    setTimeout(ApplyLockState,50);
+}
+
+// After UpdateStatusBadge definition add helper
+function ApplyLockState(){
+  const statusID = parseInt($('#salesOrderStatusID').val()||'0',10);
+  const forcedLocked = ($('#salesOrderIsLocked').val()||'').toString().toLowerCase()==='true';
+  const lockedStatuses = [2,4,5,6,7,8];
+  const isLocked = forcedLocked || lockedStatuses.includes(statusID);
+  const $form = $('#salesOrderHeaderBody');
+  if(isLocked){
+    $form.find('input,textarea,select').prop('disabled',true);
+    $('#selectProduct').prop('disabled',true).trigger('change.select2');
+    $('#buttonSave,#buttonPay,#btnCreateDO').addClass('d-none');
+  } else {
+    $form.find('input,textarea,select').prop('disabled',false);
+    $('#selectProduct').prop('disabled',false);
+    $('#buttonSave,#buttonPay').removeClass('d-none');
+  }
+}
+
+function ShowOrHideCreateDOButton() {
+    const soId = parseInt($('#salesOrderID').val() || '0', 10);
+    const statusID = parseInt($('#salesOrderStatusID').val() || '1', 10);
+    if (soId > 0 && statusID >= 2) { // allow from status 2 and above
+        // Check if DO exists
+        $.get('/DeliveryOrder/List', { statusID: null }, function (list) {
+            const exists = (list || []).some(d => (d.salesOrderID || d.SalesOrderID) === soId);
+            if (!exists) $('#btnCreateDO').removeClass('d-none'); else $('#btnCreateDO').addClass('d-none');
+        });
+    } else { $('#btnCreateDO').addClass('d-none'); }
+}
+
+function LoadDeliveryOrderInfo() {
+    const soId = parseInt($('#salesOrderID').val() || '0', 10);
+    if (!soId) { $('#deliveryOrderSection').hide(); return; }
+    $.get('/DeliveryOrder/List', function (list) {
+        const doData = (list || []).find(d => (d.salesOrderID || d.SalesOrderID) === soId);
+        if (!doData) { $('#deliveryOrderSection').hide(); return; }
+        $('#deliveryOrderSection').show();
+        $('#deliveryOrderNo').text(doData.no || doData.No);
+        const sId = doData.statusID || doData.StatusID;
+        const sTxt = DOStatus[sId] || '-';
+        const $b = $('#deliveryOrderStatusBadge');
+        $b.text(sTxt).removeClass('bg-secondary bg-info bg-warning bg-success bg-danger');
+        if (sId === 1) $b.addClass('bg-secondary');
+        else if (sId === 2) $b.addClass('bg-info');
+        else if (sId === 3) $b.addClass('bg-warning');
+        else if (sId === 4) $b.addClass('bg-success');
+        else $b.addClass('bg-danger');
+        $('#btnViewDO').removeClass('d-none').off('click').on('click', function(){ DeliveryOrderModal.Open(doData.id || doData.ID); });
+    });
 }
 
 let ButtonSalesOrder = {
@@ -42,19 +94,86 @@ let ButtonSalesOrder = {
         });
         $('#buttonSearch').click(function () { Table.FillGridSearch(); });
         $('#buttonNew').click(function () { FormSalesOrder.Reset(); });
+        $(document).on('click', '#btnCreateDO', function(){
+            const soId = parseInt($('#salesOrderID').val()||'0',10); if(!soId){ toastr.info('Save SO first'); return; }
+            $(this).prop('disabled',true).text('Processing...');
+            $.post('/DeliveryOrder/CreateFromSO',{ soId: soId }, function(res){
+                if(res.success){ toastr.success('Delivery Order created'); LoadDeliveryOrderInfo(); $('#btnCreateDO').addClass('d-none'); }
+                else toastr.error(res.result||'Failed create DO');
+            }).fail(()=> toastr.error('Error create DO')).always(()=> $('#btnCreateDO').prop('disabled',false).html('<i class="fa fa-truck"></i> Create Delivery Order'));
+        });
     }
 }
+
+// Enhanced modal with progress + actions
+const DeliveryOrderModal = {
+  Open: function(id){
+    $.get('/DeliveryOrder/Get',{id:id}, function(data){
+        const status = data.statusID || data.StatusID; const driver = data.driverUserID || data.DriverUserID; const soId = data.salesOrderID || data.SalesOrderID;
+        const steps = [1,2,3,4];
+        const stepHtml = steps.map(s=>{ const active = status>=s ? 'active-step' : ''; const label = DOStatus[s]; return `<div class="do-step ${active}"><div class='circle'>${s}</div><div class='label small'>${label}</div></div>`; }).join('<div class="do-line"></div>');
+        const items = (data.items||data.Items||[]).map(i=> `<tr><td>${i.productID||i.ProductID}</td><td>${i.quantity||i.Quantity}</td></tr>`).join('');
+        let actionBtns = '';
+        if(status===1){ actionBtns += `<button class='btn btn-sm btn-outline-primary me-2' id='btnAssignDriver'><i class='fa fa-user'></i> Assign Driver</button>`; }
+        if(status===2){ actionBtns += `<button class='btn btn-sm btn-outline-warning me-2' id='btnOutForDelivery'><i class='fa fa-truck'></i> Out For Delivery</button>`; }
+        if(status===3){ actionBtns += `<button class='btn btn-sm btn-outline-success me-2' id='btnMarkDelivered'><i class='fa fa-check'></i> Mark Delivered</button>`; }
+        const modalHtml = `<div class='text-start'>
+            <div class='do-progress d-flex align-items-center justify-content-between mb-3 flex-wrap'>${stepHtml}</div>
+            <div class='mb-2'><strong>DO No:</strong> ${data.no||data.No} &nbsp; <strong>SO ID:</strong> ${soId}</div>
+            <div class='mb-2'><strong>Status:</strong> ${DOStatus[status]} &nbsp; <strong>Driver:</strong> <span id='doDriverLabel'>${driver||'-'}</span></div>
+            <div class='mb-2'><strong>Address:</strong> ${(data.deliveryAddress||data.DeliveryAddress)||'-'}</div>
+            <div class='border rounded p-2 mb-2'><div class='fw-bold mb-1'>Items</div><table class='table table-sm mb-0'><thead><tr><th>ProductID</th><th>Qty</th></tr></thead><tbody>${items}</tbody></table></div>
+            <div class='mt-3 d-flex justify-content-end flex-wrap gap-2' id='doActionContainer'>${actionBtns}</div>
+            <div id='assignDriverContainer' class='mt-3 d-none'>
+                <div class='input-group input-group-sm' style='max-width:320px;'>
+                    <select id='selectDriver' class='form-select'><option value=''>-- pick driver --</option></select>
+                    <button class='btn btn-outline-primary' id='btnSaveAssign'>Save</button>
+                    <button class='btn btn-outline-secondary' id='btnCancelAssign'>Cancel</button>
+                </div>
+            </div>
+        </div>`;
+        Swal.fire({ title:'Delivery Order', html: modalHtml, width: 720, showConfirmButton:false, showCloseButton:true });
+        DeliveryOrderModal.LoadDrivers();
+        DeliveryOrderModal.BindActions(id,status);
+    });
+  },
+  LoadDrivers: function(){ $.get('/User/GetUserList', function(list){ let data=list; if(list && list.result) data=list.result; const sel=$('#selectDriver'); if(!sel.length) return; (data||[]).forEach(u=> sel.append(`<option value='${u.id||u.ID}'>${u.userName||u.UserName}</option>`)); }); },
+  BindActions: function(id,status){
+    $(document).off('click','#btnAssignDriver').on('click','#btnAssignDriver', function(){ $('#assignDriverContainer').removeClass('d-none'); });
+    $(document).off('click','#btnCancelAssign').on('click','#btnCancelAssign', function(){ $('#assignDriverContainer').addClass('d-none'); });
+    $(document).off('click','#btnSaveAssign').on('click','#btnSaveAssign', function(){ const driverID = $('#selectDriver').val(); if(!driverID){ toastr.info('Select driver'); return; } $('#btnSaveAssign').prop('disabled',true).text('Saving...'); $.post('/DeliveryOrder/AssignDriver',{ id:id, driverUserID: driverID }, function(res){ if(res.success){ toastr.success('Driver assigned'); Swal.close(); LoadDeliveryOrderInfo(); } else toastr.error(res.result||'Assign failed'); }).fail(()=> toastr.error('Error assign driver')).always(()=> $('#btnSaveAssign').prop('disabled',false).text('Save')); });
+    $(document).off('click','#btnOutForDelivery').on('click','#btnOutForDelivery', function(){ DeliveryOrderModal.UpdateStatus(id,3); });
+    $(document).off('click','#btnMarkDelivered').on('click','#btnMarkDelivered', function(){ DeliveryOrderModal.UpdateStatus(id,4); });
+  },
+  UpdateStatus: function(id,newStatus){
+    $.post('/DeliveryOrder/UpdateStatus',{ id:id, newStatus:newStatus }, function(res){ if(res.success){ toastr.success('Status updated'); Swal.close(); LoadDeliveryOrderInfo(); } else toastr.error(res.result||'Update failed'); }).fail(()=> toastr.error('Error update status')); }
+};
 
 let Table = {
     FillGridProduct: function (id, isReset) {
         let tableID = $('#tableProduct');
-        if (isReset) {
-            tableID.DataTable().clear().draw();
+        if (isReset && $.fn.DataTable.isDataTable('#tableProduct')) {
+            tableID.DataTable().clear().destroy();
         }
         let dataList = [];
         if (id != undefined && id != 0) {
-            dataList = Common.GetData.Get('/SalesOrder/GetDetailListById?id=' + id);
+            let resp = Common.GetData.Get('/SalesOrder/GetDetailListById?id=' + id);
+            if (resp && resp.result) resp = resp.result;
+            dataList = resp || [];
         }
+        // Normalize each row to satisfy expected columns to avoid DataTables unknown parameter warnings
+        dataList = (dataList || []).map(r => ({
+            id: r.id || r.ID || 0,
+            productID: r.productID || r.ProductID || 0,
+            supplierID: r.supplierID || r.SupplierID || 0,
+            stockQuantity: r.stockQuantity || r.StockQuantity || null,
+            product: r.product || r.Product || r.productName || r.ProductName || '-',
+            supplier: r.supplier || r.Supplier || '-',
+            quantity: r.quantity || r.Quantity || 0,
+            unit: r.unit || r.Unit || '-',
+            unitPrice: r.unitPrice || r.UnitPrice || 0,
+            subTotal: r.subTotal || r.SubTotal || ((r.unitPrice || r.UnitPrice || 0) * (r.quantity || r.Quantity || 0))
+        }));
         let columns = [
             { data: 'productID', visible: false },
             { data: 'supplierID', visible: false },
@@ -72,9 +191,7 @@ let Table = {
             { data: 'subTotal', render: $.fn.dataTable.render.number(',', '.', 2) },
             {
                 data: null,
-                render: function () {
-                    return `<a class="btn btn-danger delete"><i class="fa fa-trash"></i></a>`;
-                },
+                render: function () { return `<a class="btn btn-danger delete"><i class="fa fa-trash"></i></a>`; },
                 orderable: false
             },
         ];
@@ -93,7 +210,6 @@ let Table = {
         });
         tableID.find('tbody').unbind();
         $('#tableProduct').off('change');
-
         $('#tableProduct').on('change', 'input[type="number"]', function () {
             let table = $('#tableProduct').DataTable();
             let rowIndex = table.cell($(this).closest('td')).index().row;
@@ -112,7 +228,6 @@ let Table = {
             table.draw(false);
             ControlSalesOrder.CalculateGrandTotal();
         });
-
         tableID.find('tbody').on('click', '.delete', function () {
             let row = table.row($(this).parents('tr')).data();
             if (row.id) {
@@ -124,10 +239,7 @@ let Table = {
                     confirmButtonText: 'Yes, delete it',
                     showLoaderOnConfirm: true,
                     preConfirm: () => {
-                        return fetch(`/SalesOrder/DeleteItem?id=${row.id}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' }
-                        })
+                        return fetch(`/SalesOrder/DeleteItem?id=${row.id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
                             .then(response => {
                                 toastr.options.onShown = function () { Table.FillGridProduct(id); }
                                 response.ok ? toastr.success('Data has been deleted') : toastr.error('Data not deleted');
@@ -316,6 +428,8 @@ let FormSalesOrder = {
                 ControlSalesOrder.SelectProduct();
                 Table.FillGridProduct(id, isReset);
                 ControlSalesOrder.CalculateGrandTotal();
+                // refresh DO related UI after DOM update
+                setTimeout(()=>{ ShowOrHideCreateDOButton(); LoadDeliveryOrderInfo(); }, 200);
             },
             error: function (error) { toastr.error(error, 'Error load data'); }
         });
@@ -344,8 +458,7 @@ let FormSalesOrder = {
         });
         const doAjaxSave = () => {
             const btnSelector = isPay ? '#buttonPay' : '#buttonSave';
-            const $btn = $(btnSelector);
-            $btn.prop('disabled', true);
+            const $btn = $(btnSelector).prop('disabled',true);
             $btn.find('.spinner-border').show();
             return $.ajax({
                 url: '/SalesOrder/Save',
@@ -356,7 +469,8 @@ let FormSalesOrder = {
                     toastr.success('Data saved');
                     if (result.id) $('#salesOrderID').val(result.id);
                     if (result.no) $('#salesOrderNumber').val(result.no);
-                    if (result.statusID) { UpdateStatusBadge(result.statusID); }
+                    if (result.statusID) { UpdateStatusBadge(result.statusID); $('#salesOrderStatusID').val(result.statusID); }
+                    setTimeout(()=>{ ShowOrHideCreateDOButton(); LoadDeliveryOrderInfo(); },300);
                 } else {
                     toastr.error(result.result || 'Data not saved');
                 }
@@ -385,4 +499,4 @@ let FormSalesOrder = {
         }
     },
     Reset: function () { FormSalesOrder.FillForm(0, true); }
-}
+};

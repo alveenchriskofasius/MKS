@@ -19,8 +19,10 @@ namespace API.Repository
             PartialRefund = 4,
             Refund = 5,
             Exchange = 6,
-            PartialExchange = 7
+            PartialExchange = 7,
+            Completed = 8 // DO delivered / finalized
         }
+        private static readonly HashSet<short> LockedStatuses = new HashSet<short>{ (short)TradeStatus.Paid,(short)TradeStatus.PartialRefund,(short)TradeStatus.Refund,(short)TradeStatus.Exchange,(short)TradeStatus.PartialExchange,(short)TradeStatus.Completed };
         public SalesOrderRepository(MKSTableContext context, MKSSPContextProcedures procedures, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
@@ -84,7 +86,8 @@ namespace API.Repository
                     No = trade.No,
                     Amount = trade.Amount,
                     CustomerID = trade.CustomerID,
-                    Note = trade.Note
+                    Note = trade.Note,
+                    IsLocked = trade.IsLocked
                 };
             }
             return salesOrder;
@@ -178,6 +181,11 @@ namespace API.Repository
                     {
                         return new { success = false, result = "Sales Order (Trade) not found." };
                     }
+                    // Locking rule: prevent modification when status already final/locked
+                    if (tradeEntity.StatusID.HasValue && LockedStatuses.Contains(tradeEntity.StatusID.Value))
+                    {
+                        return new { success = false, result = "Sales Order is locked and cannot be modified (status already finalized / has returns)." };
+                    }
                     tradeEntity.Amount = salesOrder.SalesOrderDetails.Sum(x => x.Subtotal);
                     tradeEntity.CustomerID = salesOrder.CustomerID;
                     tradeEntity.UpdatedAt = DateTime.Now;
@@ -185,6 +193,10 @@ namespace API.Repository
                     tradeEntity.Date = salesOrder.Date;
                     tradeEntity.StatusID = salesOrder.IsPaid ? (short)TradeStatus.Paid : (short)TradeStatus.Draft;
                     tradeEntity.Note = salesOrder.Note;
+                    if (tradeEntity.StatusID == (short)TradeStatus.Paid || tradeEntity.StatusID == (short)TradeStatus.Completed)
+                    {
+                        tradeEntity.IsLocked = true; // mark lock for persistence
+                    }
                     await _context.SaveChangesAsync();
                 }
 
@@ -219,19 +231,25 @@ namespace API.Repository
             try
             {
                 var product = await _context.Products.FindAsync(salesOrderDetailModel.ProductID);
-
                 if (product == null)
                 {
                     return new { success = false, result = "Product not found." };
                 }
-
+                // Merge logic: avoid duplicate SalesOrderItem entries. If item already exists we will UPDATE to requested qty (not add).
+                if (salesOrderDetailModel.ID == 0)
+                {
+                    var existingSameProduct = await _context.SalesOrderItems.FirstOrDefaultAsync(x => x.TradeID == tradeID && x.ProductID == salesOrderDetailModel.ProductID);
+                    if (existingSameProduct != null)
+                    {
+                        salesOrderDetailModel.ID = existingSameProduct.ID; // switch to update path
+                    }
+                }
                 if (salesOrderDetailModel.ID == 0)
                 {
                     if (salesOrderDetailModel.Quantity > product.StockQuantity)
                     {
                         return new { success = false, result = $"Insufficient stock for product. Available: {product.StockQuantity}" };
                     }
-
                     var newProduct = new SalesOrderItem
                     {
                         TradeID = tradeID,
@@ -240,7 +258,6 @@ namespace API.Repository
                         QtyRefunded = 0,
                         QtyExchanged = 0
                     };
-
                     await _context.SalesOrderItems.AddAsync(newProduct);
                     product.StockQuantity -= salesOrderDetailModel.Quantity;
                 }
@@ -251,22 +268,18 @@ namespace API.Repository
                     {
                         return new { success = false, result = "Sales Order Item not found." };
                     }
-
-                    var availableStock = product.StockQuantity + existingProduct.Quantity;
+                    var availableStock = product.StockQuantity + existingProduct.Quantity; // we can restore original quantity to stock for comparison
                     if (salesOrderDetailModel.Quantity > availableStock)
                     {
                         return new { success = false, result = $"Insufficient stock for product. Available: {availableStock}" };
                     }
-
-                    var quantityDifference = salesOrderDetailModel.Quantity - existingProduct.Quantity;
+                    var quantityDifference = salesOrderDetailModel.Quantity - existingProduct.Quantity; // positive means consume stock, negative means release
                     product.StockQuantity -= quantityDifference;
-                    existingProduct.Quantity = salesOrderDetailModel.Quantity;
+                    existingProduct.Quantity = salesOrderDetailModel.Quantity; // set to requested (not additive)
                     _context.SalesOrderItems.Update(existingProduct);
                 }
-
                 _context.Products.Update(product);
                 await _context.SaveChangesAsync();
-
                 return new { success = true };
             }
             catch (Exception e)

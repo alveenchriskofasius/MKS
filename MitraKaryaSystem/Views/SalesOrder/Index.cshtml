@@ -2,6 +2,23 @@
 @{
     ViewData["Title"] = "Sales Order";
 }
+<style>
+.do-progress {position:relative; width:100%;}
+.do-step {text-align:center; flex:1 1 0; position:relative; min-width:110px; margin-bottom:10px;}
+.do-step .circle {width:34px; height:34px; line-height:34px; border-radius:50%; background:#e0e0e0; color:#555; margin:0 auto 4px; font-weight:600; transition:all .3s; box-shadow:0 0 0 2px #fff inset,0 0 0 3px #ccc;}
+.do-step.active-step .circle {background:#0d6efd; color:#fff; box-shadow:0 0 0 2px #0d6efd inset,0 0 0 3px rgba(13,110,253,.35);}
+.do-step .label {font-size:.65rem; font-weight:500; text-transform:uppercase; letter-spacing:.5px; color:#777; max-width:100px; margin:0 auto;}
+.do-step.active-step .label {color:#0d6efd; font-weight:600;}
+.do-line {flex:0 0 32px; height:2px; background:linear-gradient(90deg,#ccc,#ccc); margin:0 4px 28px 4px; position:relative; top:16px; border-radius:2px;}
+.do-step.active-step + .do-line {background:linear-gradient(90deg,#0d6efd,#0d6efd);}
+/* SweetAlert2 container adjustments */
+.swal2-html-container {text-align:left; width:100%;}
+#assignDriverContainer select {min-width:140px;}
+#btnCreateDO {transition:all .25s;}
+#btnCreateDO:not(.d-none):hover {transform:translateY(-1px); box-shadow:0 4px 10px rgba(0,0,0,.1);} 
+#deliveryOrderSection {animation:fadeIn .4s ease;}
+@@keyframes fadeIn {from{opacity:0; transform:translateY(-4px);} to {opacity:1; transform:translateY(0);} }
+</style>
 <div class="card">
     <div class="card-header" style="background-color:#f0f0f0">
         <div class="card-title">
@@ -33,9 +50,7 @@
                 </div>
             </div>
         </div>
-        <!-- Product detail table (was missing) -->
         <partial name="_TableProduct" />
-        <!-- Search modal / other partials -->
         <partial name="_Table" />
 
     </div>
