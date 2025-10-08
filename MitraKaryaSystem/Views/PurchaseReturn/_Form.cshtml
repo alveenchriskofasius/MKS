@@ -1,0 +1,10 @@
+@model API.Models.PurchaseReturnModel
+<div class="card shadow-sm">
+ <div class="card-body row g-3 align-items-end">
+  <input type="hidden" id="prID" value="@Model.ID" />
+  <div class="col-auto"><label class="form-label small mb-0">No</label><input id="prNo" class="form-control form-control-sm" value="@Model.No" readonly /></div>
+  <div class="col-auto"><label class="form-label small mb-0">Date</label><input type="date" id="prDate" class="form-control form-control-sm" value="@Model.Date.ToString("yyyy-MM-dd")" /></div>
+  <div class="col-auto"><label class="form-label small mb-0">SupplierID</label><input id="prSupplierID" class="form-control form-control-sm" value="@Model.SupplierID" /></div>
+  <div class="col-3"><label class="form-label small mb-0">Note</label><input id="prNote" class="form-control form-control-sm" value="@Model.Note" /></div>
+ </div>
+</div>
