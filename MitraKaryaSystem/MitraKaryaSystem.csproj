@@ -8,13 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Views\PurchaseOrder\**" />
-    <Content Remove="Views\PurchaseOrder\**" />
-    <EmbeddedResource Remove="Views\PurchaseOrder\**" />
-    <None Remove="Views\PurchaseOrder\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="icon.ico" />
   </ItemGroup>
 

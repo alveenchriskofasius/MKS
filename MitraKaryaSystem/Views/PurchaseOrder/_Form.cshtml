@@ -1,0 +1,23 @@
+@model API.Models.PurchaseOrderModel
+<form id="purchaseOrderForm">
+    <input type="text" id="purchaseOrderID" hidden asp-for="ID" />
+    <input type="hidden" id="purchaseOrderStatusID" value="@Model.StatusID" />
+    <div class="row mb-3">
+        <label for="purchaseOrderNumber" class="form-label col-sm-2">No</label>
+        <div class="col-md-6 col-lg-6">
+            <input type="text" asp-for="No" autofocus class="form-control" placeholder="Auto" readonly id="purchaseOrderNumber" />
+        </div>
+    </div>
+    <div class="row mb-3">
+        <label for="purchaseOrderDate" class="form-label col-sm-2">Date</label>
+        <div class="col-sm-6">
+            <input type="date" asp-for="Date" class="form-control" id="purchaseOrderDate" />
+        </div>
+    </div>
+    <div class="row mb-3">
+        <label for="purchaseOrderNote" class="form-label col-sm-2">Note</label>
+        <div class="col-sm-6">
+            <textarea class="form-control" asp-for="Note" id="purchaseOrderNote"></textarea>
+        </div>
+    </div>
+</form>

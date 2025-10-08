@@ -4,6 +4,7 @@
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
+   "MinimumProductVersion": "2.6.1186",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Context\/SP",
@@ -44,6 +45,10 @@
       },
       {
          "Name": "[dbo].[uspGetProductComboList]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[uspGetPurchaseOrderItemList]",
          "ObjectType": 1
       },
       {

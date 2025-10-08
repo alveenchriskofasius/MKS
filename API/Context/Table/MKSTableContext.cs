@@ -25,6 +25,8 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<Product> Products { get; set; }
 
+    public virtual DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; }
+
     public virtual DbSet<PurchasePayment> PurchasePayments { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
@@ -59,7 +61,7 @@ public partial class MKSTableContext : DbContext
 
         modelBuilder.Entity<Customer>(entity =>
         {
-            entity.HasKey(e => e.ID).HasName("PK__Customer__3214EC279013386C");
+            entity.HasKey(e => e.ID).HasName("PK__Customer__3214EC279240A7C4");
 
             entity.ToTable("Customer");
 
@@ -87,7 +89,7 @@ public partial class MKSTableContext : DbContext
 
         modelBuilder.Entity<Debt>(entity =>
         {
-            entity.HasKey(e => e.ID).HasName("PK__Debt__3214EC27DF075FF8");
+            entity.HasKey(e => e.ID).HasName("PK__Debt__3214EC278FEE98D6");
 
             entity.ToTable("Debt");
 
@@ -148,9 +150,16 @@ public partial class MKSTableContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<PurchaseOrderItem>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Purchase__3214EC278D21C0CE");
+
+            entity.ToTable("PurchaseOrderItem");
+        });
+
         modelBuilder.Entity<PurchasePayment>(entity =>
         {
-            entity.HasKey(e => e.ID).HasName("PK__Purchase__3214EC2751753BB2");
+            entity.HasKey(e => e.ID).HasName("PK__Purchase__3214EC272752EB26");
 
             entity.ToTable("PurchasePayment");
 
@@ -170,7 +179,7 @@ public partial class MKSTableContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.ID).HasName("PK__Role__3214EC270179CC09");
+            entity.HasKey(e => e.ID).HasName("PK__Role__3214EC27592650AE");
 
             entity.ToTable("Role");
 
@@ -184,28 +193,28 @@ public partial class MKSTableContext : DbContext
 
         modelBuilder.Entity<RolePermission>(entity =>
         {
-            entity.HasKey(e => e.ID).HasName("PK__RolePerm__3214EC27A917F0DF");
+            entity.HasKey(e => e.ID).HasName("PK__RolePerm__3214EC27D381C933");
 
             entity.ToTable("RolePermission");
         });
 
         modelBuilder.Entity<SalesOrderItem>(entity =>
         {
-            entity.HasKey(e => e.ID).HasName("PK__SalesOrd__3214EC27B544403B");
+            entity.HasKey(e => e.ID).HasName("PK__SalesOrd__3214EC27E33F869F");
 
             entity.ToTable("SalesOrderItem");
         });
 
         modelBuilder.Entity<StockInItem>(entity =>
         {
-            entity.HasKey(e => e.ID).HasName("PK__Purchase__3214EC27A4ADE210");
+            entity.HasKey(e => e.ID).HasName("PK__StockInI__3214EC275A9D5844");
 
             entity.ToTable("StockInItem");
         });
 
         modelBuilder.Entity<Trade>(entity =>
         {
-            entity.HasKey(e => e.ID).HasName("PK__Trade__3214EC27964FD476");
+            entity.HasKey(e => e.ID).HasName("PK__Trade__3214EC27E417F279");
 
             entity.ToTable("Trade");
 
@@ -247,12 +256,32 @@ public partial class MKSTableContext : DbContext
 
         modelBuilder.Entity<Unit>(entity =>
         {
-            entity.HasKey(e => e.ID).HasName("PK__Unit__3214EC277B33FD90");
+            entity.HasKey(e => e.ID).HasName("PK__Unit__3214EC27C1781765");
 
             entity.ToTable("Unit");
 
             entity.Property(e => e.Name)
                 .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(e => e.Email)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.KTP)
+                .HasMaxLength(16)
+                .IsUnicode(false);
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Password).HasMaxLength(100);
+            entity.Property(e => e.PhoneNumber)
+                .HasMaxLength(13)
+                .IsUnicode(false);
+            entity.Property(e => e.UserName)
                 .HasMaxLength(50)
                 .IsUnicode(false);
         });

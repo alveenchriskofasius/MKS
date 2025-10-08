@@ -21,6 +21,7 @@ namespace API.Context.SP
         Task<List<uspGetDetailListByIdResult>> uspGetDetailListByIdAsync(int? tradeID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<uspGetPermissionListResult>> uspGetPermissionListAsync(int? roleID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<uspGetProductComboListResult>> uspGetProductComboListAsync(string name, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
+        Task<List<uspGetPurchaseOrderItemListResult>> uspGetPurchaseOrderItemListAsync(int? tradeID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<uspGetSalesOrderItemListResult>> uspGetSalesOrderItemListAsync(int? tradeID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<uspGetUserPermissionListResult>> uspGetUserPermissionListAsync(string userName, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
         Task<List<uspUserAddResult>> uspUserAddAsync(string name, string phoneNumber, string username, string email, string password, bool? active, string kTP, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default);
