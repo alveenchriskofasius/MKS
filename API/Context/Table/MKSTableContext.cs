@@ -35,6 +35,10 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<SalesOrderItem> SalesOrderItems { get; set; }
 
+    public virtual DbSet<StockCount> StockCounts { get; set; }
+
+    public virtual DbSet<StockCountItem> StockCountItems { get; set; }
+
     public virtual DbSet<StockInItem> StockInItems { get; set; }
 
     public virtual DbSet<Trade> Trades { get; set; }
@@ -203,6 +207,45 @@ public partial class MKSTableContext : DbContext
             entity.HasKey(e => e.ID).HasName("PK__SalesOrd__3214EC27E33F869F");
 
             entity.ToTable("SalesOrderItem");
+        });
+
+        modelBuilder.Entity<StockCount>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__StockCou__3214EC27B632DCFD");
+
+            entity.ToTable("StockCount");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(50);
+            entity.Property(e => e.Date)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("date");
+            entity.Property(e => e.No)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Note).HasMaxLength(255);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<StockCountItem>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__StockCou__3214EC2703079B17");
+
+            entity.ToTable("StockCountItem");
+
+            entity.Property(e => e.UnitPrice).HasColumnType("decimal(10, 2)");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.StockCountItems)
+                .HasForeignKey(d => d.ProductID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StockCountItem_Product");
+
+            entity.HasOne(d => d.StockCount).WithMany(p => p.StockCountItems)
+                .HasForeignKey(d => d.StockCountID)
+                .HasConstraintName("FK_StockCountItem_StockCount");
         });
 
         modelBuilder.Entity<StockInItem>(entity =>

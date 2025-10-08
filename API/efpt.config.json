@@ -1,13 +1,13 @@
 ﻿{
    "CodeGenerationMode": 4,
-   "ContextClassName": "MKSSPContext",
+   "ContextClassName": "MKSTableContext",
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
    "MinimumProductVersion": "2.6.1186",
    "ModelNamespace": null,
    "OutputContextPath": null,
-   "OutputPath": "Context\/SP",
+   "OutputPath": "Context\/Table",
    "PreserveCasingWithRegex": true,
    "ProjectRootNamespace": "API",
    "Schemas": null,
@@ -16,64 +16,80 @@
    "T4TemplatePath": null,
    "Tables": [
       {
-         "Name": "[dbo].[GetProductList]",
-         "ObjectType": 1
+         "Name": "[dbo].[Category]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[GetSalesOrderList]",
-         "ObjectType": 1
+         "Name": "[dbo].[Customer]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[GetStockInList]",
-         "ObjectType": 1
+         "Name": "[dbo].[Debt]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspBarcodeScan]",
-         "ObjectType": 1
+         "Name": "[dbo].[Lookup]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspGenerateNo]",
-         "ObjectType": 1
+         "Name": "[dbo].[Permission]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspGetDetailListById]",
-         "ObjectType": 1
+         "Name": "[dbo].[Product]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspGetPermissionList]",
-         "ObjectType": 1
+         "Name": "[dbo].[PurchaseOrderItem]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspGetProductComboList]",
-         "ObjectType": 1
+         "Name": "[dbo].[PurchasePayment]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspGetPurchaseOrderItemList]",
-         "ObjectType": 1
+         "Name": "[dbo].[Role]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspGetSalesOrderItemList]",
-         "ObjectType": 1
+         "Name": "[dbo].[RolePermission]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspGetUserPermissionList]",
-         "ObjectType": 1
+         "Name": "[dbo].[SalesOrderItem]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspUserAdd]",
-         "ObjectType": 1
+         "Name": "[dbo].[StockCount]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspUserGet]",
-         "ObjectType": 1
+         "Name": "[dbo].[StockCountItem]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspUserLogin]",
-         "ObjectType": 1
+         "Name": "[dbo].[StockInItem]",
+         "ObjectType": 0
       },
       {
-         "Name": "[dbo].[uspUserUpdate]",
-         "ObjectType": 1
+         "Name": "[dbo].[Trade]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TradeType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Unit]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserRole]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Users]",
+         "ObjectType": 0
       }
    ],
    "UiHint": null,

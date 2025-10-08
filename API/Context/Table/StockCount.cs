@@ -5,23 +5,17 @@ using System.Collections.Generic;
 
 namespace API.Context.Table;
 
-public partial class Product
+public partial class StockCount
 {
     public int ID { get; set; }
 
-    public string Name { get; set; }
+    public DateTime Date { get; set; }
 
-    public byte CategoryID { get; set; }
+    public string No { get; set; }
 
-    public short UnitID { get; set; }
+    public string Note { get; set; }
 
-    public string Description { get; set; }
-
-    public decimal UnitPrice { get; set; }
-
-    public int StockQuantity { get; set; }
-
-    public short SupplierID { get; set; }
+    public bool AutoAdjust { get; set; }
 
     public string CreatedBy { get; set; }
 
@@ -30,8 +24,6 @@ public partial class Product
     public string UpdatedBy { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
-
-    public string Barcode { get; set; }
 
     public virtual ICollection<StockCountItem> StockCountItems { get; set; } = new List<StockCountItem>();
 }
