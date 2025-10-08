@@ -32,4 +32,14 @@ public partial class Trade
     public short? StatusID { get; set; }
 
     public string Note { get; set; }
+
+    public int? TotalQtySold { get; set; }
+
+    public int? TotalQtyRefunded { get; set; }
+
+    public decimal? NetDifference { get; set; }
+
+    public bool? CustomerPays { get; set; }
+
+    public bool? IsFullQtyRefunded { get; set; }
 }
