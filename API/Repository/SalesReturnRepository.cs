@@ -63,7 +63,7 @@ public class SalesReturnRepository : ISalesReturnRepository
                     newStatus = anyRefund ? (short)(allRefundFull ? SalesOrderStatus.Refund : SalesOrderStatus.PartialRefund) : (short)SalesOrderStatus.Paid;
                     if (anyRefund) { isFullQtyRefunded = allRefundFull ? true : soItems.Any(x => (x.QtyRefunded ?? 0) >= x.Quantity); }
                 }
-                var soHeader = await _context.Trades.FindAsync(model.LinkedSalesOrderID.Value); if (soHeader != null) { soHeader.StatusID = newStatus; soHeader.TotalQtySold = soItems.Sum(x => x.Quantity); soHeader.TotalQtyRefunded = soItems.Sum(x => (x.QtyRefunded ?? 0)); soHeader.IsFullQtyRefunded = isFullQtyRefunded; _context.Trades.Update(soHeader); await _context.SaveChangesAsync(); }
+                var soHeader = await _context.Trades.FindAsync(model.LinkedSalesOrderID.Value); if (soHeader != null) { soHeader.StatusID = newStatus; soHeader.TotalQtySold = soItems.Sum(x => x.Quantity); soHeader.TotalQtyRefunded = soItems.Sum(x => (x.QtyRefunded ?? 0)); soHeader.IsFullQtyRefunded = isFullQtyRefunded; soHeader.IsLocked = true; _context.Trades.Update(soHeader); await _context.SaveChangesAsync(); }
             }
             decimal returnedTotal = model.Details.Sum(x => x.Subtotal); decimal replacementTotal = model.ReplacementDetails.Sum(x => x.Subtotal); decimal net = replacementTotal - returnedTotal; model.RefundAmount = net; trade.Amount = returnedTotal; await _context.SaveChangesAsync(); return new { success = true, id = trade.ID, no = trade.No, netDifference = net };
         }
