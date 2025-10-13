@@ -22,7 +22,7 @@ namespace API.Repository
             PartialExchange = 7,
             Completed = 8 // DO delivered / finalized
         }
-        private static readonly HashSet<short> LockedStatuses = new HashSet<short>{ (short)TradeStatus.Paid,(short)TradeStatus.PartialRefund,(short)TradeStatus.Refund,(short)TradeStatus.Exchange,(short)TradeStatus.PartialExchange,(short)TradeStatus.Completed };
+        private static readonly HashSet<short> LockedStatuses = new HashSet<short> { (short)TradeStatus.Paid, (short)TradeStatus.PartialRefund, (short)TradeStatus.Refund, (short)TradeStatus.Exchange, (short)TradeStatus.PartialExchange, (short)TradeStatus.Completed };
         public SalesOrderRepository(MKSTableContext context, MKSSPContextProcedures procedures, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
@@ -87,7 +87,8 @@ namespace API.Repository
                     Amount = trade.Amount,
                     CustomerID = trade.CustomerID,
                     Note = trade.Note,
-                    IsLocked = trade.IsLocked
+                    IsLocked = trade.IsLocked,
+                    PaidAmount = trade.PaidAmount ?? 0m
                 };
             }
             return salesOrder;
@@ -169,7 +170,8 @@ namespace API.Repository
                         StatusID = salesOrder.IsPaid ? (short)TradeStatus.Paid : (short)TradeStatus.Draft,
                         TradeTypeID = 2,
                         CreatedAt = DateTime.Now,
-                        Note = salesOrder.Note
+                        Note = salesOrder.Note,
+                        PaidAmount = salesOrder.IsPaid ? salesOrder.SalesOrderDetails.Sum(x => x.Subtotal) : 0
                     };
                     await _context.Trades.AddAsync(tradeEntity);
                     await _context.SaveChangesAsync();
@@ -197,6 +199,10 @@ namespace API.Repository
                     {
                         tradeEntity.IsLocked = true; // mark lock for persistence
                     }
+                    if (salesOrder.IsPaid)
+                    {
+                        tradeEntity.PaidAmount = tradeEntity.Amount; // mark fully paid when saving with isPay
+                    }
                     await _context.SaveChangesAsync();
                 }
 
@@ -210,6 +216,22 @@ namespace API.Repository
                     {
                         return saveResult;
                     }
+                }
+
+                // Propagate SO payment state to linked Sales Invoice if exists
+                var linkedInvoice = await _context.Trades.FirstOrDefaultAsync(t => t.TradeTypeID == 3 && t.Note == $"SO:{tradeEntity.ID}");
+                if (linkedInvoice != null)
+                {
+                    var soPaid = tradeEntity.PaidAmount ?? 0m;
+                    var invPaid = Math.Min(soPaid, linkedInvoice.Amount);
+                    linkedInvoice.PaidAmount = invPaid;
+                    if (invPaid >= linkedInvoice.Amount) linkedInvoice.StatusID = 4; // Paid
+                    else if (invPaid > 0) linkedInvoice.StatusID = 3; // Partially Paid
+                    else linkedInvoice.StatusID = 1; // Draft
+                    linkedInvoice.UpdatedAt = DateTime.Now;
+                    linkedInvoice.UpdatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
+                    _context.Trades.Update(linkedInvoice);
+                    await _context.SaveChangesAsync();
                 }
 
                 return new

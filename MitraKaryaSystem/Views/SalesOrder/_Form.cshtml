@@ -4,6 +4,7 @@
     <input type="text" id="salesOrderID" hidden asp-for="SalesOrder.ID" />
     <input type="hidden" id="salesOrderStatusID" value="@Model.SalesOrder.StatusID" />
     <input type="hidden" id="salesOrderIsLocked" value="@Model.SalesOrder.IsLocked" />
+    <input type="hidden" id="salesOrderPaidAmount" value="@Model.SalesOrder.PaidAmount" />
     <div class="row">
         <div class="col-6">
             <div class="row mb-3">
@@ -45,6 +46,7 @@
             </div>
             <div class="row mb-2">
                 <div class="col-sm-12 text-end">
+                    <button type="button" id="btnCreateInvoice" class="btn btn-sm btn-outline-primary me-2"><i class="fa fa-file-invoice"></i> Create Invoice</button>
                     <button type="button" id="btnCreateDO" class="btn btn-sm btn-outline-success d-none"><i class="fa fa-truck"></i> Create Delivery Order</button>
                 </div>
             </div>

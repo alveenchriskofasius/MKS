@@ -13,6 +13,7 @@
         public string Note { get; set; }
         public bool IsPaid { get; set; }
         public bool IsLocked { get; set; } // new for UI locking
+        public decimal PaidAmount { get; set; } // total paid for this SO
 
         public List<SalesOrderDetailModel> SalesOrderDetails { get; set; } = new List<SalesOrderDetailModel>();
     }
