@@ -64,6 +64,13 @@ builder.Services.AddScoped<IPurchaseReturnService, PurchaseReturnService>();
 // Delivry Order
 builder.Services.AddScoped<IDeliveryOrderRepository, DeliveryOrderRepository>();
 builder.Services.AddScoped<IDeliveryOrderService, DeliveryOrderService>();
+// Payment In
+builder.Services.AddScoped<IPaymentInRepository, PaymentInRepository>();
+builder.Services.AddScoped<IPaymentInService, PaymentInService>();
+// Sales Invoice
+builder.Services.AddScoped<ISalesInvoiceRepository, SalesInvoiceRepository>();
+builder.Services.AddScoped<ISalesInvoiceService, SalesInvoiceService>();
+
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<MKSSPContextProcedures>();
 builder.Services.AddDbContext<MKSTableContext>(options =>

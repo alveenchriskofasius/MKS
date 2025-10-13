@@ -45,5 +45,9 @@ public partial class Trade
 
     public bool IsLocked { get; set; }
 
+    public decimal? PaidAmount { get; set; }
+
     public virtual ICollection<DeliveryOrder> DeliveryOrders { get; set; } = new List<DeliveryOrder>();
+
+    public virtual ICollection<PaymentIn> PaymentIns { get; set; } = new List<PaymentIn>();
 }

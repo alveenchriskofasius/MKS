@@ -28,4 +28,6 @@ public partial class Customer
     public DateTime? UpdatedAt { get; set; }
 
     public string Note { get; set; }
+
+    public virtual ICollection<PaymentIn> PaymentIns { get; set; } = new List<PaymentIn>();
 }

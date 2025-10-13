@@ -40,6 +40,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[PaymentIn]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Permission]",
          "ObjectType": 0
       },

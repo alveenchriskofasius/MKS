@@ -25,6 +25,8 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<Lookup> Lookups { get; set; }
 
+    public virtual DbSet<PaymentIn> PaymentIns { get; set; }
+
     public virtual DbSet<Permission> Permissions { get; set; }
 
     public virtual DbSet<Product> Products { get; set; }
@@ -185,6 +187,45 @@ public partial class MKSTableContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<PaymentIn>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__PaymentI__3214EC2735E28B9F");
+
+            entity.ToTable("PaymentIn");
+
+            entity.HasIndex(e => e.CustomerID, "IX_PaymentIn_CustomerID");
+
+            entity.HasIndex(e => e.SalesInvoiceID, "IX_PaymentIn_SalesInvoiceID");
+
+            entity.HasIndex(e => e.SalesOrderID, "IX_PaymentIn_SalesOrderID");
+
+            entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(64);
+            entity.Property(e => e.Date)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("date");
+            entity.Property(e => e.Method).HasMaxLength(32);
+            entity.Property(e => e.No)
+                .IsRequired()
+                .HasMaxLength(32);
+            entity.Property(e => e.Note).HasMaxLength(256);
+            entity.Property(e => e.StatusID).HasDefaultValue((short)1);
+            entity.Property(e => e.Type).HasMaxLength(16);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(64);
+
+            entity.HasOne(d => d.Customer).WithMany(p => p.PaymentIns)
+                .HasForeignKey(d => d.CustomerID)
+                .HasConstraintName("FK_PaymentIn_Customer");
+
+            entity.HasOne(d => d.SalesOrder).WithMany(p => p.PaymentIns)
+                .HasForeignKey(d => d.SalesOrderID)
+                .HasConstraintName("FK_PaymentIn_SalesOrder");
         });
 
         modelBuilder.Entity<Permission>(entity =>
@@ -377,6 +418,7 @@ public partial class MKSTableContext : DbContext
             entity.Property(e => e.Note)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.PaidAmount).HasColumnType("decimal(18, 0)");
             entity.Property(e => e.UpdatedAt).HasColumnType("date");
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)
