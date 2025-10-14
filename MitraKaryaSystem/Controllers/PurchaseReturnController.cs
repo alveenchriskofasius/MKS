@@ -1,7 +1,9 @@
 using API.Models;
 using API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using MitraKaryaSystem.Security;
 namespace MitraKaryaSystem.Controllers;
+[HasPermission("Purchase Return")]
 public class PurchaseReturnController : Controller
 {
     private readonly IPurchaseReturnService _svc; public PurchaseReturnController(IPurchaseReturnService s) { _svc = s; }

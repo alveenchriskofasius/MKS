@@ -140,7 +140,8 @@ public class SalesInvoiceRepository : ISalesInvoiceRepository
         if (statusId.HasValue) q = q.Where(t => t.StatusID == statusId);
         var list = await q
             .OrderByDescending(t => t.Date)
-            .Select(t => new SalesInvoiceListItem {
+            .Select(t => new SalesInvoiceListItem
+            {
                 ID = t.ID,
                 No = t.No,
                 Date = t.Date,

@@ -1,9 +1,11 @@
 ﻿using API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using MitraKaryaSystem.Models;
+using MitraKaryaSystem.Security;
 
 namespace MitraKaryaSystem.Controllers
 {
+    [HasPermission("Stock In")] // permission name must match records in Permission table
     public class StockInController : Controller
     {
         private readonly IStockInService _stockInService;

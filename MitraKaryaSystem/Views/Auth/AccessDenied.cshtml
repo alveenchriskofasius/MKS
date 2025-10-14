@@ -1,20 +1,19 @@
 ﻿@{
-	ViewData["Title"] = "Request Access";
-	Layout = "_LayoutLogin";
+    ViewData["Title"] = "Request Access";
+    Layout = "_LayoutLogin";
 }
 <div class="row justify-content-center align-items-center" style="height: 100vh;">
 
-	<div class="card">
-		<div class="card-title text-center">
-			<h2 class="text-danger">You Don't have access on this application!!!</h2>
-		</div>
-		<div class="card-body">
-			<div class="text-center">
-				<!-- Center-align these elements -->
-				<h5 class="text-success">ACCESS REQUEST</h5>
-				<p class="card-text">To make an access request, please send request</p>
-				<button id="buttonRequest" class="btn btn-success">Send Request</button>
-			</div>
-		</div>
-	</div>
+    <div class="card">
+        <div class="card-title text-center">
+            <h2 class="text-danger">You Don't have access on this application!!!</h2>
+        </div>
+        <div class="card-body">
+            <div class="text-center">
+                <!-- Center-align these elements -->
+                <h5 class="text-success">ASK YOU ADMIN TO GET ACCESS</h5>
+                <a class="btn btn-success" asp-controller="Home" asp-action="Index">Go back home</a>
+            </div>
+        </div>
+    </div>
 </div>

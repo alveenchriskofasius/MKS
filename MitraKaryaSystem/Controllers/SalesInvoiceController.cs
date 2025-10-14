@@ -1,14 +1,16 @@
 using API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MitraKaryaSystem.Security;
 
 namespace MitraKaryaSystem.Controllers;
 
 [Authorize(Roles = "Admin,Kasir")]
+[HasPermission("Sales Invoice")]
 public class SalesInvoiceController : Controller
 {
     private readonly ISalesInvoiceService _svc;
-    public SalesInvoiceController(ISalesInvoiceService svc){ _svc = svc; }
+    public SalesInvoiceController(ISalesInvoiceService svc) { _svc = svc; }
 
     public IActionResult Index() => View();
 

@@ -2,9 +2,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MitraKaryaSystem.Models;
+using MitraKaryaSystem.Security;
 namespace MitraKaryaSystem.Controllers
 {
     [Authorize]
+    [HasPermission("Product")] // Require Product permission
     public class ProductController : Controller
     {
         private readonly IProductService _service;

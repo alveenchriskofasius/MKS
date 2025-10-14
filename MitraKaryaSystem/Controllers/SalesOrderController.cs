@@ -2,9 +2,11 @@
 using API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using MitraKaryaSystem.Security;
 
 namespace MitraKaryaSystem.Controllers
 {
+    [HasPermission("Sales Order")]
     public class SalesOrderController : Controller
     {
         private readonly ISalesOrderService _salesOrderService;

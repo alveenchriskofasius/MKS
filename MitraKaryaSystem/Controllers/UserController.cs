@@ -2,10 +2,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MitraKaryaSystem.Models;
+using MitraKaryaSystem.Security;
 
 namespace MitraKaryaSystem.Controllers
 {
     [Authorize]
+    [HasPermission("User")] // Require User permission
     public class UserController : Controller
     {
         private readonly IUserService _userService;

@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Views\Dashboard\" />
     <Folder Include="wwwroot\lib\fontawesome\" />
   </ItemGroup>
 

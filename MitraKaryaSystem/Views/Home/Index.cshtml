@@ -1,4 +1,31 @@
 ﻿@{
     ViewData["Title"] = "Dashboard";
 }
-<partial name="_StatusList" />
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header"><h5>Sales Today</h5></div>
+            <div class="card-body">
+                <div id="salesTodayContainer">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><h5>Stock Alerts</h5></div>
+            <div class="card-body">
+                <div id="stockAlertsContainer">Loading...</div>
+            </div>
+        </div>
+        <div class="card mt-2">
+            <div class="card-header"><h5>Pending Deliveries</h5></div>
+            <div class="card-body">
+                <div id="pendingDOContainer">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Dashboard.js" asp-append-version="true"></script>
+}

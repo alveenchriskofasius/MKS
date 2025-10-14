@@ -24,11 +24,22 @@ namespace API.Repository
             var isLogin = users.Count > 0;
             if (isLogin)
             {
-                var claims = new[]
+                // Load permissions for the user
+                var perms = await _sp.uspGetUserPermissionListAsync(username);
+                var permissionClaims = perms?.Select(p => new Claim("Permission", p.Name)) ?? Enumerable.Empty<Claim>();
+
+                var claims = new List<Claim>
                 {
-                            new Claim(ClaimTypes.Name, uspUserLogin?.Name),
-                            new Claim(ClaimTypes.Role, uspUserLogin?.RoleName),
+                    new Claim(ClaimTypes.NameIdentifier, (uspUserLogin?.ID ?? 0).ToString()),
+                    new Claim(ClaimTypes.Name, uspUserLogin?.Name ?? username),
                 };
+
+                if (!string.IsNullOrEmpty(uspUserLogin?.RoleName))
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, uspUserLogin.RoleName));
+                }
+
+                claims.AddRange(permissionClaims);
 
                 // Create the identity and principal
                 var identity = new ClaimsIdentity(claims, "AuthScheme");

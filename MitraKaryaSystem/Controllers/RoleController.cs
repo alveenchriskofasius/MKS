@@ -2,10 +2,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MitraKaryaSystem.Models;
+using MitraKaryaSystem.Security;
 
 namespace MitraKaryaSystem.Controllers
 {
     [Authorize]
+    [HasPermission("Role")] // Require Role permission
     public class RoleController : Controller
     {
         private readonly IRoleService _roleService;

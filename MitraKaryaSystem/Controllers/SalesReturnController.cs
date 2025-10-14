@@ -1,7 +1,9 @@
 using API.Models;
 using API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using MitraKaryaSystem.Security;
 namespace MitraKaryaSystem.Controllers;
+[HasPermission("Sales Return")]
 public class SalesReturnController : Controller
 {
     private readonly ISalesReturnService _svc; public SalesReturnController(ISalesReturnService s) { _svc = s; }

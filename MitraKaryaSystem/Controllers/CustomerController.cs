@@ -1,9 +1,13 @@
 ﻿using API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MitraKaryaSystem.Models;
+using MitraKaryaSystem.Security;
 
 namespace MitraKaryaSystem.Controllers
 {
+    [Authorize]
+    [HasPermission("Customer")] // Require Customer permission
     public class CustomerController : Controller
     {
         private readonly ICustomerService _customerService;

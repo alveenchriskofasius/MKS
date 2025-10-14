@@ -51,13 +51,21 @@ function ApplyLockState() {
     }
 }
 
+function normalizeListResult(list){
+    if (Array.isArray(list)) return list;
+    if (list && Array.isArray(list.result)) return list.result;
+    if (list && Array.isArray(list.data)) return list.data;
+    return [];
+}
+
 function ShowOrHideCreateDOButton() {
     const soId = parseInt($('#salesOrderID').val() || '0', 10);
     const statusID = parseInt($('#salesOrderStatusID').val() || '1', 10);
     if (soId > 0 && statusID >= 2) { // allow from status 2 and above
         // Check if DO exists
         $.get('/DeliveryOrder/List', { statusID: null }, function (list) {
-            const exists = (list || []).some(d => (d.salesOrderID || d.SalesOrderID) === soId);
+            const data = normalizeListResult(list);
+            const exists = data.some(d => (d.salesOrderID || d.SalesOrderID) === soId);
             if (!exists) $('#btnCreateDO').removeClass('d-none'); else $('#btnCreateDO').addClass('d-none');
         });
     } else { $('#btnCreateDO').addClass('d-none'); }
@@ -86,7 +94,8 @@ function LoadDeliveryOrderInfo() {
     const soId = parseInt($('#salesOrderID').val() || '0', 10);
     if (!soId) { $('#deliveryOrderSection').hide(); return; }
     $.get('/DeliveryOrder/List', function (list) {
-        const doData = (list || []).find(d => (d.salesOrderID || d.SalesOrderID) === soId);
+        const data = normalizeListResult(list);
+        const doData = data.find(d => (d.salesOrderID || d.SalesOrderID) === soId);
         if (!doData) { $('#deliveryOrderSection').hide(); return; }
         $('#deliveryOrderSection').show();
         $('#deliveryOrderNo').text(doData.no || doData.No);

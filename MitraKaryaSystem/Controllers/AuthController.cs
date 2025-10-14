@@ -37,6 +37,7 @@ namespace MitraKaryaSystem.Controllers
             return View();
         }
 
+        [AllowAnonymous]
         public IActionResult AccessDenied() => View();
     }
 }

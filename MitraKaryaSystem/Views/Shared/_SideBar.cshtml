@@ -1,10 +1,25 @@
 ﻿<!-- Sidebar -->
+@using System.Security.Claims
+@{
+    // collect permission claims (case-insensitive)
+    var permissions = User?.Claims?.Where(c => string.Equals(c.Type, "Permission", StringComparison.OrdinalIgnoreCase)).Select(c => c.Value).ToList() ?? new List<string>();
+    bool isDriverOnly = permissions.Count == 1 && string.Equals(permissions[0], "Driver", StringComparison.OrdinalIgnoreCase);
+
+    string? Has(string perm)
+    {
+        // Home (dashboard) should be visible to everyone
+        if (string.Equals(perm, "Home", StringComparison.OrdinalIgnoreCase)) return null;
+        // If user is driver-only, hide all other menu items
+        if (isDriverOnly) return "d-none";
+        return User?.Claims?.Any(c => c.Type == "Permission" && string.Equals(c.Value, perm, StringComparison.OrdinalIgnoreCase)) == true ? null : "d-none";
+    }
+}
 <div class="sidebar">
     <!-- Sidebar Menu -->
     <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="User" class="nav-link">
+                <a asp-action="Index" asp-controller="User" class="nav-link @Has("User")">
                     <i class="fa-solid fa-users"></i>
                     <p>
                         User
@@ -12,7 +27,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="Role" class="nav-link">
+                <a asp-action="Index" asp-controller="Role" class="nav-link @Has("Role")">
                     <i class="fa-solid fa-wrench"></i>
                     <p>
                         Role
@@ -20,7 +35,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="Customer" class="nav-link">
+                <a asp-action="Index" asp-controller="Customer" class="nav-link @Has("Customer")">
                     <i class="fa-solid fa-user"></i>
                     <p>
                         Customer
@@ -28,7 +43,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="Product" class="nav-link">
+                <a asp-action="Index" asp-controller="Product" class="nav-link @Has("Product")">
                     <i class="fa-solid fa-cubes-stacked"></i>
                     <p>
                         Product
@@ -36,7 +51,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="StockIn" class="nav-link">
+                <a asp-action="Index" asp-controller="StockIn" class="nav-link @Has("Stock In")">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <p>
                         Stock In
@@ -44,7 +59,15 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="SalesOrder" class="nav-link">
+                <a asp-action="Index" asp-controller="Home" class="nav-link @Has("Home")">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <p>
+                        Dashboard
+                    </p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-action="Index" asp-controller="SalesOrder" class="nav-link @Has("Sales Order")">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <p>
                         Sales Order
@@ -52,7 +75,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="DeliveryOrder" class="nav-link">
+                <a asp-action="Index" asp-controller="DeliveryOrder" class="nav-link @Has("Delivery Order")">
                     <i class="fa-solid fa-truck"></i>
                     <p>
                         Delivery Order
@@ -60,7 +83,15 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="PurchaseOrder" class="nav-link">
+                <a asp-action="Index" asp-controller="Driver" class="nav-link @Has("Driver")">
+                    <i class="fa-solid fa-id-badge"></i>
+                    <p>
+                        Driver
+                    </p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-action="Index" asp-controller="PurchaseOrder" class="nav-link @Has("Purchase Order")">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <p>
                         Purchase Order
@@ -68,7 +99,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="StockCount" class="nav-link">
+                <a asp-action="Index" asp-controller="StockCount" class="nav-link @Has("Stock Count")">
                     <i class="fa-solid fa-clipboard-check"></i>
                     <p>
                         Stock Count
@@ -76,7 +107,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="SalesReturn" class="nav-link">
+                <a asp-action="Index" asp-controller="SalesReturn" class="nav-link @Has("Sales Return")">
                     <i class="fa-solid fa-rotate-left"></i>
                     <p>
                         Sales Return
@@ -84,7 +115,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="PurchaseReturn" class="nav-link">
+                <a asp-action="Index" asp-controller="PurchaseReturn" class="nav-link @Has("Purchase Return")">
                     <i class="fa-solid fa-rotate-right"></i>
                     <p>
                         Purchase Return
@@ -92,7 +123,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-action="Index" asp-controller="SalesInvoice" class="nav-link">
+                <a asp-action="Index" asp-controller="SalesInvoice" class="nav-link @Has("Sales Invoice")">
                     <i class="fa-solid fa-file-invoice"></i>
                     <p>
                         Sales Invoice
