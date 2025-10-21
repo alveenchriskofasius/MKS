@@ -1,0 +1,181 @@
+@{
+    ViewData["Title"] = "Payment Out";
+}
+<div class="card">
+    <div class="card-header">
+        <div class="card-title"><h5>Payment Out</h5></div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-2">
+            <div class="col-md-4">
+                <label class="form-label">Supplier</label>
+                <select id="selectSupplier" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Purchase Order</label>
+                <select id="selectPO" class="form-select"></select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button id="btnNewPaymentOut" class="btn btn-primary ms-auto">New Payment</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm" id="tablePaymentOut">
+                <thead class="table-light"><tr><th>No</th><th>Date</th><th>Supplier</th><th class="text-end">Amount</th><th>Method</th><th>Type</th><th>Status</th><th></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* shared modal *@
+<partial name="_PaymentOutModal" />
+
+@section Scripts {
+    <script src="~/js/Common.js"></script>
+    <script src="~/js/PaymentOut.js"></script>
+    <script>
+        $(document).ready(function(){
+            function normalizeList(resp){
+                if(!resp) return [];
+                if(Array.isArray(resp)) return resp;
+                if(resp.result && Array.isArray(resp.result)) return resp.result;
+                if(resp.data && Array.isArray(resp.data)) return resp.data;
+                return [];
+            }
+
+            // Try multiple endpoints until we get suppliers. Use async AJAX to avoid synchronous blocking.
+            (function loadSuppliers(){
+                var endpoints = ['/PaymentOut/GetSupplierList','/Product/GetSupplierList','/Customer/GetList'];
+                var $select = $('#selectSupplier');
+                $select.html('');
+                $select.append($('<option>').val('').text('Loading...'));
+
+                var tryIndex = 0;
+                function tryNext(){
+                    if(tryIndex >= endpoints.length){
+                        // no data found
+                        $select.html('');
+                        $select.append($('<option>').val('').text('Select supplier'));
+                        return;
+                    }
+                    var url = endpoints[tryIndex++];
+                    $.ajax({
+                        url: url,
+                        method: 'GET',
+                        dataType: 'json'
+                    }).done(function(resp){
+                        var list = normalizeList(resp);
+                        if(list && list.length>0){
+                            $select.html('');
+                            $select.append($('<option>').val('').text('Select supplier'));
+                            list.forEach(function(s){
+                                var id = s.id || s.ID || s.Id;
+                                var name = s.supplierName || s.SupplierName || s.name || s.Name || '-';
+                                $select.append($('<option>').val(id).text(name));
+                            });
+                        } else {
+                            tryNext();
+                        }
+                    }).fail(function(){
+                        tryNext();
+                    });
+                }
+                tryNext();
+            })();
+
+            $('#selectSupplier').on('change', function(){
+                const supId = $(this).val();
+                const $po = $('#selectPO');
+                $po.html('');
+                $po.append($('<option>').val('').text('Select PO'));
+                if(!supId) return;
+
+                // show loading option while fetching
+                $po.find('option').remove();
+                $po.append($('<option>').val('').text('Loading...'));
+
+                // fetch POs for supplier (try query string first for compatibility)
+                var url = '/PurchaseOrder/ListBySupplier?supplierId=' + encodeURIComponent(supId);
+                $.get(url, function(list){
+                    var data = normalizeList(list);
+                    $po.html('');
+                    $po.append($('<option>').val('').text('Select PO'));
+                    if(!data || data.length === 0){
+                        $po.append($('<option>').val('').text('No Purchase Orders'));
+                        return;
+                    }
+                    data.forEach(function(po){
+                        var id = po.id || po.ID || po.Id;
+                        var no = po.no || po.No || po.noValue || '';
+                        $po.append($('<option>').val(id).text(no));
+                    });
+
+                    // if a recent PO was saved and matches this supplier, select it
+                    try{
+                        if(window.lastSavedPO && window.lastSavedPO.supplierID && String(window.lastSavedPO.supplierID) === String(supId)){
+                            $po.val(String(window.lastSavedPO.id));
+                        }
+                    }catch(e){ console.warn('selectPO auto-select failed', e); }
+                }).fail(function(){
+                    $po.html('');
+                    $po.append($('<option>').val('').text('Failed load'));
+                });
+            });
+
+            // listen for purchase order saved from PO page and preselect supplier/PO
+            $(document).on('purchaseorder:saved', function(e, payload){
+                try{
+                    if(!payload) return;
+                    if(payload.supplierID){ $('#selectSupplier').val(String(payload.supplierID)).trigger('change'); }
+                    window.lastSavedPO = payload; // keep for later
+                }catch(ex){ console.warn('purchaseorder:saved handling', ex); }
+            });
+
+            function loadList(){
+                $.get('/PaymentOut/List', function(list){
+                    const data = list && list.result ? list.result : list || [];
+                    let rows = data.map(p => {
+                        const canEdit = (p.statusID || p.StatusID) != 2;
+                        const editBtn = canEdit ? `<button class='btn btn-sm btn-primary edit' data-id='${p.id||p.ID}'>Edit</button>` : '';
+                        return `<tr><td>${p.no||''}</td><td>${(p.date||'').toString().substr(0,10)}</td><td>${p.supplierName||''}</td><td class='text-end'>${(Number(p.amount||0)).toFixed(2)}</td><td>${p.method||''}</td><td>${p.type||''}</td><td>${(p.statusID==2?'<span class="badge bg-success">Submitted</span>':'<span class="badge bg-secondary">Draft</span>')}</td><td>${editBtn}</td></tr>`;
+                    }).join('');
+                    $('#tablePaymentOut tbody').html(rows||'<tr><td colspan="8" class="text-center text-muted">No data</td></tr>');
+                }).fail(()=>$('#tablePaymentOut tbody').html('<tr><td colspan="8" class="text-center text-muted">Failed load</td></tr>'));
+            }
+
+            loadList();
+
+            $('#btnNewPaymentOut').on('click', function(){
+                const supId = $('#selectSupplier').val();
+                if(!supId){ toastr.info('Select supplier first'); return; }
+                const supName = $('#selectSupplier option:selected').text();
+                const poId = $('#selectPO').val();
+                window.showPaymentOutModal(supId, supName, new Date().toISOString().slice(0,10), poId);
+            });
+
+            // refresh after save
+            $(document).on('paymentout:saved', function(){ loadList(); });
+
+            // optional: delegate edit click if present
+            $('#tablePaymentOut').on('click', '.edit', function(){
+                const id = $(this).data('id');
+                // open edit flow - if backend supports, otherwise ignore
+                // try to fetch payment detail and prefill modal
+                $.get('/PaymentOut/Get',{ id: id }, function(res){
+                    const p = res && (res.result || res) ? (res.result || res) : null;
+                    if(!p){ toastr.error('Failed to load payment'); return; }
+                    const supId = p.supplierID || p.SupplierID || '';
+                    const supName = p.supplierName || p.SupplierName || '';
+                    window.showPaymentOutModal(supId, supName, (p.date||new Date().toISOString()).toString().substr(0,10), p.purchaseOrderID || p.PurchaseOrderID);
+                    // set values after modal open
+                    setTimeout(function(){
+                        $('#poAmount').val((p.amount||p.Amount||0).toFixed ? (p.amount||p.Amount||0).toFixed(2) : (p.amount||p.Amount||0));
+                        $('#poMethod').val(p.method||p.Method||'Cash');
+                        if ($('input[name="poType"][value="' + (p.type||p.Type||'Payment') + '"]').length) $('input[name="poType"][value="' + (p.type||p.Type||'Payment') + '"]').prop('checked', true);
+                    }, 250);
+                }).fail(()=> toastr.error('Failed load'));
+            });
+        });
+    </script>
+}
