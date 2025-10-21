@@ -70,7 +70,8 @@ builder.Services.AddScoped<IPaymentInService, PaymentInService>();
 // Sales Invoice
 builder.Services.AddScoped<ISalesInvoiceRepository, SalesInvoiceRepository>();
 builder.Services.AddScoped<ISalesInvoiceService, SalesInvoiceService>();
-
+builder.Services.AddScoped<IPaymentOutRepository, PaymentOutRepository>();
+builder.Services.AddScoped<IPaymentOutService, PaymentOutService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<MKSSPContextProcedures>();
 builder.Services.AddDbContext<MKSTableContext>(options =>
