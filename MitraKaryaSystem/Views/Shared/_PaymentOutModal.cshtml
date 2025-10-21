@@ -1,0 +1,70 @@
+<div class="modal fade" id="paymentOutModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa fa-money-bill-wave"></i> Add Payment Out</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label small">Date</label>
+            <input type="date" class="form-control form-control-sm" id="poDate" />
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Supplier</label>
+            <div class="form-control form-control-sm" id="poSupplierName">-</div>
+            <input type="hidden" id="poSupplierId" />
+            <input type="hidden" id="poPurchaseOrderId" />
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Method</label>
+            <select id="poMethod" class="form-select form-select-sm">
+              <option>Cash</option>
+              <option>Transfer</option>
+              <option>Deposit</option>
+              <option>Adjustment</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Type</label>
+            <div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="poType" id="poTypePayment" value="Payment" checked>
+                <label class="form-check-label" for="poTypePayment">Payment</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="poType" id="poTypeRefund" value="Refund">
+                <label class="form-check-label" for="poTypeRefund">Refund</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="poType" id="poTypeDeposit" value="Deposit">
+                <label class="form-check-label" for="poTypeDeposit">Deposit</label>
+              </div>
+            </div>
+          </div>
+          <div class="col-6" id="poReferenceWrap" style="display:none;">
+            <label class="form-label small">Reference No</label>
+            <input type="text" class="form-control form-control-sm" id="poReferenceNo" />
+          </div>
+          <div class="col-6" id="poDepositBalanceWrap" style="display:none;">
+            <label class="form-label small">Deposit Balance</label>
+            <div class="form-control form-control-sm" id="poDepositBalance">Rp 0.00</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Amount</label>
+            <input type="number" class="form-control form-control-sm" id="poAmount" min="0" step="0.01" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small">Note</label>
+            <textarea class="form-control form-control-sm" id="poNote"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnSavePaymentOut">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
