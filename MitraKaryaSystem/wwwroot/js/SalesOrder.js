@@ -172,9 +172,11 @@ let ButtonSalesOrder = {
 const DeliveryOrderModal = {
     Open: function (id) {
         $.get('/DeliveryOrder/Get', { id: id }, function (data) {
-            const status = data.statusID || data.StatusID; const driver = data.driverUserID || data.DriverUserID; const soId = data.salesOrderID || data.SalesOrderID;
+            const status = data.statusID || data.StatusID;
+            const driverNameFromApi = data.driverName || data.DriverName || null;
+            const driverId = data.driverUserID || data.DriverUserID || null;
             const steps = [1, 2, 3, 4];
-            const stepHtml = steps.map(s => { const active = status >= s ? 'active-step' : ''; const label = DOStatus[s]; return `<div class=\"do-step ${active}\"><div class='circle'>${s}</div><div class='label small'>${label}</div></div>`; }).join('<div class=\"do-line\"></div>');
+            const stepHtml = steps.map(s => { const active = status >= s ? 'active-step' : ''; const label = DOStatus[s]; return `<div class="do-step ${active}"><div class='circle'>${s}</div><div class='label small'>${label}</div></div>`; }).join('<div class="do-line"></div>');
             const items = (data.items || data.Items || []).map(i => {
                 const pname =
                     (i.product && (i.product.name || i.product.Name)) ||
@@ -184,17 +186,17 @@ const DeliveryOrderModal = {
                 const qty = i.quantity || i.Quantity;
                 return `<tr><td>${pname}</td><td>${qty}</td></tr>`;
             }).join('');
-            // Evaluate if customer is general (Umum). Prefer DO data; fallback to page selected customer.
             const custIdRaw = data.customerID || data.CustomerID;
             let isGeneral = false;
             if (custIdRaw !== undefined && custIdRaw !== null) { isGeneral = Number(custIdRaw) === 0; }
             else { isGeneral = (parseInt($('#selectCustomer').val() || '0', 10) === 0); }
             const addressVal = (data.deliveryAddress || data.DeliveryAddress) || '';
             const addressHtml = (!isGeneral && addressVal) ? `<div class='mb-2'><strong>Address:</strong> ${addressVal}</div>` : '';
+            // NOTE: Do not show SO ID here per request
             const modalHtml = `<div class='text-start'>
             <div class='do-progress d-flex align-items-center justify-content-between mb-3 flex-wrap'>${stepHtml}</div>
-            <div class='mb-2'><strong>DO No:</strong> ${data.no || data.No} &nbsp; <strong>SO ID:</strong> ${soId}</div>
-            <div class='mb-2'><strong>Status:</strong> ${DOStatus[status]} &nbsp; <strong>Driver:</strong> <span id='doDriverLabel'>${driver || '-'}</span></div>
+            <div class='mb-2'><strong>DO No:</strong> ${data.no || data.No}</div>
+            <div class='mb-2'><strong>Status:</strong> ${DOStatus[status]} &nbsp; <strong>Driver:</strong> <span id='doDriverLabel'>${driverNameFromApi || '-'}</span></div>
             ${addressHtml}
             <div class='border rounded p-2 mb-2'><div class='fw-bold mb-1'>Items</div><table class='table table-sm mb-0'><thead><tr><th>Product</th><th>Qty</th></tr></thead><tbody>${items}</tbody></table></div>
             <div id='assignDriverContainer' class='mt-2 d-none'>
@@ -218,11 +220,20 @@ const DeliveryOrderModal = {
             if (status === 3) { actionBtns += `<button class='btn btn-sm btn-outline-success me-2' id='btnMarkDelivered'><i class='fa fa-check'></i> Mark Delivered</button>`; }
             Swal.fire({ title: 'Delivery Order', html: modalHtml, width: 720, showConfirmButton: false, showCloseButton: true });
             if (actionBtns) $('#doActionContainer').html(actionBtns);
-            DeliveryOrderModal.LoadDrivers();
+            // populate driver select and resolve driver label if only ID provided
+            DeliveryOrderModal.LoadDrivers(function (users) {
+                if (!driverNameFromApi && driverId) {
+                    const found = (users || []).find(u => (u.id || u.ID) == driverId);
+                    if (found) {
+                        const name = found.name || found.Name || found.userName || found.UserName;
+                        $('#doDriverLabel').text(name);
+                    }
+                }
+            });
             DeliveryOrderModal.BindActions(id, status);
         });
     },
-    LoadDrivers: function () { $.get('/User/GetUserList', function (list) { let data = list; if (list && list.result) data = list.result; const sel = $('#selectDriver'); if (!sel.length) return; (data || []).forEach(u => sel.append(`<option value='${u.id || u.ID}'>${u.userName || u.UserName}</option>`)); }); },
+    LoadDrivers: function (callback) { $.get('/User/GetUserList', function (list) { let data = list; if (list && list.result) data = list.result; const sel = $('#selectDriver'); if (!sel.length) { if (typeof callback === 'function') callback(data); return; } sel.empty().append(`<option value=''>-- Select driver --</option>`); (data || []).forEach(u => sel.append(`<option value='${u.id || u.ID}'>${u.name || u.Name || u.userName || u.UserName}</option>`)); if (typeof callback === 'function') callback(data); }); },
     BindActions: function (id, status) {
         $(document).off('click', '#btnAssignDriver').on('click', '#btnAssignDriver', function () { $('#assignDriverContainer').removeClass('d-none'); });
         $(document).off('click', '#btnCancelAssign').on('click', '#btnCancelAssign', function () { $('#assignDriverContainer').addClass('d-none'); });
@@ -350,6 +361,7 @@ let Table = {
             { data: 'no' },
             { data: 'date' },
             { data: 'amount' },
+            { data: null, render: function (_data, _type, row) { const s = row && (row.statusID || row.StatusID || row.status || row.Status); return TradeStatus[s] || (s || ''); } },
             { data: 'customerName' },
             { data: 'createdBy' },
             { data: 'updatedBy' },

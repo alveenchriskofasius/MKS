@@ -147,7 +147,31 @@ namespace API.Repository
             }
             return salesOrderDetailModels;
         }
-        public async Task<object> GetSearchList() => await _procedure.GetSalesOrderListAsync();
+        public async Task<object> GetSearchList()
+        {
+            var q = from t in _context.Trades
+                    where t.TradeTypeID == 2
+                    join c in _context.Customers on t.CustomerID equals c.ID into cgroup
+                    from cust in cgroup.DefaultIfEmpty()
+                    join l in _context.Lookups.Where(x => x.Entity == "SalesOrderStatus") on t.StatusID equals (short?)l.Key into lgroup
+                    from ls in lgroup.DefaultIfEmpty()
+                    orderby t.ID descending
+                    select new
+                    {
+                        id = t.ID,
+                        no = t.No,
+                        date = t.Date.ToString("yyyy-MM-dd"),
+                        amount = t.Amount,
+                        customerName = cust != null ? cust.Name : "-",
+                        createdBy = t.CreatedBy,
+                        updatedBy = t.UpdatedBy,
+                        statusID = t.StatusID,
+                        status = ls != null ? ls.Name : null
+                    };
+
+            var list = await q.ToListAsync();
+            return list;
+        }
         public async Task<object> Save(SalesOrderModel salesOrder)
         {
             try
