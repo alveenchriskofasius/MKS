@@ -1,11 +1,7 @@
-const DriverPage = {
-  Init(){ this.InitTable(); this.Bind(); this.Load(); },
-  InitTable(){ $('#tableDriverTasks').DataTable({ deferRender:true, destroy:true, searching:true, paging:true, columns:[{data:'no'},{data:'salesOrderID'},{data:'statusID'},{data:'deliveryAddress'},{data:null, orderable:false, render:()=>`<div class='btn-group'>
-    <button class='btn btn-sm btn-outline-primary act-start'>Start</button>
-    <button class='btn btn-sm btn-outline-success act-delivered'>Delivered</button>
-  </div>`}]}); },
-  Bind(){ $('#filterTaskStatus').on('change',()=> this.Load()); $('#tableDriverTasks').on('click','.act-start',()=> this.BulkUpdate(3)); $('#tableDriverTasks').on('click','.act-delivered',()=> this.BulkUpdate(4)); },
-  Load(){ const status=$('#filterTaskStatus').val(); $.get('/Driver/MyTasks', { statusID: status||null }, list=>{ let tb=$('#tableDriverTasks').DataTable(); tb.clear(); tb.rows.add(list||[]); tb.draw(); }); },
-  BulkUpdate(newStatus){ let tb=$('#tableDriverTasks').DataTable(); let row = tb.row('.selected').data(); if(!row){ toastr.info('Select a row first'); return; } $.post('/Driver/UpdateStatus',{ id: row.id||row.ID, statusID: newStatus }).done(res=>{ res.success? toastr.success('Updated') : toastr.error(res.result||'Failed'); this.Load(); }); }
+const DriverPages = {
+  Init(){ this.Bind(); this.InitTable(); this.Load(); },
+  Bind(){ $('#filterTaskStatus').on('change', ()=> this.Load()); },
+  InitTable(){ $('#tableDriverTasks').DataTable({ deferRender:true, destroy:true, searching:true, paging:true, info:true, columns:[ {data:'no'}, {data:'salesOrderNo', render:d=> d||''}, {data:'statusID', render:d=> d||''}, {data:'deliveryAddress', render:d=> d||''}, {data:null, orderable:false, render:()=> `<button class='btn btn-sm btn-outline-primary view-do'><i class='fa fa-eye'></i></button>`}] }); $('#tableDriverTasks').on('click','.view-do', function(){ let row=$('#tableDriverTasks').DataTable().row($(this).closest('tr')).data(); if(!row) return; window.DeliveryOrderModal.Open(row.id||row.ID); }); },
+  Load(){ const status = $('#filterTaskStatus').val(); $.get('/Driver/MyTasks', { statusID: status||null }, list=>{ let tb=$('#tableDriverTasks').DataTable(); const normalized = (list || []).map(item => ({ id: item.id || item.ID, no: item.no || item.No, salesOrderID: item.salesOrderID || item.SalesOrderID, salesOrderNo: item.salesOrderNo || item.SalesOrderNo || null, statusID: item.statusID || item.StatusID, driverUserID: item.driverUserID || item.DriverUserID, driverName: item.driverName || item.DriverName || null, deliveryAddress: item.deliveryAddress || item.DeliveryAddress })); tb.clear(); tb.rows.add(normalized||[]); tb.draw(); }); }
 };
-$(document).ready(()=>{ DriverPage.Init(); $('#tableDriverTasks tbody').on('click','tr', function(){ $(this).toggleClass('selected').siblings().removeClass('selected'); }); });
+$(document).ready(function(){ DriverPages.Init(); });
