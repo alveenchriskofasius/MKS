@@ -10,5 +10,6 @@ namespace API.Services.Interfaces
         Task<object> Save(PurchaseOrderModel model);
         Task<object> Delete(int id);
         Task<object> DeleteItem(int id);
+        Task<object> GetListBySupplier(int supplierId);
     }
 }

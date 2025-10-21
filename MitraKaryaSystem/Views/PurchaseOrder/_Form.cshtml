@@ -14,6 +14,7 @@
             <input type="date" asp-for="Date" class="form-control" id="purchaseOrderDate" />
         </div>
     </div>
+    <!-- Supplier moved to page-level filter to avoid duplication -->
     <div class="row mb-3">
         <label for="purchaseOrderNote" class="form-label col-sm-2">Note</label>
         <div class="col-sm-6">
@@ -21,3 +22,9 @@
         </div>
     </div>
 </form>
+
+@section Scripts {
+    <script>
+        // no supplier control here; supplier selection is on page-level filter (#filterSupplier)
+    </script>
+}
