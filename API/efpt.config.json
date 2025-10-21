@@ -24,6 +24,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[CustomerDeposit]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Debt]",
          "ObjectType": 0
       },
@@ -41,6 +45,10 @@
       },
       {
          "Name": "[dbo].[PaymentIn]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PaymentOut]",
          "ObjectType": 0
       },
       {

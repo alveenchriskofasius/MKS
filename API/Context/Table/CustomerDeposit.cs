@@ -5,29 +5,13 @@ using System.Collections.Generic;
 
 namespace API.Context.Table;
 
-public partial class PaymentOut
+public partial class CustomerDeposit
 {
     public int ID { get; set; }
 
-    public string No { get; set; }
-
-    public DateTime Date { get; set; }
-
-    public int? SupplierID { get; set; }
-
-    public int? PurchaseOrderID { get; set; }
-
-    public string Method { get; set; }
-
-    public string Type { get; set; }
+    public int SupplierID { get; set; }
 
     public decimal Amount { get; set; }
-
-    public string Note { get; set; }
-
-    public string ReferenceNo { get; set; }
-
-    public short StatusID { get; set; }
 
     public string CreatedBy { get; set; }
 

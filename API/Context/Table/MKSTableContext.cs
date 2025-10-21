@@ -17,6 +17,8 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<Customer> Customers { get; set; }
 
+    public virtual DbSet<CustomerDeposit> CustomerDeposits { get; set; }
+
     public virtual DbSet<Debt> Debts { get; set; }
 
     public virtual DbSet<DeliveryOrder> DeliveryOrders { get; set; }
@@ -26,6 +28,8 @@ public partial class MKSTableContext : DbContext
     public virtual DbSet<Lookup> Lookups { get; set; }
 
     public virtual DbSet<PaymentIn> PaymentIns { get; set; }
+
+    public virtual DbSet<PaymentOut> PaymentOuts { get; set; }
 
     public virtual DbSet<Permission> Permissions { get; set; }
 
@@ -99,6 +103,19 @@ public partial class MKSTableContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<CustomerDeposit>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Customer__3214EC27D526C7FE");
+
+            entity.ToTable("CustomerDeposit");
+
+            entity.HasIndex(e => e.SupplierID, "UQ_CustomerDeposit_SupplierID").IsUnique();
+
+            entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.CreatedBy).HasMaxLength(64);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(64);
         });
 
         modelBuilder.Entity<Debt>(entity =>
@@ -226,6 +243,24 @@ public partial class MKSTableContext : DbContext
             entity.HasOne(d => d.SalesOrder).WithMany(p => p.PaymentIns)
                 .HasForeignKey(d => d.SalesOrderID)
                 .HasConstraintName("FK_PaymentIn_SalesOrder");
+        });
+
+        modelBuilder.Entity<PaymentOut>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__PaymentO__3214EC27FF3C12F4");
+
+            entity.ToTable("PaymentOut");
+
+            entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.CreatedBy).HasMaxLength(64);
+            entity.Property(e => e.Method).HasMaxLength(32);
+            entity.Property(e => e.No)
+                .IsRequired()
+                .HasMaxLength(64);
+            entity.Property(e => e.Note).HasMaxLength(256);
+            entity.Property(e => e.ReferenceNo).HasMaxLength(64);
+            entity.Property(e => e.Type).HasMaxLength(32);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(64);
         });
 
         modelBuilder.Entity<Permission>(entity =>

@@ -144,9 +144,9 @@ namespace API.Context.SP
                 new SqlParameter
                 {
                     ParameterName = "TradeTypePrefix",
-                    Size = 2,
+                    Size = 10,
                     Value = tradeTypePrefix ?? Convert.DBNull,
-                    SqlDbType = System.Data.SqlDbType.Char,
+                    SqlDbType = System.Data.SqlDbType.VarChar,
                 },
                 new SqlParameter
                 {
