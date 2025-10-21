@@ -1,20 +1,40 @@
 const PaymentIn = (function () {
+  async function fetchJson(url, opts) {
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch(e) { /* non-json response */ }
+    if (!res.ok) {
+      const msg = (data && (data.message || data.result)) || text || res.statusText || `HTTP ${res.status}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
   const api = {
-    create: (payload) => fetch('/api/paymentin/create', {
+    create: (payload) => fetchJson('/api/paymentin/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).then(r => r.json()),
-    listBySO: (soId) => fetch(`/api/paymentin/list?salesOrderId=${soId}`).then(r=>r.json()),
-    listByInvoice: (invId) => fetch(`/api/paymentin/list?salesInvoiceId=${invId}`).then(r=>r.json()),
-    getInvoice: (id) => fetch(`/SalesInvoice/Get?id=${id}`).then(r=>r.json())
+    }),
+    listBySO: (soId) => fetchJson(`/api/paymentin/list?salesOrderId=${soId}`),
+    listByInvoice: (invId) => fetchJson(`/api/paymentin/list?salesInvoiceId=${invId}`),
+    getInvoice: (id) => fetchJson(`/SalesInvoice/Get?id=${id}`),
+    listByCustomer: (custId) => fetchJson(`/api/paymentin/list?customerId=${custId}`)
   };
 
-  const bindHistory = (soId, invoiceId) => {
+  const bindHistory = (soId, invoiceId, customerId) => {
     let loader = null;
     if (invoiceId) loader = api.listByInvoice(invoiceId);
     else if (soId) loader = api.listBySO(soId);
-    if(!loader) return;
+    else if (customerId !== undefined && customerId !== null) loader = api.listByCustomer(customerId);
+    if(!loader) {
+      $('#piHistoryBody').html(`<tr><td colspan='6' class='text-center text-muted small'>No payments</td></tr>`);
+      return;
+    }
     loader.then(list => {
       const rows = (list||[]).map(p => {
         const date = (p.date || '').toString().substring(0,10);
@@ -24,8 +44,12 @@ const PaymentIn = (function () {
         return `<tr><td>${p.no||''}</td><td>${date}</td><td>${p.method||''}</td><td class='text-end'>${amtText}</td><td>${p.type||''}</td><td>${status}</td></tr>`;
       }).join('');
       $('#piHistoryBody').html(rows || `<tr><td colspan='6' class='text-center text-muted small'>No payments</td></tr>`);
-    }).catch(()=>{
+    }).catch(err=>{
+      console.error('Failed load payment history', err);
+      const statusText = err.status ? `(${err.status}) ` : '';
+      const msg = err.message || 'Failed load';
       $('#piHistoryBody').html(`<tr><td colspan='6' class='text-center text-muted small'>Failed load</td></tr>`);
+      toastr.error(`${statusText}${msg}`, 'Failed load payment history');
     });
   };
 
@@ -64,7 +88,8 @@ const PaymentIn = (function () {
       setTypeByAmount(remaining, amount);
       $('#paymentInModal').modal('show');
       bindHistory(null, id);
-    } catch{
+    } catch(err){
+      console.error('getInvoice failed', err);
       const remaining = (Number(inv.amount)||0) - (Number(inv.paidAmount)||0);
       $('#piCustomerName').text(inv.customerName || '-');
       $('#piCustomerId').val(inv.customerID || inv.CustomerID || '');
@@ -75,6 +100,24 @@ const PaymentIn = (function () {
       setTypeByAmount(remaining, Number(inv.amount||0));
       $('#paymentInModal').modal('show');
       bindHistory(null, id);
+    }
+  };
+
+  // New: open payment modal for a customer without SO or Invoice
+  window.showPaymentInModal = function (customerId, customerName, defaultDate) {
+    try {
+      $('#piCustomerName').text(customerName || '-');
+      $('#piCustomerId').val(customerId || '');
+      $('#piSOId').val('');
+      $('#piInvoiceId').val('');
+      $('#piDate').val(defaultDate || new Date().toISOString().slice(0,10));
+      $('#piAmount').val('0.00');
+      setTypeByAmount(0, 0);
+      $('#paymentInModal').modal('show');
+      bindHistory(null, null, customerId);
+    } catch (e) {
+      console.error('Failed open payment dialog', e);
+      toastr.error('Failed open payment dialog');
     }
   };
 
@@ -96,14 +139,19 @@ const PaymentIn = (function () {
     };
     $('#btnPaymentSave').prop('disabled', true).find('.spinner-border').removeClass('d-none');
     return api.create(payload).then(res => {
-      if (res.success) {
+      if (res && res.success) {
         toastr.success('Payment saved');
-        bindHistory(payload.salesOrderID || null, payload.salesInvoiceID || null);
+        bindHistory(payload.salesOrderID || null, payload.salesInvoiceID || null, payload.customerID || null);
         $(document).trigger('so:payment:updated', res);
       } else {
-        toastr.error(res.result || 'Failed to save payment');
+        const msg = (res && (res.result || res.message)) || 'Failed to save payment';
+        toastr.error(msg);
       }
-    }).catch(err => toastr.error(err?.statusText || 'Network error')).finally(()=>{
+    }).catch(err => {
+      console.error('PaymentIn.save failed', err);
+      const statusText = err.status ? `(${err.status}) ` : '';
+      toastr.error(`${statusText}${err.message || 'Network error'}`, 'Payment save failed');
+    }).finally(()=>{
       $('#btnPaymentSave').prop('disabled', false).find('.spinner-border').addClass('d-none');
     });
   };
