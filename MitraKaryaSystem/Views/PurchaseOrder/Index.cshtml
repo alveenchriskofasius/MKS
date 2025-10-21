@@ -21,8 +21,12 @@
         <div class="card mb-3">
             <div class="card-body">
                 <div class="row mb-3">
+                    <label class="form-label col-sm-2">Supplier</label>
+                    <div class="col-md-4 col-lg-4">
+                        <select id="filterSupplier" class="form-control"></select>
+                    </div>
                     <label class="form-label col-sm-2">Select Product</label>
-                    <div class="col-md-10 col-lg-10">
+                    <div class="col-md-4 col-lg-4">
                         <select class="form-control select2" id="selectProduct" autofocus></select>
                     </div>
                 </div>
@@ -31,6 +35,24 @@
         <div id="purchaseOrderTableContainer">
             @await Html.PartialAsync("_Table")
         </div>
+
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-title">Payments</div>
+                <div>
+                    <button id="btnAddPaymentOut" class="btn btn-outline-primary btn-sm"><i class="fa fa-money-bill-wave"></i> Add Payment</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm" id="tablePaymentOutRelated">
+                        <thead class="table-light"><tr><th>No</th><th>Date</th><th class="text-end">Amount</th><th>Method</th><th>Type</th><th></th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
     <div class="card-footer">
         <button type="submit" class="btn btn-primary" id="buttonSave">Save</button>
@@ -52,6 +74,7 @@
                                 <th>No</th>
                                 <th>Date</th>
                                 <th>Amount</th>
+                                <th>Status</th>
                                 <th>Supplier</th>
                                 <th>Created By</th>
                                 <th>Updated By</th>
@@ -71,4 +94,55 @@
 @section Scripts {
     <script src="~/js/PurchaseOrder.js" asp-append-version="true"></script>
     <script src="~/js/Common.js" asp-append-version="true"></script>
+    <script src="~/js/PaymentOut.js" asp-append-version="true"></script>
+    <script>
+        // Payment out related helpers for PO page
+        $(document).ready(function(){
+            // open modal prefilled for PO
+            $('#btnAddPaymentOut').on('click', function(){
+                const poId = parseInt($('#purchaseOrderID').val()||'0',10);
+                if(!poId){ toastr.info('Save PO first'); return; }
+                const supplierName = $('#purchaseOrderHeaderBody').find('#selectSupplier option:selected').text() || '';
+                window.showPaymentOutModal($('#purchaseOrderHeaderBody').find('#supplierId').val()||$('#purchaseOrderHeaderBody').find('#purchaseOrderSupplierID').val()||0, supplierName, new Date().toISOString().slice(0,10), poId);
+            });
+
+            // load related payments when PO loaded
+            // intercept form load by PurchaseOrder JS via polling for purchaseOrderID change
+            function loadRelatedPayments(){
+                const poId = parseInt($('#purchaseOrderID').val()||'0',10);
+                if(!poId) { $('#tablePaymentOutRelated tbody').html('<tr><td colspan="6" class="text-center text-muted">No PO selected</td></tr>'); return; }
+                $.get('/PaymentOut/RelatedByPO',{ purchaseOrderId: poId }, function(list){
+                    let rows = (list||[]).map(p => `<tr><td>${p.no||''}</td><td>${(p.date||'').toString().substring(0,10)}</td><td class="text-end">${(Number(p.amount||0)).toFixed(2)}</td><td>${p.method||''}</td><td>${p.type||''}</td><td>${p.statusID==2?'<span class="badge bg-success">Submitted</span>':'<span class="badge bg-secondary">Draft</span>'}</td></tr>`).join('');
+                    $('#tablePaymentOutRelated tbody').html(rows || '<tr><td colspan="6" class="text-center text-muted">No payments</td></tr>');
+                }).fail(()=> $('#tablePaymentOutRelated tbody').html('<tr><td colspan="6" class="text-center text-muted">Failed load</td></tr>'));
+            }
+
+            // watch for PO id changes (simple interval) to refresh payments
+            let lastPo = null;
+            setInterval(function(){
+                const cur = $('#purchaseOrderID').val()||'';
+                if(cur !== lastPo){ lastPo = cur; loadRelatedPayments(); }
+            }, 800);
+
+            // initialize supplier filter for product selection
+            // try to load supplier list into filter dropdown
+            (function(){
+                let endpoints = ['/PaymentOut/GetSupplierList','/Product/GetSupplierList','/Customer/GetList'];
+                var supData = [];
+                for(var i=0;i<endpoints.length;i++){
+                    try{
+                        var resp = Common.GetData.Get(endpoints[i]);
+                        var list = (resp && resp.result && Array.isArray(resp.result)) ? resp.result : (Array.isArray(resp) ? resp : []);
+                        if(list && list.length>0){ supData = list; break; }
+                    }catch(e){}
+                }
+                $('#filterSupplier').append($('<option>').val('').text('All suppliers'));
+                (supData||[]).forEach(function(s){
+                    var id = s.id || s.ID || s.ID;
+                    var name = s.supplierName || s.SupplierName || s.name || s.Name || (s.SupplierName && s.SupplierName) || '-';
+                    $('#filterSupplier').append($('<option>').val(id).text(name));
+                });
+            })();
+        });
+    </script>
 }

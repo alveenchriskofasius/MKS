@@ -11,7 +11,8 @@ namespace API.Repository
         private readonly MKSTableContext _context;
         private readonly MKSSPContextProcedures _procedure;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private enum TradeStatus { Draft = 1, Approved = 2, Closed = 3 }
+        private enum TradeStatus { Draft = 1, PartialPaid = 2, Paid = 3 }
+        private static readonly HashSet<short> LockedStatuses = new HashSet<short> { (short)TradeStatus.PartialPaid, (short)TradeStatus.Paid };
         public PurchaseOrderRepository(MKSTableContext context, MKSSPContextProcedures procedure, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
@@ -35,19 +36,27 @@ namespace API.Repository
         }
         public async Task<object> GetSearchList()
         {
-            var list = await _context.Trades
-                .Where(t => t.TradeTypeID == 4)
-                .OrderByDescending(t => t.ID)
-                .Select(t => new
-                {
-                    id = t.ID,
-                    no = t.No,
-                    date = t.Date.ToString("yyyy-MM-dd"),
-                    amount = t.Amount,
-                    supplierName = _context.Customers.Where(c => c.ID == t.CustomerID).Select(c => c.Name).FirstOrDefault() ?? "-",
-                    createdBy = t.CreatedBy,
-                    updatedBy = t.UpdatedBy
-                }).ToListAsync();
+            var q = from t in _context.Trades
+                    where t.TradeTypeID == 4
+                    join c in _context.Customers on t.CustomerID equals c.ID into cgroup
+                    from cust in cgroup.DefaultIfEmpty()
+                    join l in _context.Lookups.Where(x => x.Entity == "PurchaseOrderStatus") on t.StatusID equals (short?)l.Key into lgroup
+                    from lp in lgroup.DefaultIfEmpty()
+                    orderby t.ID descending
+                    select new
+                    {
+                        id = t.ID,
+                        no = t.No,
+                        date = t.Date.ToString("yyyy-MM-dd"),
+                        amount = t.Amount,
+                        supplierName = cust != null ? cust.Name : "-",
+                        createdBy = t.CreatedBy,
+                        updatedBy = t.UpdatedBy,
+                        statusID = t.StatusID,
+                        status = lp != null ? lp.Name : null
+                    };
+
+            var list = await q.ToListAsync();
             return list;
         }
         public async Task<object> GetDetailListById(int id) => await _procedure.uspGetPurchaseOrderItemListAsync(id);
@@ -71,7 +80,8 @@ namespace API.Repository
                         CustomerID = model.SupplierID,
                         CreatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name,
                         Date = model.Date,
-                        StatusID = model.IsApproved ? (short)TradeStatus.Approved : (short)TradeStatus.Draft,
+                        // initially Draft
+                        StatusID = (short)TradeStatus.Draft,
                         TradeTypeID = 4,
                         CreatedAt = DateTime.Now,
                         Note = model.Note
@@ -82,12 +92,18 @@ namespace API.Repository
                 else
                 {
                     tradeEntity = await _context.Trades.FindAsync(model.ID) ?? throw new Exception("Purchase Order not found");
+
+                    // Prevent modification when PO already partially/fully paid
+                    if (tradeEntity.StatusID.HasValue && LockedStatuses.Contains(tradeEntity.StatusID.Value))
+                    {
+                        return new { success = false, result = "Purchase Order is locked and cannot be modified after payments have been submitted." };
+                    }
+
                     tradeEntity.Amount = model.PurchaseOrderDetails.Sum(x => x.Subtotal);
                     tradeEntity.CustomerID = model.SupplierID;
                     tradeEntity.UpdatedAt = DateTime.Now;
                     tradeEntity.UpdatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
                     tradeEntity.Date = model.Date;
-                    tradeEntity.StatusID = model.IsApproved ? (short)TradeStatus.Approved : (short)TradeStatus.Draft;
                     tradeEntity.Note = model.Note;
                     await _context.SaveChangesAsync();
                 }
@@ -113,6 +129,30 @@ namespace API.Repository
                     var result = await SaveDetail(d, tradeID);
                     if (!result.success) return result; // early return on failure
                 }
+
+                // Recalculate paid amount from PaymentOuts (only count submitted payments)
+                try
+                {
+                    var paid = await _context.PaymentOuts.Where(p => p.PurchaseOrderID == tradeID && p.StatusID == 2).Select(p => (decimal?)p.Amount).DefaultIfEmpty(0m).SumAsync();
+                    tradeEntity.PaidAmount = paid;
+                    // set status based on paid vs amount
+                    if (tradeEntity.PaidAmount >= tradeEntity.Amount)
+                        tradeEntity.StatusID = (short)TradeStatus.Paid;
+                    else if (tradeEntity.PaidAmount > 0)
+                        tradeEntity.StatusID = (short)TradeStatus.PartialPaid;
+                    else
+                        tradeEntity.StatusID = (short)TradeStatus.Draft;
+
+                    // if fully paid, mark locked
+                    if (tradeEntity.StatusID == (short)TradeStatus.Paid)
+                    {
+                        tradeEntity.IsLocked = true;
+                    }
+
+                    _context.Trades.Update(tradeEntity);
+                    await _context.SaveChangesAsync();
+                }
+                catch { /* ignore payment aggregation failures */ }
 
                 return new { success = true, id = tradeEntity.ID, no = tradeEntity.No, statusID = tradeEntity.StatusID, amount = tradeEntity.Amount };
             }
@@ -154,6 +194,13 @@ namespace API.Repository
             {
                 var trade = await _context.Trades.FindAsync(id);
                 if (trade == null) return new { success = false, result = "Purchase Order not found." };
+
+                // prevent delete when partially/fully paid
+                if (trade.StatusID.HasValue && LockedStatuses.Contains(trade.StatusID.Value))
+                {
+                    return new { success = false, result = "Cannot delete Purchase Order that has payments." };
+                }
+
                 var details = await _context.PurchaseOrderItems.Where(x => x.TradeID == id).ToListAsync();
                 if (details.Any()) _context.PurchaseOrderItems.RemoveRange(details);
                 _context.Trades.Remove(trade);
@@ -168,11 +215,39 @@ namespace API.Repository
             {
                 var detail = await _context.PurchaseOrderItems.FindAsync(id);
                 if (detail == null) return new { success = false, result = "Purchase Order item not found." };
+
+                var trade = await _context.Trades.FindAsync(detail.TradeID);
+                if (trade != null && trade.StatusID.HasValue && LockedStatuses.Contains(trade.StatusID.Value))
+                {
+                    return new { success = false, result = "Cannot delete item from Purchase Order that has payments." };
+                }
+
                 _context.PurchaseOrderItems.Remove(detail);
                 await _context.SaveChangesAsync();
                 return new { success = true };
             }
             catch (Exception e) { return new { success = false, result = e.Message }; }
+        }
+
+        // New: get purchase orders for a supplier
+        public async Task<object> GetListBySupplier(int supplierId)
+        {
+            // return only purchase orders with outstanding amount > 0 (not fully paid) and not Closed (StatusID != 3)
+            var list = await _context.Trades
+                .Where(t => t.TradeTypeID == 4 && t.CustomerID == supplierId && (t.StatusID == null || t.StatusID != 3))
+                .Select(t => new
+                {
+                    id = t.ID,
+                    no = t.No,
+                    date = t.Date.ToString("yyyy-MM-dd"),
+                    amount = t.Amount,
+                    // calculate paid using Sum on nullable decimal so EF can translate to SQL
+                    paid = _context.PurchasePayments.Where(p => p.PurchaseOrderID == t.ID).Select(p => (decimal?)p.AmountPaid).Sum()
+                })
+                .ToListAsync();
+
+            var filtered = list.Where(x => (x.amount - (x.paid ?? 0m)) > 0).Select(x => new { x.id, x.no, x.date, amount = x.amount, paid = x.paid, outstanding = x.amount - (x.paid ?? 0m) }).OrderByDescending(x => x.id).ToList();
+            return filtered;
         }
     }
 }

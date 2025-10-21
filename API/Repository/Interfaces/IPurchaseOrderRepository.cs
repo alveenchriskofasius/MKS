@@ -10,5 +10,7 @@ namespace API.Repository.Interfaces
         Task<object> Save(PurchaseOrderModel model);
         Task<object> Delete(int id);
         Task<object> DeleteItem(int id);
+        // New: get purchase orders by supplier
+        Task<object> GetListBySupplier(int supplierId);
     }
 }
