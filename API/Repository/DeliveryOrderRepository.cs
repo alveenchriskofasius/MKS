@@ -39,7 +39,21 @@ public class DeliveryOrderRepository : IDeliveryOrderRepository
         var q = _ctx.DeliveryOrders.AsQueryable();
         if (statusID.HasValue) q = q.Where(d => d.StatusID == statusID.Value);
         if (driverUserID.HasValue) q = q.Where(d => d.DriverUserID == driverUserID.Value);
-        var list = await q.OrderByDescending(d => d.ID).Select(d => new { d.ID, d.No, d.SalesOrderID, d.StatusID, d.DriverUserID, d.DeliveryAddress }).ToListAsync();
+        // include related SalesOrder and DriverUser to be able to return readable names/nos
+        var list = await q
+            .OrderByDescending(d => d.ID)
+            .Select(d => new
+            {
+                d.ID,
+                d.No,
+                d.SalesOrderID,
+                SalesOrderNo = d.SalesOrder != null ? d.SalesOrder.No : null,
+                d.StatusID,
+                d.DriverUserID,
+                DriverName = d.DriverUser != null ? d.DriverUser.Name : null,
+                d.DeliveryAddress
+            })
+            .ToListAsync();
         return list;
     }
 
