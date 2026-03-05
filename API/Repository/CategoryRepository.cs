@@ -5,51 +5,36 @@ using MitraKaryaSystem.Models;
 
 namespace API.Repository
 {
-    public class CategoryRepository : ICategoryRepository
+    public class CategoryRepository : BaseRepository, ICategoryRepository
     {
-        private readonly MKSTableContext _context;
-
-        public CategoryRepository(MKSTableContext context)
+        public CategoryRepository(MKSTableContext context, IHttpContextAccessor http)
+            : base(context, http)
         {
-            _context = context;
         }
+
         public async Task<object> DeleteCategory(int id)
         {
             try
             {
-                _context.Categories.Remove(await _context.Categories.FindAsync(id));
-                await _context.SaveChangesAsync();
+                var entity = await _context.Categories.FindAsync(id);
+                if (entity != null) _context.Categories.Remove(entity);
+                await SaveChangesAsync();
+                return new { success = true };
             }
             catch (Exception e)
             {
-                return Task.FromResult<object>(new
-                {
-                    success = false,
-                    error = e.Message
-                });
-
+                return CreateErrorResponse(e);
             }
-            return Task.FromResult<object>(new { success = true });
         }
+
         public async Task<CategoryModel> FillFormCategory(int id)
         {
-            Category? category = await _context.Categories.FindAsync(id);
-            CategoryModel? categoryModel = null;
-            if (category == null)
-            {
-                categoryModel = new CategoryModel();
-            }
-            else
-            {
-                categoryModel = new CategoryModel
-                {
-                    ID = category.ID,
-                    CategoryName = category.Name
-                };
-            }
-            return categoryModel;
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null) return new CategoryModel();
+            return new CategoryModel { ID = category.ID, CategoryName = category.Name };
         }
-        public async Task<object> GetCategoryList() => Task.FromResult<object>(await _context.Categories.Select(x => new { x.ID, CategoryName = x.Name }).ToListAsync());
+
+        public async Task<object> GetCategoryList() => await _context.Categories.AsNoTracking().Select(x => new { x.ID, CategoryName = x.Name }).ToListAsync();
 
         public async Task<object> SaveCategory(CategoryModel categoryModel)
         {
@@ -57,30 +42,22 @@ namespace API.Repository
             {
                 if (categoryModel.ID == 0)
                 {
-                    _context.Categories.Add(new Category
-                    {
-                        Name = categoryModel.CategoryName
-                    });
+                    _context.Categories.Add(new Category { Name = categoryModel.CategoryName });
                 }
                 else
                 {
-                    Category category = await _context.Categories.FindAsync(categoryModel.ID);
+                    var category = await _context.Categories.FindAsync(categoryModel.ID);
+                    if (category == null) return new { success = false, error = "Category not found" };
                     category.Name = categoryModel.CategoryName;
                     _context.Categories.Update(category);
                 }
-                await _context.SaveChangesAsync();
-
+                await SaveChangesAsync();
+                return new { success = true };
             }
             catch (Exception e)
             {
-                return Task.FromResult<object>(new
-                {
-                    success = false,
-                    error = e.Message
-                });
-
+                return CreateErrorResponse(e);
             }
-            return Task.FromResult<object>(new { success = true });
         }
     }
 }

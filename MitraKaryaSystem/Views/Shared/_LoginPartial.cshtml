@@ -1,11 +1,21 @@
 ﻿@using System.Security.Principal
 @using Microsoft.AspNetCore.Http
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
-<ul class="navbar-nav ml-auto">
-    <a class="dropdown-item has-icon ">
-        <i class="fas fa-user"></i> @User.Identity.Name
-    </a>
-    <a asp-controller="Auth" asp-action="Logout" class="dropdown-item has-icon text-danger">
-        <i class="fas fa-sign-out-alt"></i> Logout
-    </a>
+<ul class="navbar-nav ms-auto d-flex flex-row align-items-center gap-2">
+    @if (User?.Claims?.Any(c => string.Equals(c.Type, "Permission", StringComparison.OrdinalIgnoreCase) && string.Equals(c.Value, "Product", StringComparison.OrdinalIgnoreCase)) == true)
+    {
+        <li class="nav-item">
+            <a asp-controller="Stock" asp-action="Low" class="nav-link px-2" title="Low Stock">
+                <i class="fas fa-exclamation-triangle text-warning"></i>
+            </a>
+        </li>
+    }
+    <li class="nav-item">
+        <span class="nav-link px-2 text-muted"><i class="fas fa-user-circle me-1"></i>@User.Identity.Name</span>
+    </li>
+    <li class="nav-item">
+        <a asp-controller="Auth" asp-action="Logout" class="nav-link px-2 text-danger" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+        </a>
+    </li>
 </ul>

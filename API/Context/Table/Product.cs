@@ -33,5 +33,7 @@ public partial class Product
 
     public string Barcode { get; set; }
 
+    public int? LowStockThreshold { get; set; }
+
     public virtual ICollection<StockCountItem> StockCountItems { get; set; } = new List<StockCountItem>();
 }

@@ -12,5 +12,6 @@ namespace API.Repository.Interfaces
         Task<object> DeleteItem(int id);
         // New: get purchase orders by supplier
         Task<object> GetListBySupplier(int supplierId);
+        Task<object> ChangeStatus(int id, short statusId, string? reason);
     }
 }

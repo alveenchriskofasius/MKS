@@ -9,6 +9,7 @@
         public string? Description { get; set; }
         public decimal UnitPrice { get; set; }
         public int StockQuantity { get; set; }
+        public int? LowStockThreshold { get; set; }
         public short SupplierID { get; set; }
         public string? Barcode { get; set; }
     }

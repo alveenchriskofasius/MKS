@@ -20,5 +20,8 @@ namespace MitraKaryaSystem.Controllers
         public async Task<IActionResult> FillForm(int id) => PartialView("_CustomerModal", await _customerService.FillForm(id));
         [HttpPost]
         public async Task<JsonResult> Delete(int id) => Json(await _customerService.Delete(id));
+
+        [HttpGet]
+        public async Task<JsonResult> GetDepositBalance(int supplierId) => Json(await _customerService.GetDepositBalance(supplierId));
     }
 }

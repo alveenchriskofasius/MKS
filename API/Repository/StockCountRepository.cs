@@ -5,12 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Repository;
 
-public class StockCountRepository : IStockCountRepository
+public class StockCountRepository : BaseRepository, IStockCountRepository
 {
-    private readonly MKSTableContext _context;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    public StockCountRepository(MKSTableContext ctx, IHttpContextAccessor accessor)
-    { _context = ctx; _httpContextAccessor = accessor; }
+    public StockCountRepository(MKSTableContext ctx, IHttpContextAccessor accessor) : base(ctx, accessor) { }
 
     public async Task<StockCountModel> FillForm(int id)
     {
@@ -72,7 +69,7 @@ public class StockCountRepository : IStockCountRepository
         {
             model.Items ??= new();
             StockCount entity;
-            var user = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
+            var user = GetCurrentUserName();
             if (model.ID == 0)
             {
                 entity = new StockCount
@@ -85,7 +82,7 @@ public class StockCountRepository : IStockCountRepository
                     CreatedBy = user
                 };
                 await _context.AddAsync(entity);
-                await _context.SaveChangesAsync();
+                await SaveChangesAsync();
             }
             else
             {
@@ -95,14 +92,14 @@ public class StockCountRepository : IStockCountRepository
                 entity.AutoAdjust = model.AutoAdjust;
                 entity.UpdatedAt = DateTime.Now;
                 entity.UpdatedBy = user;
-                await _context.SaveChangesAsync();
+                await SaveChangesAsync();
             }
 
             // sync detail
             var existingIds = model.Items.Where(i => i.ID > 0).Select(i => i.ID).ToHashSet();
             var toRemove = _context.StockCountItems.Where(i => i.StockCountID == entity.ID && !existingIds.Contains(i.ID));
             _context.StockCountItems.RemoveRange(toRemove);
-            await _context.SaveChangesAsync();
+            await SaveChangesAsync();
 
             foreach (var d in model.Items)
             {
@@ -131,7 +128,7 @@ public class StockCountRepository : IStockCountRepository
                     _context.StockCountItems.Update(item);
                 }
             }
-            await _context.SaveChangesAsync();
+            await SaveChangesAsync();
 
             if (model.AutoAdjust)
             {
@@ -142,7 +139,7 @@ public class StockCountRepository : IStockCountRepository
         }
         catch (Exception ex)
         {
-            return new { success = false, result = ex.Message };
+            return CreateErrorResponse(ex);
         }
     }
 
@@ -155,10 +152,10 @@ public class StockCountRepository : IStockCountRepository
             var items = _context.StockCountItems.Where(x => x.StockCountID == id);
             _context.StockCountItems.RemoveRange(items);
             _context.StockCounts.Remove(entity);
-            await _context.SaveChangesAsync();
+            await SaveChangesAsync();
             return new { success = true };
         }
-        catch (Exception ex) { return new { success = false, result = ex.Message }; }
+        catch (Exception ex) { return CreateErrorResponse(ex); }
     }
 
     public async Task<object> DeleteItem(int id)
@@ -168,17 +165,27 @@ public class StockCountRepository : IStockCountRepository
             var item = await _context.StockCountItems.FindAsync(id);
             if (item == null) return new { success = false, result = "Item not found" };
             _context.StockCountItems.Remove(item);
-            await _context.SaveChangesAsync();
+            await SaveChangesAsync();
             return new { success = true };
         }
-        catch (Exception ex) { return new { success = false, result = ex.Message }; }
+        catch (Exception ex) { return CreateErrorResponse(ex); }
     }
 
     public async Task<object> AutoAdjust(int id)
     {
-        // Placeholder: Here you would create stock adjustment transactions.
-        // For now just recalc total diff value.
-        var totalDiffValue = await _context.StockCountItems.Where(x => x.StockCountID == id).SumAsync(i => (i.PhysicalQty - i.SystemQty) * i.UnitPrice);
-        return new { success = true, diffValue = totalDiffValue };
+        var items = await _context.StockCountItems.Where(x => x.StockCountID == id).ToListAsync();
+        foreach (var item in items)
+        {
+            var product = await _context.Products.FindAsync(item.ProductID);
+            if (product != null)
+            {
+                product.StockQuantity = item.PhysicalQty;
+                _context.Products.Update(product);
+            }
+        }
+        await SaveChangesAsync();
+
+        var totalDiffValue = items.Sum(i => (i.PhysicalQty - i.SystemQty) * i.UnitPrice);
+        return new { success = true, diffValue = totalDiffValue, adjustedCount = items.Count };
     }
 }

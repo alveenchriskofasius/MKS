@@ -10,4 +10,5 @@ public interface IPurchaseReturnRepository
     Task<object> Save(PurchaseReturnModel model);
     Task<object> Delete(int id);
     Task<object> DeleteItem(int id);
+    Task<object> ChangeStatus(int id, short statusId, string? reason);
 }

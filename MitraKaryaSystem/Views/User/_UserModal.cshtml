@@ -53,6 +53,15 @@
 
     </div>
 
+    @if (Model != null && Model.ID > 0)
+    {
+        <hr />
+        <div class="form-group">
+            <label class="form-label fw-bold">Assigned Roles</label>
+            <div id="userRolesContainer"><span class="text-muted">Loading roles...</span></div>
+        </div>
+    }
+
 </form>
 
 @section Scripts {

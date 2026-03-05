@@ -1,84 +1,108 @@
 @{
     ViewData["Title"] = "Purchase Order";
 }
-<div class="card">
-    <div class="card-header" style="background-color:#f0f0f0">
-        <div class="card-title"><h5>Purchase Order</h5></div>
-        <div class="card-tools">
-            <button type="button" id="buttonNew" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-circle-plus"></i> Add</button>
-            <button type="button" id="buttonSearch" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-        </div>
-    </div>
-    <div class="card-body">
-        <div class="card mb-3">
-            <div class="card-header">
-                <div class="card-title">
-                    <span class="badge rounded-pill text-bg-warning" id="purchaseOrderStatus">Draft</span>
-                </div>
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-cart-shopping fa-lg"></i>
+                <h5 class="mb-0">Purchase Order</h5>
             </div>
-            <div class="card-body" id="purchaseOrderHeaderBody"><!-- form partial will be loaded by JS --></div>
-        </div>
-        <div class="card mb-3">
-            <div class="card-body">
-                <div class="row mb-3">
-                    <label class="form-label col-sm-2">Supplier</label>
-                    <div class="col-md-4 col-lg-4">
-                        <select id="filterSupplier" class="form-control"></select>
-                    </div>
-                    <label class="form-label col-sm-2">Select Product</label>
-                    <div class="col-md-4 col-lg-4">
-                        <select class="form-control select2" id="selectProduct" autofocus></select>
-                    </div>
-                </div>
+            <div class="d-flex gap-2">
+                <button type="button" id="buttonNew" class="btn btn-sm btn-outline-light"><i class="fa-solid fa-plus"></i> New</button>
+                <button type="button" id="buttonSearch" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
             </div>
         </div>
-        <div id="purchaseOrderTableContainer">
-            @await Html.PartialAsync("_Table")
-        </div>
+        <div class="card-body">
+            <!-- Status & workflow -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="workflow-bar" id="poWorkflowBar">
+                    <div class="wf-step active" data-step="1"><span class="wf-dot"></span> Draft</div>
+                    <i class="fa fa-chevron-right wf-arrow"></i>
+                    <div class="wf-step" data-step="2"><span class="wf-dot"></span> Submitted</div>
+                    <i class="fa fa-chevron-right wf-arrow"></i>
+                    <div class="wf-step" data-step="3"><span class="wf-dot"></span> Approved</div>
+                </div>
+                <span class="badge-status badge-draft" id="purchaseOrderStatus">Draft</span>
+            </div>
 
-        <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div class="card-title">Payments</div>
-                <div>
-                    <button id="btnAddPaymentOut" class="btn btn-outline-primary btn-sm"><i class="fa fa-money-bill-wave"></i> Add Payment</button>
-                </div>
+            <!-- Form -->
+            <div class="card mb-3">
+                <div class="card-body" id="purchaseOrderHeaderBody"><!-- form partial will be loaded by JS --></div>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm" id="tablePaymentOutRelated">
-                        <thead class="table-light"><tr><th>No</th><th>Date</th><th class="text-end">Amount</th><th>Method</th><th>Type</th><th></th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
-    </div>
-    <div class="card-footer">
-        <button type="submit" class="btn btn-primary" id="buttonSave">Save</button>
-        <a class="btn btn-secondary" asp-action="Index" asp-controller="Home" id="buttonCancel">Cancel</a>
+            <!-- Product selection -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold">Supplier</label>
+                            <select id="filterSupplier" class="form-control"></select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold">Add Product</label>
+                            <select class="form-control select2" id="selectProduct" autofocus></select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items table -->
+            <div id="purchaseOrderTableContainer">
+                @await Html.PartialAsync("_Table")
+            </div>
+
+            <!-- Payments -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold"><i class="fa fa-money-bill-wave me-1 text-muted"></i> Payments</span>
+                    <button id="btnAddPaymentOut" class="btn btn-outline-primary btn-sm"><i class="fa fa-plus"></i> Add Payment</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover" id="tablePaymentOutRelated">
+                            <thead><tr><th>No</th><th>Date</th><th class="text-end">Amount</th><th>Method</th><th>Type</th><th class="text-center">Action</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="card-footer d-flex gap-2 flex-wrap">
+            <button type="submit" class="btn btn-primary" id="buttonSave"><i class="fa fa-save"></i> Save</button>
+            @if (User.IsInRole("Admin"))
+            {
+                <button type="button" class="btn btn-outline-info" id="buttonSubmitPO"><i class="fa fa-paper-plane"></i> Submit</button>
+                <button type="button" class="btn btn-outline-success" id="buttonApprovePO"><i class="fa fa-check"></i> Approve</button>
+                <button type="button" class="btn btn-outline-danger" id="buttonRejectPO"><i class="fa fa-xmark"></i> Reject</button>
+            }
+            <button type="button" class="btn btn-outline-primary" id="buttonCreateStockIn"><i class="fa fa-boxes-stacked"></i> Create Stock In</button>
+            <a class="btn btn-secondary ms-auto" asp-action="Index" asp-controller="Home" id="buttonCancel"><i class="fa fa-arrow-left"></i> Back</a>
+        </div>
     </div>
 </div>
 <!-- Search Modal -->
 <div class="modal fade" id="searchModal" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
-    <div class="modal-dialog  modal-xl">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header" style="background-color:#18864A">
-                <h5 class="modal-title text-white">Purchase Order Information</h5>
+            <div class="modal-header mks-modal-header">
+                <h5 class="modal-title"><i class="fa fa-magnifying-glass me-2"></i>Search Purchase Orders</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover" cellpadding="0" cellspacing="0" style="text-align:center" width="100%" id="tableSearchPO">
+                    <table class="table table-sm table-hover" cellpadding="0" cellspacing="0" width="100%" id="tableSearchPO">
                         <thead>
                             <tr>
                                 <th>No</th>
                                 <th>Date</th>
-                                <th>Amount</th>
+                                <th class="text-end">Amount</th>
                                 <th>Status</th>
                                 <th>Supplier</th>
                                 <th>Created By</th>
                                 <th>Updated By</th>
-                                <th>Action</th>
+                                <th class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody></tbody>

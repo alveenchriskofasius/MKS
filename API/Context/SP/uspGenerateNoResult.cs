@@ -8,7 +8,7 @@ namespace API.Context.SP
 {
     public partial class uspGenerateNoResult
     {
-        [StringLength(20)]
-        public string NewPONumber { get; set; }
+        [StringLength(30)]
+        public string NewNumber { get; set; }
     }
 }

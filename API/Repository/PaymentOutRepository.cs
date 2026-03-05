@@ -144,7 +144,7 @@ public class PaymentOutRepository : IPaymentOutRepository
             try
             {
                 var gen = await _sp.uspGenerateNoAsync("POT", req.Date);
-                no = gen.FirstOrDefault()?.NewPONumber ?? $"POT-{DateTime.Now:yyyyMMddHHmmssfff}";
+                no = gen.FirstOrDefault()?.NewNumber ?? $"POT-{DateTime.Now:yyyyMMddHHmmssfff}";
             }
             catch
             {

@@ -72,12 +72,16 @@ builder.Services.AddScoped<ISalesInvoiceRepository, SalesInvoiceRepository>();
 builder.Services.AddScoped<ISalesInvoiceService, SalesInvoiceService>();
 builder.Services.AddScoped<IPaymentOutRepository, PaymentOutRepository>();
 builder.Services.AddScoped<IPaymentOutService, PaymentOutService>();
+// POS
+builder.Services.AddScoped<IPosService, PosService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddScoped<API.Services.IAuditService, API.Services.AuditService>();
+builder.Services.AddScoped<API.Services.IStockLedgerService, API.Services.StockLedgerService>();
 builder.Services.AddScoped<MKSSPContextProcedures>();
-builder.Services.AddDbContext<MKSTableContext>(options =>
+builder.Services.AddDbContextPool<MKSTableContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("MKS"));
-}, ServiceLifetime.Scoped);
+}, poolSize: 32);
 builder.Services.AddDbContext<MKSSPContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("MKS"));
@@ -90,6 +94,9 @@ builder.Services.AddAuthorization(options =>
         .RequireAuthenticatedUser()
         .Build();
 });
+
+// Add in-memory cache for small reference data
+builder.Services.AddMemoryCache();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -34,5 +34,10 @@ namespace API.Services
         {
             return await _repository.GetListModel();
         }
+
+        public async Task<object> GetDepositBalance(int supplierId)
+        {
+            return await _repository.GetDepositBalance(supplierId);
+        }
     }
 }

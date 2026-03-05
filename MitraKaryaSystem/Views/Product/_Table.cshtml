@@ -1,29 +1,27 @@
-﻿<div class="col-12">
-    <div class="card">
-        <div class="card-header" style="background-color:#f0f0f0">
-            <div class="card-title">
-                <b> Product </b>
+﻿<div class="col-12 fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-cubes-stacked fa-lg"></i>
+                <h5 class="mb-0">Products</h5>
             </div>
-            <div class="card-tools">
-                <a class="btn btn-primary" asp-action="Form" asp-controller="Product" id="buttonAdd"><i class="fa-solid fa-file-circle-plus"></i> Add</a>
-            </div>
+            <a class="btn btn-sm btn-outline-light" asp-action="Form" asp-controller="Product" id="buttonAdd"><i class="fa-solid fa-plus"></i> Add Product</a>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover" cellpadding="0" cellspacing="0" style="text-align:center" width="100%" id="tableProduct">
+                <table class="table table-sm table-hover" width="100%" id="tableProduct">
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>Category</th>
                             <th>Unit</th>
-                            <th>Price</th>
-                            <th>Stock</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-end">Stock</th>
                             <th>Supplier</th>
-                            <th>Action</th>
+                            <th class="text-center" style="width:120px">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>

@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
+    @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+    <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
     <link href="https://cdn.datatables.net/v/bs5/dt-1.13.7/r-2.5.0/sl-1.7.0/datatables.min.css" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css">
@@ -13,6 +15,7 @@
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="~/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="~/css/site-custom.css" asp-append-version="true" />
     <style>
         .asterisk {
             color: red;
@@ -40,7 +43,7 @@
         </nav>
         <!-- /.navbar -->
         <!-- Main Sidebar Container -->
-        <aside class="main-sidebar sidebar-light-primary" style=" background-color:skyblue" elevation-4">
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <a asp-action="Index" asp-controller="Home" class="navbar-brand brand-link">
                 <img src="~/dist/image/logo.jpg" class="brand-image img-circle elevation-2">
                 <span class="brand-text font-weight-light">@ViewData["Title"]</span>
@@ -76,7 +79,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
     <script src="https://cdn.datatables.net/v/bs5/dt-1.13.7/r-2.5.0/sl-1.7.0/datatables.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="~/js/Common.js" asp-append-version="true"></script>
     <script src="~/dist/js/adminlte.js"></script>
+    <script src="~/js/shared/DataTable.js" asp-append-version="true"></script>
     <script src="~/js/PaymentOut.js" asp-append-version="true"></script>
     <!-- AdminLTE -->
     @await RenderSectionAsync("Scripts", required: false)

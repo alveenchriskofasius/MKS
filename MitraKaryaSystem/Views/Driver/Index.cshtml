@@ -1,35 +1,36 @@
 @{
     ViewData["Title"] = "Driver Tasks";
 }
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div class="card-title"><b>My Delivery Tasks</b></div>
-                <div>
-                    <select id="filterTaskStatus" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        <option value="2">Assigned</option>
-                        <option value="3">On Route</option>
-                        <option value="4">Delivered</option>
-                    </select>
-                </div>
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-truck-fast fa-lg"></i>
+                <h5 class="mb-0">My Delivery Tasks</h5>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover" id="tableDriverTasks">
-                        <thead>
-                        <tr>
-                            <th>DO No</th>
-                            <th>SO ID</th>
-                            <th>Status</th>
-                            <th>Address</th>
-                            <th>Action</th>
-                        </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+            <div>
+                <select id="filterTaskStatus" class="form-select form-select-sm" style="min-width:140px">
+                    <option value="">All Status</option>
+                    <option value="2">Assigned</option>
+                    <option value="3">On Route</option>
+                    <option value="4">Delivered</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle" id="tableDriverTasks" style="width:100%">
+                    <thead class="table-light">
+                    <tr>
+                        <th>DO No</th>
+                        <th>SO ID</th>
+                        <th>Status</th>
+                        <th>Address</th>
+                        <th style="width:100px" class="text-center">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>

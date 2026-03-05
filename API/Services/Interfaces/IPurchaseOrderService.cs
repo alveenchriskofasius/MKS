@@ -11,5 +11,6 @@ namespace API.Services.Interfaces
         Task<object> Delete(int id);
         Task<object> DeleteItem(int id);
         Task<object> GetListBySupplier(int supplierId);
+        Task<object> ChangeStatus(int id, short statusId, string? reason);
     }
 }

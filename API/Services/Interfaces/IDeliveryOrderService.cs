@@ -1,5 +1,6 @@
 using API.Models;
 namespace API.Services.Interfaces;
+
 public interface IDeliveryOrderService
 {
     Task<object> CreateFromSalesOrder(int salesOrderID);

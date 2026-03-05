@@ -53,5 +53,25 @@ namespace API.Services
         {
             return await _repository.ScanBarcode(barcode);
         }
+
+        public async Task<object> Submit(int id)
+        {
+            return await _repository.Submit(id);
+        }
+
+        public async Task<object> Verify(int id)
+        {
+            return await _repository.Verify(id);
+        }
+
+        public async Task<object> CreateFromPurchaseOrder(int poId)
+        {
+            return await _repository.CreateFromPurchaseOrder(poId);
+        }
+
+        public async Task<object> GetApprovedPurchaseOrders()
+        {
+            return await _repository.GetApprovedPurchaseOrders();
+        }
     }
 }

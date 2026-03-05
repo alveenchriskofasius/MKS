@@ -18,14 +18,17 @@ namespace API.Repository
         {
             try
             {
-                _context.Customers.Remove(await _context.Customers.FindAsync(id));
+                var customer = await _context.Customers.FindAsync(id);
+                if (customer == null)
+                    return new { success = false, error = "Customer not found" };
+                _context.Customers.Remove(customer);
                 await _context.SaveChangesAsync();
             }
             catch (Exception e)
             {
-                return Task.FromResult<object>(new { success = false, error = e.Message });
+                return new { success = false, error = e.Message };
             }
-            return Task.FromResult<object>(new { success = true });
+            return new { success = true };
         }
 
         public async Task<CustomerModel> FillForm(int id)
@@ -96,9 +99,18 @@ namespace API.Repository
             }
             catch (Exception e)
             {
-                return Task.FromResult<object>(new { success = false, error = e.Message });
+                return new { success = false, error = e.Message };
             }
-            return Task.FromResult<object>(new { success = true });
+            return new { success = true };
+        }
+
+        public async Task<object> GetDepositBalance(int supplierId)
+        {
+            var deposit = await _context.CustomerDeposits
+                .FirstOrDefaultAsync(d => d.SupplierID == supplierId);
+            if (deposit == null)
+                return new { supplierId, balance = 0m };
+            return new { supplierId, balance = deposit.Amount };
         }
     }
 }

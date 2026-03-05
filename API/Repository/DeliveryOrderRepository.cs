@@ -4,6 +4,7 @@ using API.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Repository;
+
 public class DeliveryOrderRepository : IDeliveryOrderRepository
 {
     private readonly MKSTableContext _ctx; private readonly IHttpContextAccessor _http;
@@ -78,8 +79,22 @@ public class DeliveryOrderRepository : IDeliveryOrderRepository
         };
         if (!valid) return new { success = false, result = "Invalid status transition" };
         d.StatusID = (short)target; d.UpdatedAt = DateTime.Now; d.UpdatedBy = userName; if (target == DeliveryOrderStatus.Delivered) d.DeliveredAt = DateTime.Now; _ctx.DeliveryOrders.Update(d); await _ctx.SaveChangesAsync();
-        // Auto-complete Sales Order when delivered
-        if (target == DeliveryOrderStatus.Delivered) { var so = await _ctx.Trades.FindAsync(d.SalesOrderID); if (so != null) { so.StatusID = (short)TradeStatus.Completed; so.IsLocked = true; _ctx.Trades.Update(so); await _ctx.SaveChangesAsync(); } }
+        // Auto-complete Sales Order when delivered (only if not in a return status)
+        if (target == DeliveryOrderStatus.Delivered)
+        {
+            var so = await _ctx.Trades.FindAsync(d.SalesOrderID);
+            if (so != null)
+            {
+                var returnStatuses = new HashSet<short> { (short)TradeStatus.PartialRefund, (short)TradeStatus.Refund, (short)TradeStatus.Exchange, (short)TradeStatus.PartialExchange };
+                if (!returnStatuses.Contains(so.StatusID ?? 0))
+                {
+                    so.StatusID = (short)TradeStatus.Completed;
+                }
+                so.IsLocked = true;
+                _ctx.Trades.Update(so);
+                await _ctx.SaveChangesAsync();
+            }
+        }
         return new { success = true };
     }
 }

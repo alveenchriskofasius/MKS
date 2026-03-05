@@ -31,7 +31,15 @@ namespace MitraKaryaSystem.Controllers
             return PartialView("_Form", salesOrder);
         }
         [HttpPost]
-        public async Task<JsonResult> Save(SalesOrderModel salesOrder) => Json(await _salesOrderService.Save(salesOrder));
+        public async Task<JsonResult> Save([FromBody] SalesOrderModel salesOrder)
+        {
+            // basic guard: if details expected but missing when ID=0, indicate error early
+            if (salesOrder.ID == 0 && (salesOrder.SalesOrderDetails == null || salesOrder.SalesOrderDetails.Count == 0))
+            {
+                return Json(new { success = false, result = "SalesOrderDetails empty" });
+            }
+            return Json(await _salesOrderService.Save(salesOrder));
+        }
         public async Task<JsonResult> FillGrid() => Json(await _salesOrderService.GetSearchList());
         public async Task<JsonResult> GetDetailListById(int id) => Json(await _salesOrderService.GetSalesOrderDetailById(id));
         public async Task<object> DeleteItem(int id) => Json(await _salesOrderService.DeleteProductById(id));

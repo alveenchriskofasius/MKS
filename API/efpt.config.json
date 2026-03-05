@@ -1,20 +1,27 @@
 ﻿{
-   "CodeGenerationMode": 4,
+   "CodeGenerationMode": 5,
    "ContextClassName": "MKSTableContext",
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
-   "MinimumProductVersion": "2.6.1186",
+   "IrregularWords": null,
+   "MinimumProductVersion": "2.6.1301",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Context\/Table",
+   "PluralRules": null,
    "PreserveCasingWithRegex": true,
    "ProjectRootNamespace": "API",
    "Schemas": null,
    "SelectedHandlebarsLanguage": 2,
    "SelectedToBeGenerated": 0,
+   "SingularRules": null,
    "T4TemplatePath": null,
    "Tables": [
+      {
+         "Name": "[dbo].[AuditLog]",
+         "ObjectType": 0
+      },
       {
          "Name": "[dbo].[Category]",
          "ObjectType": 0
@@ -41,6 +48,10 @@
       },
       {
          "Name": "[dbo].[Lookup]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Numbering]",
          "ObjectType": 0
       },
       {
@@ -97,6 +108,10 @@
       },
       {
          "Name": "[dbo].[StockInItem]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[StockLedger]",
          "ObjectType": 0
       },
       {

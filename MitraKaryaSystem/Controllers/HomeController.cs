@@ -14,16 +14,19 @@ namespace MitraKaryaSystem.Controllers
         private readonly ISalesOrderService _salesOrderService;
         private readonly IProductService _productService;
         private readonly IDeliveryOrderService _deliveryOrderService;
+        private readonly IPurchaseOrderService _purchaseOrderService;
 
         public HomeController(ILogger<HomeController> logger,
                               ISalesOrderService salesOrderService,
                               IProductService productService,
-                              IDeliveryOrderService deliveryOrderService)
+                              IDeliveryOrderService deliveryOrderService,
+                              IPurchaseOrderService purchaseOrderService)
         {
             _logger = logger;
             _salesOrderService = salesOrderService;
             _productService = productService;
             _deliveryOrderService = deliveryOrderService;
+            _purchaseOrderService = purchaseOrderService;
         }
 
         public IActionResult Index() => View();
@@ -88,23 +91,9 @@ namespace MitraKaryaSystem.Controllers
             if (IsDriver()) return Json(new { success = false, result = "Access denied" });
             try
             {
-                var list = await _productService.GetProductList();
-                // only return low stock items (threshold 5) to avoid fetching full list on client
-                var low = new List<object>();
-                if (list is System.Collections.IEnumerable rows)
-                {
-                    foreach (var r in rows)
-                    {
-                        if (r == null) continue;
-                        var t = r.GetType();
-                        var stockProp = t.GetProperty("StockQuantity") ?? t.GetProperty("stockQuantity");
-                        if (stockProp == null) continue;
-                        var stockVal = stockProp.GetValue(r);
-                        if (stockVal == null) continue;
-                        if (int.TryParse(stockVal.ToString(), out var stock) && stock <= 5) low.Add(r);
-                    }
-                }
-                return Json(new { success = true, result = low });
+                // ask service for only low stock products (threshold5)
+                var list = await _productService.GetLowStockProductList(5);
+                return Json(new { success = true, result = list });
             }
             catch (Exception ex)
             {
@@ -131,6 +120,35 @@ namespace MitraKaryaSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PendingDeliveryOrders failed");
+                return Json(new { success = false, result = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> PendingPurchaseOrders()
+        {
+            if (IsDriver()) return Json(new { success = false, result = "Access denied" });
+            try
+            {
+                var list = await _purchaseOrderService.GetSearchList();
+                int pending = 0;
+                if (list is System.Collections.IEnumerable rows)
+                {
+                    foreach (var r in rows)
+                    {
+                        if (r == null) continue;
+                        var statusProp = r.GetType().GetProperty("statusID") ?? r.GetType().GetProperty("StatusID");
+                        if (statusProp == null) continue;
+                        var val = statusProp.GetValue(r);
+                        if (val != null && short.TryParse(val.ToString(), out var sid) && sid == 2)
+                            pending++;
+                    }
+                }
+                return Json(new { success = true, count = pending, result = list });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PendingPurchaseOrders failed");
                 return Json(new { success = false, result = ex.Message });
             }
         }

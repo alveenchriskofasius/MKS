@@ -6,11 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Repository
 {
-    public class SalesOrderRepository : ISalesOrderRepository
+    public class SalesOrderRepository : BaseRepository, ISalesOrderRepository
     {
-        private readonly MKSTableContext _context;
         private readonly MKSSPContextProcedures _procedure;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private enum TradeStatus
         {
             Draft = 1,
@@ -23,11 +21,44 @@ namespace API.Repository
             Completed = 8 // DO delivered / finalized
         }
         private static readonly HashSet<short> LockedStatuses = new HashSet<short> { (short)TradeStatus.Paid, (short)TradeStatus.PartialRefund, (short)TradeStatus.Refund, (short)TradeStatus.Exchange, (short)TradeStatus.PartialExchange, (short)TradeStatus.Completed };
+
         public SalesOrderRepository(MKSTableContext context, MKSSPContextProcedures procedures, IHttpContextAccessor httpContextAccessor)
+            : base(context, httpContextAccessor)
         {
-            _context = context;
             _procedure = procedures;
-            _httpContextAccessor = httpContextAccessor;
+        }
+
+        // Helper: apply payment-related state changes to a trade
+        private void ApplyTradePaymentState(Trade tradeEntity, bool isPaid)
+        {
+            tradeEntity.StatusID = isPaid ? (short)TradeStatus.Paid : (short)TradeStatus.Draft;
+            if (isPaid)
+            {
+                tradeEntity.PaidAmount = tradeEntity.Amount;
+            }
+            if (tradeEntity.StatusID == (short)TradeStatus.Paid || tradeEntity.StatusID == (short)TradeStatus.Completed)
+            {
+                tradeEntity.IsLocked = true;
+            }
+        }
+
+        // Helper: update a linked invoice's paid amount/status based on SO
+        private async Task UpdateLinkedInvoiceAsync(Trade soTrade)
+        {
+            var linkedInvoice = await _context.Trades.FirstOrDefaultAsync(t => t.TradeTypeID == 3 && t.Note == $"SO:{soTrade.ID}");
+            if (linkedInvoice != null)
+            {
+                var soPaid = soTrade.PaidAmount ?? 0m;
+                var invPaid = Math.Min(soPaid, linkedInvoice.Amount);
+                linkedInvoice.PaidAmount = invPaid;
+                if (invPaid >= linkedInvoice.Amount) linkedInvoice.StatusID = 4; // Paid
+                else if (invPaid > 0) linkedInvoice.StatusID = 3; // Partially Paid
+                else linkedInvoice.StatusID = 1; // Draft
+                linkedInvoice.UpdatedAt = DateTime.Now;
+                linkedInvoice.UpdatedBy = GetCurrentUserName();
+                _context.Trades.Update(linkedInvoice);
+                await SaveChangesAsync();
+            }
         }
 
         public async Task<object> Delete(int id)
@@ -35,38 +66,68 @@ namespace API.Repository
             try
             {
                 Trade trade = await _context.Trades.FindAsync(id);
-                var items = await _context.SalesOrderItems.Where(x => x.TradeID == id).ToListAsync();
                 if (trade == null)
                 {
-                    return new { success = false, result = "Stock In item not found." };
+                    return new { success = false, result = "Sales Order not found." };
+                }
+                // Guard: prevent delete if linked records exist
+                if (await _context.PaymentIns.AnyAsync(p => p.SalesOrderID == id))
+                    return new { success = false, result = "Cannot delete: Sales Order has linked Payment In records." };
+                if (await _context.DeliveryOrders.AnyAsync(d => d.SalesOrderID == id))
+                    return new { success = false, result = "Cannot delete: Sales Order has a linked Delivery Order." };
+                if (await _context.Trades.AnyAsync(t => t.TradeTypeID == 3 && t.Note == $"SO:{id}"))
+                    return new { success = false, result = "Cannot delete: Sales Order has a linked Sales Invoice." };
+                if (await _context.Trades.AnyAsync(t => t.TradeTypeID == 5 && t.Note != null && t.Note.Contains($"SO:{id}")))
+                    return new { success = false, result = "Cannot delete: Sales Order has linked Sales Return records." };
+
+                var items = await _context.SalesOrderItems.Where(x => x.TradeID == id).ToListAsync();
+                // Restore stock for each item before deleting
+                foreach (var item in items)
+                {
+                    var product = await _context.Products.FindAsync(item.ProductID);
+                    if (product != null)
+                    {
+                        product.StockQuantity += item.Quantity;
+                        _context.Products.Update(product);
+                    }
                 }
                 _context.SalesOrderItems.RemoveRange(items);
                 _context.Trades.Remove(trade);
-                await _context.SaveChangesAsync();
+                await SaveChangesAsync();
+                return new { success = true };
             }
             catch (Exception e)
             {
-                await Task.FromResult<object>(new { success = false, result = e.Message });
+                return CreateErrorResponse(e);
             }
-            return new { success = true };
         }
         public async Task<object> DeleteProductById(int id)
         {
             try
             {
-                var product = await _context.SalesOrderItems.FindAsync(id);
-                if (product == null)
+                var item = await _context.SalesOrderItems.FindAsync(id);
+                if (item == null)
                 {
                     return new { success = false, result = "Sales Order item not found." };
                 }
-                _context.SalesOrderItems.Remove(product);
-                await _context.SaveChangesAsync();
+                // Restore stock before removing item
+                if (item.ProductID.HasValue)
+                {
+                    var product = await _context.Products.FindAsync(item.ProductID.Value);
+                    if (product != null)
+                    {
+                        product.StockQuantity += item.Quantity;
+                        _context.Products.Update(product);
+                    }
+                }
+                _context.SalesOrderItems.Remove(item);
+                await SaveChangesAsync();
+                return new { success = true };
             }
             catch (Exception e)
             {
-                await Task.FromResult<object>(new { success = false, result = e.Message });
+                return CreateErrorResponse(e);
             }
-            return new { success = true };
         }
         public async Task<SalesOrderModel> FillForm(int id)
         {
@@ -97,6 +158,36 @@ namespace API.Repository
         public async Task<object> GetSalesOrderDetailById(int id)
         {
             var raw = await _procedure.uspGetSalesOrderItemListAsync(id); // original SP results
+            bool usedFallback = false;
+            if (raw == null || raw.Count == 0)
+            {
+                usedFallback = true;
+                var fallback = await _context.SalesOrderItems
+                    .Where(i => i.TradeID == id)
+                    .Join(_context.Products,
+                          i => i.ProductID,
+                          p => p.ID,
+                          (i, p) => new
+                          {
+                              ID = i.ID,
+                              ProductID = p.ID,
+                              Product = p.Name,
+                              Quantity = i.Quantity,
+                              UnitPrice = p.UnitPrice,
+                              SubTotal = (decimal?)(p.UnitPrice * i.Quantity)
+                          })
+                    .ToListAsync();
+                // replace raw with lightweight pseudo-results (anonymous objects) so later projection still works
+                raw = fallback.Select(f => new uspGetSalesOrderItemListResult
+                {
+                    ID = f.ID,
+                    ProductID = f.ProductID,
+                    Product = f.Product,
+                    Quantity = f.Quantity,
+                    UnitPrice = f.UnitPrice,
+                    SubTotal = f.SubTotal ?? 0m
+                }).ToList();
+            }
             var ids = raw.Select(r => r.ID).ToList();
             var entities = await _context.SalesOrderItems.Where(x => ids.Contains(x.ID)).ToListAsync();
             var enriched = raw.Select(r =>
@@ -107,13 +198,7 @@ namespace API.Repository
                 int qtyExchanged = ent?.QtyExchanged ?? 0;
                 int remaining = qtySold - (qtyRefunded + qtyExchanged);
                 if (remaining < 0) remaining = 0;
-                // Try get product id from SP result (property naming may differ)
-                int productId = 0;
-                try
-                {
-                    productId = (int)(r.GetType().GetProperty("ProductID")?.GetValue(r) ?? r.GetType().GetProperty("ProductId")?.GetValue(r) ?? 0);
-                }
-                catch { }
+                int productId = r.ProductID ?? 0;
                 return new
                 {
                     id = r.ID,
@@ -124,7 +209,8 @@ namespace API.Repository
                     subTotal = r.SubTotal,
                     qtyRefunded,
                     qtyExchanged,
-                    remainingQty = remaining
+                    remainingQty = remaining,
+                    isFallback = usedFallback
                 };
             }).ToList();
             return new { result = enriched };
@@ -149,18 +235,18 @@ namespace API.Repository
         }
         public async Task<object> GetSearchList()
         {
-            var q = from t in _context.Trades
+            var q = from t in _context.Trades.AsNoTracking()
                     where t.TradeTypeID == 2
-                    join c in _context.Customers on t.CustomerID equals c.ID into cgroup
+                    join c in _context.Customers.AsNoTracking() on t.CustomerID equals c.ID into cgroup
                     from cust in cgroup.DefaultIfEmpty()
-                    join l in _context.Lookups.Where(x => x.Entity == "SalesOrderStatus") on t.StatusID equals (short?)l.Key into lgroup
+                    join l in _context.Lookups.Where(x => x.Entity == "SalesOrderStatus").AsNoTracking() on t.StatusID equals (short?)l.Key into lgroup
                     from ls in lgroup.DefaultIfEmpty()
                     orderby t.ID descending
                     select new
                     {
                         id = t.ID,
                         no = t.No,
-                        date = t.Date.ToString("yyyy-MM-dd"),
+                        date = t.Date, // return DateTime, format on client
                         amount = t.Amount,
                         customerName = cust != null ? cust.Name : "-",
                         createdBy = t.CreatedBy,
@@ -182,23 +268,48 @@ namespace API.Repository
                 if (salesOrder.ID == 0)
                 {
                     var noResult = await _procedure.uspGenerateNoAsync("SO", salesOrder.Date);
-                    var generatedNo = noResult.FirstOrDefault()?.NewPONumber ?? string.Empty;
+                    var generatedNo = noResult.FirstOrDefault()?.NewNumber ?? string.Empty;
+
+                    // Fallback / uniqueness assurance: if SP returns empty or existing no, build sequential number based on date.
+                    if (string.IsNullOrWhiteSpace(generatedNo) || await _context.Trades.AnyAsync(t => t.No == generatedNo))
+                    {
+                        string prefix = "SO" + salesOrder.Date.ToString("yyMMdd");
+                        // collect existing sequences for today
+                        var existingSeqParts = await _context.Trades
+                            .Where(t => t.TradeTypeID == 2 && t.No.StartsWith(prefix))
+                            .Select(t => t.No.Substring(prefix.Length))
+                            .ToListAsync();
+                        int maxSeq = existingSeqParts
+                            .Select(s => int.TryParse(s, out var num) ? num : 0)
+                            .DefaultIfEmpty(0)
+                            .Max();
+                        generatedNo = prefix + (maxSeq + 1).ToString("D2"); // keep 2 digits like sample (..03)
+                        int safety = 0;
+                        while (await _context.Trades.AnyAsync(t => t.No == generatedNo) && safety < 10)
+                        {
+                            maxSeq++;
+                            generatedNo = prefix + (maxSeq).ToString("D2");
+                            safety++;
+                        }
+                    }
 
                     tradeEntity = new Trade
                     {
                         No = generatedNo,
                         Amount = salesOrder.SalesOrderDetails.Sum(x => x.Subtotal),
                         CustomerID = salesOrder.CustomerID,
-                        CreatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name,
+                        CreatedBy = GetCurrentUserName(),
                         Date = salesOrder.Date,
-                        StatusID = salesOrder.IsPaid ? (short)TradeStatus.Paid : (short)TradeStatus.Draft,
                         TradeTypeID = 2,
                         CreatedAt = DateTime.Now,
-                        Note = salesOrder.Note,
-                        PaidAmount = salesOrder.IsPaid ? salesOrder.SalesOrderDetails.Sum(x => x.Subtotal) : 0
+                        Note = salesOrder.Note
                     };
+
+                    // apply payment state
+                    ApplyTradePaymentState(tradeEntity, salesOrder.IsPaid);
+
                     await _context.Trades.AddAsync(tradeEntity);
-                    await _context.SaveChangesAsync();
+                    await SaveChangesAsync();
                 }
                 else
                 {
@@ -212,22 +323,24 @@ namespace API.Repository
                     {
                         return new { success = false, result = "Sales Order is locked and cannot be modified (status already finalized / has returns)." };
                     }
+
                     tradeEntity.Amount = salesOrder.SalesOrderDetails.Sum(x => x.Subtotal);
                     tradeEntity.CustomerID = salesOrder.CustomerID;
                     tradeEntity.UpdatedAt = DateTime.Now;
-                    tradeEntity.UpdatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
+                    tradeEntity.UpdatedBy = GetCurrentUserName();
                     tradeEntity.Date = salesOrder.Date;
-                    tradeEntity.StatusID = salesOrder.IsPaid ? (short)TradeStatus.Paid : (short)TradeStatus.Draft;
                     tradeEntity.Note = salesOrder.Note;
-                    if (tradeEntity.StatusID == (short)TradeStatus.Paid || tradeEntity.StatusID == (short)TradeStatus.Completed)
-                    {
-                        tradeEntity.IsLocked = true; // mark lock for persistence
-                    }
+
+                    // apply payment state
+                    ApplyTradePaymentState(tradeEntity, salesOrder.IsPaid);
+
                     if (salesOrder.IsPaid)
                     {
                         tradeEntity.PaidAmount = tradeEntity.Amount; // mark fully paid when saving with isPay
                     }
-                    await _context.SaveChangesAsync();
+
+                    _context.Trades.Update(tradeEntity);
+                    await SaveChangesAsync();
                 }
 
                 int tradeID = tradeEntity.ID;
@@ -242,20 +355,23 @@ namespace API.Repository
                     }
                 }
 
-                // Propagate SO payment state to linked Sales Invoice if exists
-                var linkedInvoice = await _context.Trades.FirstOrDefaultAsync(t => t.TradeTypeID == 3 && t.Note == $"SO:{tradeEntity.ID}");
-                if (linkedInvoice != null)
+                // propagate SO payment state to linked Sales Invoice if exists
+                await UpdateLinkedInvoiceAsync(tradeEntity);
+
+                // Check for products that dropped below their low stock threshold
+                var lowStockWarnings = new List<object>();
+                foreach (var detail in salesOrder.SalesOrderDetails)
                 {
-                    var soPaid = tradeEntity.PaidAmount ?? 0m;
-                    var invPaid = Math.Min(soPaid, linkedInvoice.Amount);
-                    linkedInvoice.PaidAmount = invPaid;
-                    if (invPaid >= linkedInvoice.Amount) linkedInvoice.StatusID = 4; // Paid
-                    else if (invPaid > 0) linkedInvoice.StatusID = 3; // Partially Paid
-                    else linkedInvoice.StatusID = 1; // Draft
-                    linkedInvoice.UpdatedAt = DateTime.Now;
-                    linkedInvoice.UpdatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
-                    _context.Trades.Update(linkedInvoice);
-                    await _context.SaveChangesAsync();
+                    if (detail.ProductID == null || detail.ProductID == 0) continue;
+                    var prod = await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.ID == detail.ProductID);
+                    if (prod != null)
+                    {
+                        var thr = prod.LowStockThreshold ?? 0;
+                        if (thr > 0 && prod.StockQuantity <= thr)
+                        {
+                            lowStockWarnings.Add(new { name = prod.Name, stockQuantity = prod.StockQuantity, lowStockThreshold = thr });
+                        }
+                    }
                 }
 
                 return new
@@ -264,12 +380,13 @@ namespace API.Repository
                     id = tradeEntity.ID,
                     no = tradeEntity.No,
                     statusID = tradeEntity.StatusID,
-                    amount = tradeEntity.Amount
+                    amount = tradeEntity.Amount,
+                    lowStockWarnings
                 };
             }
             catch (Exception e)
             {
-                return new { success = false, result = e.Message };
+                return CreateErrorResponse(e);
             }
         }
         public async Task<object> SaveProduct(SalesOrderDetailModel salesOrderDetailModel, int tradeID)
@@ -325,12 +442,12 @@ namespace API.Repository
                     _context.SalesOrderItems.Update(existingProduct);
                 }
                 _context.Products.Update(product);
-                await _context.SaveChangesAsync();
+                await SaveChangesAsync();
                 return new { success = true };
             }
             catch (Exception e)
             {
-                return new { success = false, result = e.Message };
+                return CreateErrorResponse(e);
             }
         }
 

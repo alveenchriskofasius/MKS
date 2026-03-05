@@ -11,7 +11,7 @@ namespace API.Context.SP
         public int ID { get; set; }
         [StringLength(50)]
         public string No { get; set; }
-        [StringLength(30)]
+        [StringLength(10)]
         public string Date { get; set; }
         [StringLength(4000)]
         public string Amount { get; set; }

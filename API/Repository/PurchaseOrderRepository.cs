@@ -11,13 +11,31 @@ namespace API.Repository
         private readonly MKSTableContext _context;
         private readonly MKSSPContextProcedures _procedure;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private enum TradeStatus { Draft = 1, PartialPaid = 2, Paid = 3 }
-        private static readonly HashSet<short> LockedStatuses = new HashSet<short> { (short)TradeStatus.PartialPaid, (short)TradeStatus.Paid };
-        public PurchaseOrderRepository(MKSTableContext context, MKSSPContextProcedures procedure, IHttpContextAccessor httpContextAccessor)
+        private readonly API.Services.IAuditService? _audit;
+        // PurchaseOrder status workflow
+        private const short PO_Draft = 1;
+        private const short PO_Submitted = 2;
+        private const short PO_Approved = 3;
+        private const short PO_Rejected = 4;
+
+        private Task<bool> HasSubmittedPaymentsAsync(int tradeId)
+        {
+            // Submitted payment out uses StatusID == 2 (see PaymentOut module)
+            return _context.PaymentOuts.AnyAsync(p => p.PurchaseOrderID == tradeId && p.StatusID == 2);
+        }
+
+        private static bool IsPOEditLocked(short? statusId)
+        {
+            var s = statusId ?? PO_Draft;
+            return s == PO_Submitted || s == PO_Approved;
+        }
+
+        public PurchaseOrderRepository(MKSTableContext context, MKSSPContextProcedures procedure, IHttpContextAccessor httpContextAccessor, API.Services.IAuditService? audit = null)
         {
             _context = context;
             _procedure = procedure;
             _httpContextAccessor = httpContextAccessor;
+            _audit = audit;
         }
         public async Task<PurchaseOrderModel> FillForm(int id)
         {
@@ -33,6 +51,66 @@ namespace API.Repository
                 Amount = trade.Amount,
                 Note = trade.Note
             };
+        }
+
+        public async Task<object> ChangeStatus(int id, short statusId, string? reason)
+        {
+            try
+            {
+                var trade = await _context.Trades.FindAsync(id);
+                if (trade == null) return new { success = false, result = "Purchase Order not found." };
+
+                // If payments have been submitted, do not allow status changes
+                if (await HasSubmittedPaymentsAsync(id))
+                {
+                    return new { success = false, result = "Purchase Order is locked and cannot change status after payments have been submitted." };
+                }
+
+                var current = trade.StatusID ?? PO_Draft;
+                if (statusId == current) return new { success = true, statusID = current };
+
+                bool allowed = (current, statusId) switch
+                {
+                    (PO_Draft, PO_Submitted) => true,
+                    (PO_Submitted, PO_Approved) => true,
+                    (PO_Submitted, PO_Rejected) => true,
+                    // allow resubmit after rejection
+                    (PO_Rejected, PO_Submitted) => true,
+                    _ => false
+                };
+
+                if (!allowed)
+                {
+                    return new { success = false, result = $"Invalid status transition: {current} -> {statusId}" };
+                }
+
+                trade.StatusID = statusId;
+                trade.UpdatedAt = DateTime.Now;
+                trade.UpdatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
+                if (!string.IsNullOrWhiteSpace(reason))
+                {
+                    // keep note short, do not overwrite if empty
+                    trade.Note = reason;
+                }
+
+                _context.Trades.Update(trade);
+                await _context.SaveChangesAsync();
+
+                if (_audit != null)
+                {
+                    try
+                    {
+                        await _audit.WriteAsync("PurchaseOrder", "ChangeStatus", trade.ID.ToString(), new { trade.No, from = current, to = statusId, reason });
+                    }
+                    catch { }
+                }
+
+                return new { success = true, statusID = trade.StatusID };
+            }
+            catch (Exception e)
+            {
+                return new { success = false, result = e.Message };
+            }
         }
         public async Task<object> GetSearchList()
         {
@@ -72,7 +150,7 @@ namespace API.Repository
                 if (isNew)
                 {
                     var gen = await _procedure.uspGenerateNoAsync("PO", model.Date);
-                    var no = gen.FirstOrDefault()?.NewPONumber ?? string.Empty;
+                    var no = gen.FirstOrDefault()?.NewNumber ?? string.Empty;
                     tradeEntity = new Trade
                     {
                         No = no,
@@ -80,21 +158,32 @@ namespace API.Repository
                         CustomerID = model.SupplierID,
                         CreatedBy = _httpContextAccessor.HttpContext?.User?.Identity?.Name,
                         Date = model.Date,
-                        // initially Draft
-                        StatusID = (short)TradeStatus.Draft,
+                        // initially Draft (Purchase Order workflow)
+                        StatusID = PO_Draft,
                         TradeTypeID = 4,
                         CreatedAt = DateTime.Now,
                         Note = model.Note
                     };
                     await _context.Trades.AddAsync(tradeEntity);
                     await _context.SaveChangesAsync();
+
+                    if (_audit != null)
+                    {
+                        try { await _audit.WriteAsync("PurchaseOrder", "Create", tradeEntity.ID.ToString(), new { tradeEntity.No, tradeEntity.Amount, tradeEntity.CustomerID }); } catch { }
+                    }
                 }
                 else
                 {
                     tradeEntity = await _context.Trades.FindAsync(model.ID) ?? throw new Exception("Purchase Order not found");
 
+                    // block editing when submitted/approved (approval workflow)
+                    if (IsPOEditLocked(tradeEntity.StatusID))
+                    {
+                        return new { success = false, result = "Purchase Order is submitted/approved and cannot be modified." };
+                    }
+
                     // Prevent modification when PO already partially/fully paid
-                    if (tradeEntity.StatusID.HasValue && LockedStatuses.Contains(tradeEntity.StatusID.Value))
+                    if (await HasSubmittedPaymentsAsync(tradeEntity.ID))
                     {
                         return new { success = false, result = "Purchase Order is locked and cannot be modified after payments have been submitted." };
                     }
@@ -106,6 +195,11 @@ namespace API.Repository
                     tradeEntity.Date = model.Date;
                     tradeEntity.Note = model.Note;
                     await _context.SaveChangesAsync();
+
+                    if (_audit != null)
+                    {
+                        try { await _audit.WriteAsync("PurchaseOrder", "Update", tradeEntity.ID.ToString(), new { tradeEntity.No, tradeEntity.Amount, tradeEntity.CustomerID }); } catch { }
+                    }
                 }
 
                 int tradeID = tradeEntity.ID;
@@ -135,19 +229,9 @@ namespace API.Repository
                 {
                     var paid = await _context.PaymentOuts.Where(p => p.PurchaseOrderID == tradeID && p.StatusID == 2).Select(p => (decimal?)p.Amount).DefaultIfEmpty(0m).SumAsync();
                     tradeEntity.PaidAmount = paid;
-                    // set status based on paid vs amount
-                    if (tradeEntity.PaidAmount >= tradeEntity.Amount)
-                        tradeEntity.StatusID = (short)TradeStatus.Paid;
-                    else if (tradeEntity.PaidAmount > 0)
-                        tradeEntity.StatusID = (short)TradeStatus.PartialPaid;
-                    else
-                        tradeEntity.StatusID = (short)TradeStatus.Draft;
-
-                    // if fully paid, mark locked
-                    if (tradeEntity.StatusID == (short)TradeStatus.Paid)
-                    {
+                    // Keep PO workflow StatusID intact; only use IsLocked/PaidAmount for payment state.
+                    if (tradeEntity.PaidAmount > 0)
                         tradeEntity.IsLocked = true;
-                    }
 
                     _context.Trades.Update(tradeEntity);
                     await _context.SaveChangesAsync();
@@ -195,8 +279,13 @@ namespace API.Repository
                 var trade = await _context.Trades.FindAsync(id);
                 if (trade == null) return new { success = false, result = "Purchase Order not found." };
 
+                if (IsPOEditLocked(trade.StatusID))
+                {
+                    return new { success = false, result = "Purchase Order is submitted/approved and cannot be deleted." };
+                }
+
                 // prevent delete when partially/fully paid
-                if (trade.StatusID.HasValue && LockedStatuses.Contains(trade.StatusID.Value))
+                if (await HasSubmittedPaymentsAsync(id))
                 {
                     return new { success = false, result = "Cannot delete Purchase Order that has payments." };
                 }
@@ -205,6 +294,11 @@ namespace API.Repository
                 if (details.Any()) _context.PurchaseOrderItems.RemoveRange(details);
                 _context.Trades.Remove(trade);
                 await _context.SaveChangesAsync();
+
+                if (_audit != null)
+                {
+                    try { await _audit.WriteAsync("PurchaseOrder", "Delete", id.ToString(), new { trade.No }); } catch { }
+                }
                 return new { success = true };
             }
             catch (Exception e) { return new { success = false, result = e.Message }; }
@@ -217,13 +311,22 @@ namespace API.Repository
                 if (detail == null) return new { success = false, result = "Purchase Order item not found." };
 
                 var trade = await _context.Trades.FindAsync(detail.TradeID);
-                if (trade != null && trade.StatusID.HasValue && LockedStatuses.Contains(trade.StatusID.Value))
+                if (trade != null && IsPOEditLocked(trade.StatusID))
+                {
+                    return new { success = false, result = "Purchase Order is submitted/approved and cannot be modified." };
+                }
+                if (trade != null && await HasSubmittedPaymentsAsync(trade.ID))
                 {
                     return new { success = false, result = "Cannot delete item from Purchase Order that has payments." };
                 }
 
                 _context.PurchaseOrderItems.Remove(detail);
                 await _context.SaveChangesAsync();
+
+                if (_audit != null)
+                {
+                    try { await _audit.WriteAsync("PurchaseOrder", "DeleteItem", detail.TradeID.ToString(), new { itemId = id, detail.ProductID, detail.Quantity }); } catch { }
+                }
                 return new { success = true };
             }
             catch (Exception e) { return new { success = false, result = e.Message }; }

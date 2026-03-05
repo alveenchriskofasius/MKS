@@ -1,35 +1,53 @@
 @{
     ViewData["Title"] = "Delivery Order";
 }
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">Delivery Orders</h5>
-    <div class="d-flex gap-2">
-      <select id="filterDOStatus" class="form-select form-select-sm" style="width:180px">
-        <option value="">-- All Status --</option>
-        <option value="1">Pending</option>
-        <option value="2">Assigned</option>
-        <option value="3">Out For Delivery</option>
-        <option value="4">Delivered</option>
-        <option value="5">Canceled</option>
-      </select>
-      <button id="btnRefreshDO" class="btn btn-sm btn-outline-primary"><i class="fa fa-rotate"></i> Refresh</button>
+<div class="fade-slide-up">
+  <!-- KPI status cards -->
+  <div class="kpi-row" id="doKpiRow">
+    <div class="kpi-card active" data-status="">
+      <div class="kpi-icon all"><i class="fa fa-layer-group"></i></div>
+      <div class="kpi-body"><div class="kpi-value" id="kpiAll">-</div><div class="kpi-label">All</div></div>
+    </div>
+    <div class="kpi-card" data-status="1">
+      <div class="kpi-icon pending"><i class="fa fa-clock"></i></div>
+      <div class="kpi-body"><div class="kpi-value" id="kpiPending">-</div><div class="kpi-label">Pending</div></div>
+    </div>
+    <div class="kpi-card" data-status="2">
+      <div class="kpi-icon assigned"><i class="fa fa-user-check"></i></div>
+      <div class="kpi-body"><div class="kpi-value" id="kpiAssigned">-</div><div class="kpi-label">Assigned</div></div>
+    </div>
+    <div class="kpi-card" data-status="3">
+      <div class="kpi-icon otw"><i class="fa fa-truck-fast"></i></div>
+      <div class="kpi-body"><div class="kpi-value" id="kpiOtw">-</div><div class="kpi-label">On the Way</div></div>
+    </div>
+    <div class="kpi-card" data-status="4">
+      <div class="kpi-icon delivered"><i class="fa fa-circle-check"></i></div>
+      <div class="kpi-body"><div class="kpi-value" id="kpiDelivered">-</div><div class="kpi-label">Delivered</div></div>
     </div>
   </div>
-  <div class="card-body">
-    <table id="tableDeliveryOrder" class="table table-sm table-bordered table-striped w-100">
-      <thead>
-        <tr>
-          <th>No</th>
-          <th>Sales Order</th>
-          <th>Status</th>
-          <th>Driver</th>
-          <th>Address</th>
-          <th style="width:90px">Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+
+  <div class="card page-header-card">
+    <div class="card-header card-header-accent">
+      <h5 class="mb-0"><i class="fa fa-truck-fast me-2"></i>Delivery Orders</h5>
+      <div class="d-flex gap-2">
+        <button id="btnRefreshDO" class="btn btn-sm btn-outline-light"><i class="fa fa-rotate"></i> Refresh</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <table id="tableDeliveryOrder" class="table table-sm table-hover w-100">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Sales Order</th>
+            <th>Status</th>
+            <th>Driver</th>
+            <th>Address</th>
+            <th style="width:90px" class="text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 </div>
 @section Scripts {

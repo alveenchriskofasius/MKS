@@ -2,6 +2,7 @@ using API.Models;
 using API.Repository.Interfaces;
 using API.Services.Interfaces;
 namespace API.Services;
+
 public class SalesReturnService : ISalesReturnService
 {
     private readonly ISalesReturnRepository _repo; public SalesReturnService(ISalesReturnRepository repo) { _repo = repo; }

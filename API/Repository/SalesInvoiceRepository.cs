@@ -25,7 +25,7 @@ public class SalesInvoiceRepository : ISalesInvoiceRepository
         try
         {
             var gen = await _sp.uspGenerateNoAsync("SI", date);
-            var cand = gen.FirstOrDefault()?.NewPONumber;
+            var cand = gen.FirstOrDefault()?.NewNumber;
             if (!string.IsNullOrWhiteSpace(cand))
             {
                 var exists = await _ctx.Trades.AnyAsync(t => t.No == cand);
@@ -55,13 +55,21 @@ public class SalesInvoiceRepository : ISalesInvoiceRepository
         var so = await _ctx.Trades.FirstOrDefaultAsync(t => t.ID == salesOrderId);
         if (so == null) return null;
 
-        // Prevent duplicates: if an invoice already exists for this SO, return it
+        // Aggregate submitted payments for SO (StatusID==2 means submitted)
+        var soPaidAggregate = await _ctx.PaymentIns
+            .Where(p => p.SalesOrderID == so.ID && p.StatusID == 2)
+            .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+        // If aggregate is zero but SO status already indicates Paid, trust status for full amount
+        if (soPaidAggregate == 0m && (so.StatusID ?? 0) == 2 /* Paid */)
+            soPaidAggregate = so.Amount;
+
+        // Prevent duplicates: if an invoice already exists for this SO, return it (after sync)
         var existing = await _ctx.Trades.FirstOrDefaultAsync(t => t.TradeTypeID == 3 && t.Note == $"SO:{so.ID}");
         if (existing != null)
         {
-            // Sync invoice PaidAmount/Status with SO's current paid amount
-            var soPaid = so.PaidAmount ?? 0m;
-            var invPaid = Math.Min(soPaid, existing.Amount);
+            // Sync invoice PaidAmount/Status with real payment aggregate
+            var invPaid = Math.Min(soPaidAggregate, existing.Amount);
             short invStatus = (short)InvoiceStatus.Draft;
             if (invPaid >= existing.Amount) invStatus = (short)InvoiceStatus.Paid;
             else if (invPaid > 0) invStatus = (short)InvoiceStatus.PartiallyPaid;
@@ -99,9 +107,8 @@ public class SalesInvoiceRepository : ISalesInvoiceRepository
             guard++;
         }
 
-        // Initialize invoice paid/status from SO status/paid
-        var soPaidAmount = so.PaidAmount ?? 0m;
-        var initInvPaid = Math.Min(soPaidAmount, so.Amount);
+        // Initialize invoice paid/status from payment aggregate (NOT only from Trade.PaidAmount)
+        var initInvPaid = Math.Min(soPaidAggregate, so.Amount);
         short initInvStatus = (short)InvoiceStatus.Draft;
         if (initInvPaid >= so.Amount) initInvStatus = (short)InvoiceStatus.Paid;
         else if (initInvPaid > 0) initInvStatus = (short)InvoiceStatus.PartiallyPaid;

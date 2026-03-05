@@ -1,19 +1,16 @@
 ﻿@{
-    ViewData["Title"] = "Request Access";
+    ViewData["Title"] = "Access Denied";
     Layout = "_LayoutLogin";
 }
-<div class="row justify-content-center align-items-center" style="height: 100vh;">
 
-    <div class="card">
-        <div class="card-title text-center">
-            <h2 class="text-danger">You Don't have access on this application!!!</h2>
-        </div>
-        <div class="card-body">
-            <div class="text-center">
-                <!-- Center-align these elements -->
-                <h5 class="text-success">ASK YOU ADMIN TO GET ACCESS</h5>
-                <a class="btn btn-success" asp-controller="Home" asp-action="Index">Go back home</a>
-            </div>
-        </div>
+<div class="text-center">
+    <div class="mb-3">
+        <i class="fa fa-shield-halved" style="font-size:3.5rem;color:#dc2626;"></i>
     </div>
+    <h3 style="color:#dc2626;font-weight:700;">Access Denied</h3>
+    <p class="subtitle">You don't have permission to access this page.</p>
+    <p style="color:#64748b;font-size:.85rem;">Please contact your administrator to get access.</p>
+    <a class="btn btn-login mt-2" asp-controller="Home" asp-action="Index">
+        <i class="fa fa-arrow-left me-1"></i> Go to Dashboard
+    </a>
 </div>

@@ -42,9 +42,9 @@ namespace API.Repository
             }
             catch (Exception e)
             {
-                return Task.FromResult<object>(new { success = false, error = e.Message });
+                return new { success = false, error = e.Message };
             }
-            return Task.FromResult<object>(new { success = true });
+            return new { success = true };
         }
         public async Task<UserModel> FillForm(int id)
         {
@@ -76,14 +76,53 @@ namespace API.Repository
             try
             {
                 User user = await _context.Users.FindAsync(id);
+                if (user == null)
+                    return new { success = false, error = "User not found" };
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
             }
             catch (Exception e)
             {
-                return Task.FromResult<object>(new { success = false, error = e.Message });
+                return new { success = false, error = e.Message };
             }
-            return Task.FromResult<object>(new { success = true });
+            return new { success = true };
+        }
+
+        public async Task<List<RoleModel>> GetUserRoles(int userId)
+        {
+            var allRoles = await _context.Roles.ToListAsync();
+            var userRoleIds = await _context.UserRoles
+                .Where(ur => ur.UserID == userId)
+                .Select(ur => ur.RoleID)
+                .ToListAsync();
+
+            return allRoles.Select(r => new RoleModel
+            {
+                ID = r.ID,
+                Name = r.Name,
+                Description = r.Description,
+                IsAssigned = userRoleIds.Contains(r.ID)
+            }).ToList();
+        }
+
+        public async Task<object> SaveUserRoles(int userId, List<int> roleIds)
+        {
+            try
+            {
+                var existing = _context.UserRoles.Where(ur => ur.UserID == userId);
+                _context.UserRoles.RemoveRange(existing);
+
+                foreach (var roleId in roleIds)
+                {
+                    _context.UserRoles.Add(new UserRole { UserID = userId, RoleID = roleId });
+                }
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                return new { success = false, error = e.Message };
+            }
+            return new { success = true };
         }
     }
 }

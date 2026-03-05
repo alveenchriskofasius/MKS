@@ -1,0 +1,91 @@
+@{
+    ViewData["Title"] = "Low Stock";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-triangle-exclamation fa-lg"></i>
+                <h5 class="mb-0">Low Stock</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="d-flex gap-2 mb-3">
+                <input id="threshold" type="number" class="form-control form-control-sm" style="max-width: 200px" placeholder="Threshold (opsional)" />
+                <button id="btnRefresh" class="btn btn-primary btn-sm"><i class="fa fa-sync me-1"></i> Refresh</button>
+            </div>
+            <table id="tblLow" class="table table-hover table-sm align-middle" style="width:100%">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Product</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Threshold</th>
+                        <th style="width:80px"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <hr />
+
+            <h5 class="fw-semibold"><i class="fa fa-id-card me-1 text-muted"></i> Kartu Stok</h5>
+            <div class="d-flex gap-2 mb-3">
+                <input id="productId" type="number" class="form-control form-control-sm" style="max-width: 200px" placeholder="Product ID" />
+                <button id="btnCard" class="btn btn-secondary btn-sm"><i class="fa fa-download me-1"></i> Load</button>
+            </div>
+            <table id="tblCard" class="table table-hover table-sm align-middle" style="width:100%">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Ref</th>
+                        <th class="text-end">Qty Change</th>
+                        <th class="text-end">Qty After</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadLow() {
+            const t = $('#threshold').val();
+            const url = t ? `/Stock/LowList?threshold=${encodeURIComponent(t)}` : '/Stock/LowList';
+            return Common.Api.fetchJson(url).then(rows => {
+                const $tbody = $('#tblLow tbody');
+                $tbody.empty();
+                (rows || []).forEach(r => {
+                    const btn = `<button class="btn btn-sm btn-outline-secondary" onclick="loadCard(${r.id})">Kartu</button>`;
+                    $tbody.append(`<tr><td>${r.id}</td><td>${r.name}</td><td>${r.qty}</td><td>${r.lowStockThreshold ?? ''}</td><td>${btn}</td></tr>`);
+                });
+            });
+        }
+
+        function loadCard(productId) {
+            $('#productId').val(productId);
+            const url = `/Stock/Card?productId=${encodeURIComponent(productId)}`;
+            return Common.Api.fetchJson(url).then(rows => {
+                const $tbody = $('#tblCard tbody');
+                $tbody.empty();
+                (rows || []).forEach(r => {
+                    const ref = `${r.refType}${r.refNo ? ' - ' + r.refNo : ''}`;
+                    const dt = r.date ? new Date(r.date).toLocaleString() : '';
+                    $tbody.append(`<tr><td>${dt}</td><td>${ref}</td><td>${r.qtyChange}</td><td>${r.qtyAfter}</td><td>${r.createdBy ?? ''}</td></tr>`);
+                });
+            });
+        }
+
+        $('#btnRefresh').on('click', loadLow);
+        $('#btnCard').on('click', function(){
+            const id = $('#productId').val();
+            if (!id) return;
+            loadCard(id);
+        });
+
+        $(document).ready(loadLow);
+    </script>
+}

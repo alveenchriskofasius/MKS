@@ -1,422 +1,300 @@
 ﻿$(document).ready(function () {
-    Buttons.Init();
-    Control.Category();
-    Control.Unit();
-    Control.Supplier();
+	productButtons.init();
+	productControl.init();
 });
-let Buttons = {
-    Init: function () {
-        $('#buttonAddCategory').click(function () {
-            Forms.FillFormCategory(0);
-        });
-        $('#buttonAddUnit').click(function () {
-            Forms.FillFormUnit(0);
-        });
-        $('#buttonSave').click(function () {
-            var form = $('#productForm')[0];
 
-            if (form.checkValidity()) {
-                // If the form is valid, save the product and reset the form
-                event.preventDefault();
-                event.stopPropagation();
-                Forms.SaveProduct();
-                form.classList.remove('was-validated');
-            } else {
-                // If the form is invalid, add 'was-validated' class to apply Bootstrap validation styling
-                event.preventDefault();
-                event.stopPropagation();
-                form.classList.add('was-validated');
-            }
-        });
-        $('#buttonSaveCategory').click(function (event) {
-            let form = $('#formCategory')[0];
+const productButtons = {
+	init: function () {
+		$('#buttonAddCategory').off('click').on('click', function () { productForms.fillFormCategory(0); });
+		$('#buttonAddUnit').off('click').on('click', function () { productForms.fillFormUnit(0); });
 
-            if (form.checkValidity()) {
-                // If the form is valid, save the category and reset the form
-                event.preventDefault();
-                event.stopPropagation();
-                Forms.SaveCategory();
-                form.classList.remove('was-validated');
-            } else {
-                // If the form is invalid, add 'was-validated' class to apply Bootstrap validation styling
-                event.preventDefault();
-                event.stopPropagation();
-                form.classList.add('was-validated');
-            }
-        });
-        $('#buttonSaveUnit').click(function (event) {
-            let form = $('#formUnit')[0];
+		$('#buttonSave').off('click').on('click', function (event) {
+			const form = $('#productForm')[0];
+			if (form.checkValidity()) {
+				event.preventDefault();
+				event.stopPropagation();
+				productForms.saveProduct();
+				form.classList.remove('was-validated');
+			} else {
+				event.preventDefault();
+				event.stopPropagation();
+				form.classList.add('was-validated');
+			}
+		});
 
-            if (form.checkValidity()) {
-                // If the form is valid, save the unit and reset the form
-                event.preventDefault();
-                event.stopPropagation();
-                Forms.SaveUnit();
-                form.classList.remove('was-validated');
-            } else {
-                // If the form is invalid, add 'was-validated' class to apply Bootstrap validation styling
-                event.preventDefault();
-                event.stopPropagation();
-                form.classList.add('was-validated');
-            }
-        });
-        $('#buttonNewCategory').click(function () {
-            Forms.FillFormCategory(0);
-        });
-    },
-}
-let Table = {
-    FillGridCategory: function () {
-        let data = Common.GetData.Get('GetCategoryList');
-        let tableID = $("#tableCategory");
+		$('#buttonSaveCategory').off('click').on('click', function (event) {
+			const form = $('#formCategory')[0];
+			if (form.checkValidity()) {
+				event.preventDefault();
+				event.stopPropagation();
+				productForms.saveCategory();
+				form.classList.remove('was-validated');
+			} else {
+				event.preventDefault();
+				event.stopPropagation();
+				form.classList.add('was-validated');
+			}
+		});
 
-        $(tableID).DataTable({
-            "deferRender": true,
-            "processing": true,
-            "serverSide": false,
-            "destroy": true,
-            "filter": true,
-            "searching": false,
-            "responsive": true,
-            "columns": [
-                { "data": "categoryName" },
-                {
-                    data: null,
-                    render: function () {
-                        return `
-                    <a class="btn btn-warning edit" href="#">
-                        <i class="fa fa-pencil"></i> 
-                    </a>
-                    <span style="margin: 0 5px;"></span>
-                    <a class="btn btn-danger delete">
-                        <i class="fa fa-trash"></i> 
-                    </a>
-            `;
-                    },
-                    "orderable": false
-                },
-            ],
-            "buttons": [],
-            "dom": 'lBfrtip',
-            "columnDefs": [{ "targets": [0], "className": "text-left" }],
+		$('#buttonSaveUnit').off('click').on('click', function (event) {
+			const form = $('#formUnit')[0];
+			if (form.checkValidity()) {
+				event.preventDefault();
+				event.stopPropagation();
+				productForms.saveUnit();
+				form.classList.remove('was-validated');
+			} else {
+				event.preventDefault();
+				event.stopPropagation();
+				form.classList.add('was-validated');
+			}
+		});
 
-            "data": data.result
-        });
-        let tb = tableID.DataTable();
-        tableID.find('tbody').unbind();
-        tableID.find('tbody').on('click', '.edit', function (e) {
-            let row = tb.row($(this).parents('tr')).data();
-            Forms.FillFormCategory(row.id);
-        });
-        tableID.find('tbody').on('click', '.delete', function (e) {
-            let row = tb.row($(this).parents('tr')).data();
-            // Show a confirmation dialog
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it',
-                showLoaderOnConfirm: true,
-                preConfirm: () => {
-                    return fetch(`DeleteCategory?id=${row.id}`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        }
-                    })
-                        .then(response => {
-                            toastr.options.onShown = function () {
-                                Forms.FillFormCategory(0);
-                                Table.FillGridCategory();
-                                Control.Category();
-                            }
-                            response.ok ? toastr.success('Data has been deleted') : toastr.error(result.result.error, 'Data not deleted');
-                        })
-                        .catch(error => {
-                            Swal.showValidationMessage(`Request failed: ${error}`);
-                        });
-                },
-                allowOutsideClick: () => !Swal.isLoading()
-            });
-        });
-    },
-    FillGridUnit: function () {
-        let data = Common.GetData.Get('GetUnitList');
-        let tableID = $("#tableUnit");
+		$('#buttonNewCategory').off('click').on('click', function () { productForms.fillFormCategory(0); });
+	}
+};
 
-        $(tableID).DataTable({
-            "deferRender": true,
-            "processing": true,
-            "serverSide": false,
-            "destroy": true,
-            "filter": true,
-            "searching": false,
-            "responsive": true,
-            "columns": [
-                { "data": "unitName" },
-                {
-                    data: null,
-                    render: function () {
-                        return `
-                    <a class="btn btn-warning edit" href="#">
-                        <i class="fa fa-pencil"></i> 
-                    </a>
-                    <span style="margin: 0 5px;"></span>
-                    <a class="btn btn-danger delete">
-                        <i class="fa fa-trash"></i> 
-                    </a>
-            `;
-                    },
-                    "orderable": false
-                },
-            ],
-            "buttons": [],
-            "dom": 'lBfrtip',
-            "columnDefs": [{ "targets": [0], "className": "text-left" }],
+const productTable = {
+	fillGridCategory: async function () {
+		let data = [];
+		try { const res = await Common.Api.get('GetCategoryList'); data = (res && res.result) ? res.result : res || []; } catch { }
+		const $table = $('#tableCategory');
+		const columns = [
+			{ data: 'categoryName' },
+			{
+				data: null, render: function () {
+					return `
+                    <a class="btn btn-warning edit" href="#"><i class="fa fa-pencil"></i></a>
+                    <span style="margin:05px;"></span>
+                    <a class="btn btn-danger delete"><i class="fa fa-trash"></i></a>`;
+				}, orderable: false
+			}
+		];
 
-            "data": data.result
-        });
-        let tb = tableID.DataTable();
-        tableID.find('tbody').unbind();
-        tableID.find('tbody').on('click', '.edit', function (e) {
+		$table.DataTable({
+			deferRender: true,
+			processing: true,
+			serverSide: false,
+			destroy: true,
+			filter: true,
+			searching: false,
+			responsive: true,
+			columns: columns,
+			dom: 'lBfrtip',
+			columnDefs: [{ targets: [0], className: 'text-left' }],
+			data: data
+		});
 
-            let row = tb.row($(this).parents('tr')).data();
-            Forms.FillFormUnit(row.id);
-        });
-        tableID.find('tbody').on('click', '.delete', function (e) {
-            let row = tb.row($(this).parents('tr')).data();
-            // Show a confirmation dialog
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it',
-                showLoaderOnConfirm: true,
-                preConfirm: () => {
-                    return fetch(`DeleteUnit?id=${row.id}`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        }
-                    })
-                        .then(response => {
-                            if (response.ok) {
-                                // Show success message
-                                Swal.fire({
-                                    position: 'center',
-                                    icon: 'success',
-                                    title: 'Success',
-                                    text: 'Unit has been deleted',
-                                    showConfirmButton: false,
-                                    timer: 1500,
-                                    allowOutsideClick: false
-                                }).then(() => {
-                                    Forms.FillFormUnit(0);
-                                    Table.FillGridUnit();
-                                    Control.Unit();
-                                });
-                            }
-                        })
-                        .catch(error => {
-                            Swal.showValidationMessage(`Request failed: ${error}`);
-                        });
-                },
-                allowOutsideClick: () => !Swal.isLoading()
-            });
-        });
-    },
-}
-let Forms = {
-    FillFormCategory: function (id) {
-        $.ajax({
-            url: 'FillFormCategory',
-            type: 'POST',
-            data: { id: id },
-            success: function (result) {
-                $('#categoryBodyModal').html(result);
-                Table.FillGridCategory();
-                $('#categoryModal').modal('show');
+		const tb = $table.DataTable();
+		$table.find('tbody').off().on('click', '.edit', function () {
+			const row = tb.row($(this).closest('tr')).data();
+			productForms.fillFormCategory(row.id);
+		});
 
-            },
-            error: function (error) {
-                // Handle errors if needed
-                console.error('Error loading user data:', error);
-            }
-        });
-    },
-    FillFormUnit: function (id) {
-        $.ajax({
-            url: 'FillFormUnit',
-            type: 'POST',
-            data: { id: id },
-            success: function (result) {
-                $('#unitBodyModal').html(result);
-                Table.FillGridUnit();
-                $('#unitModal').modal('show');
-            },
-            error: function (error) {
-                // Handle errors if needed
-                console.error('Error loading user data:', error);
-            }
-        });
-    },
-    FillFormProduct: function (id) {
-        $.ajax({
-            url: 'FillFormProduct',
-            type: 'POST',
-            data: { id: id },
-            success: function (result) {
-                console.log(result);
-            },
-            error: function (error) {
-                console.error('Error loading user data:', error);
-            }
-        });
-    },
-    SaveCategory: function () {
-        let formData = $('#formCategory').serialize();
-        // Show loading indicator
-        $('#buttonSaveCategory').prop('disabled', true); // Disable the button
-        $('#buttonCloseCategory').prop('disabled', true); // Disable the button
+		$table.find('tbody').on('click', '.delete', function () {
+			const row = tb.row($(this).closest('tr')).data();
+			// Show a confirmation dialog
+			Swal.fire({
+				title: 'Are you sure?',
+				text: "You won't be able to revert this!",
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonText: 'Yes, delete it',
+				showLoaderOnConfirm: true,
+				preConfirm: () =>
+					Common.Api.post('DeleteCategory', { id: row.id })
+						.then(() => {
+							toastr.options.onShown = function () {
+								productForms.fillFormCategory(0);
+								productTable.fillGridCategory();
+								productControl.category();
+							}
+							toastr.success('Data has been deleted');
+						})
+						.catch(error => { Swal.showValidationMessage(error.message || 'Request failed'); })
+			});
+		});
+	},
+	fillGridUnit: async function () {
+		let data = [];
+		try { const res = await Common.Api.get('GetUnitList'); data = (res && res.result) ? res.result : res || []; } catch { }
+		const $table = $('#tableUnit');
+		const columns = [
+			{ data: 'unitName' },
+			{
+				data: null, render: function () {
+					return `
+                    <a class="btn btn-warning edit" href="#"><i class="fa fa-pencil"></i></a>
+                    <span style="margin:05px;"></span>
+                    <a class="btn btn-danger delete"><i class="fa fa-trash"></i></a>`;
+				}, orderable: false
+			}
+		];
+		$table.DataTable({
+			deferRender: true,
+			processing: true,
+			serverSide: false,
+			destroy: true,
+			filter: true,
+			searching: false,
+			responsive: true,
+			columns: columns,
+			dom: 'lBfrtip',
+			columnDefs: [{ targets: [0], className: 'text-left' }],
+			data: data
+		});
+		const tb = $table.DataTable();
+		$table.find('tbody').off().on('click', '.edit', function () { const row = tb.row($(this).closest('tr')).data(); productForms.fillFormUnit(row.id); });
+		$table.find('tbody').on('click', '.delete', function () {
+			const row = tb.row($(this).closest('tr')).data();
+			// Show a confirmation dialog
+			Swal.fire({
+				title: 'Are you sure?',
+				text: "You won't be able to revert this!",
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonText: 'Yes, delete it',
+				showLoaderOnConfirm: true,
+				preConfirm: () =>
+					Common.Api.post('DeleteUnit', { id: row.id })
+						.then(response => {
+							// Show success message
+							Swal.fire({ position: 'center', icon: 'success', title: 'Success', text: 'Unit has been deleted', showConfirmButton: false, timer:1500, allowOutsideClick: false })
+								.then(() => {
+									productForms.fillFormUnit(0);
+									productTable.fillGridUnit();
+									productControl.unit();
+								});
+						})
+						.catch(error => { Swal.showValidationMessage(error.message || 'Request failed'); })
+			});
+		});
+	}
+};
 
-        $('#buttonSaveCategory .spinner-border').show(); // Show the spinner
-        $.ajax({
-            url: 'SaveCategory',
-            type: 'POST',
-            data: formData,
-            success: function (result) {
-                toastr.options.onShown = function () {
-                    // Successful response from the server
-                    Table.FillGridCategory();
-                    Forms.FillFormCategory(0);
-                    Control.Category();
-                }
+const productForms = {
+	fillFormCategory: function (id) {
+		Common.Api.post('FillFormCategory', { id: id })
+			.then(function (result) {
+				$('#categoryBodyModal').html(result);
+				productTable.fillGridCategory();
+				$('#categoryModal').modal('show');
+			})
+			.catch(function (error) { console.error('Error loading category form', error); });
+	},
+	fillFormUnit: function (id) {
+		Common.Api.post('FillFormUnit', { id: id })
+			.then(function (result) {
+				$('#unitBodyModal').html(result);
+				productTable.fillGridUnit();
+				$('#unitModal').modal('show');
+			})
+			.catch(function (error) { console.error('Error loading unit form', error); });
+	},
+	fillFormProduct: function (id) {
+		Common.Api.post('FillFormProduct', { id: id })
+			.then(function (result) { console.log(result); })
+			.catch(function (error) { console.error('Error loading product form', error); });
+	},
+	saveCategory: function () {
+		const formData = $('#formCategory').serializeArray().reduce((acc, cur) => { acc[cur.name] = cur.value; return acc; }, {});
+		// Show loading indicator
+		$('#buttonSaveCategory').prop('disabled', true);
+		$('#buttonCloseCategory').prop('disabled', true);
+		$('#buttonSaveCategory .spinner-border').show();
 
-                result.result.success ? toastr.success('Data saved') : toastr.error(result.result.error, 'Data not saved');
-                // Close loading indicator
-                $('#buttonSaveCategory').prop('disabled', false); // Enable the button
-                $('#buttonCloseCategory').prop('disabled', false); // Disable the button
+		Common.Api.post('SaveCategory', formData)
+			.then(function (result) {
+				toastr.options.onShown = function () {
+					productTable.fillGridCategory();
+					productForms.fillFormCategory(0);
+					productControl.category();
+				};
+				(result && result.result && result.result.success) ? toastr.success('Data saved') : toastr.error((result && result.result && result.result.error) || 'Data not saved');
+			})
+			.catch(function (error) { console.error('SaveCategory failed', error); })
+			.finally(function () {
+				// Close loading indicator
+				$('#buttonSaveCategory').prop('disabled', false);
+				$('#buttonCloseCategory').prop('disabled', false);
+				$('#buttonSaveCategory .spinner-border').hide();
+			});
+	},
+	saveUnit: function () {
+		const formData = $('#formUnit').serializeArray().reduce((acc, cur) => { acc[cur.name] = cur.value; return acc; }, {});
+		// Show loading indicator
+		$('#buttonSaveCategory').prop('disabled', true);
+		$('#buttonCloseCategory').prop('disabled', true);
+		$('#buttonSaveCategory .spinner-border').show();
 
-                $('#buttonSaveCategory .spinner-border').hide(); // Hide the spinner
-            },
-            error: function (error) {
-                // Handle errors if needed
-                console.error('Error loading user data:', error);
-            }
-        });
-    },
-    SaveUnit: function () {
-        let formData = $('#formUnit').serialize();
-        // Show loading indicator
-        $('#buttonSaveCategory').prop('disabled', true); // Disable the button
-        $('#buttonCloseCategory').prop('disabled', true); // Disable the button
-        $('#buttonSaveCategory .spinner-border').show(); // Show the spinner
+		Common.Api.post('SaveUnit', formData)
+			.then(function (result) {
+				toastr.options.onShown = function () {
+					productTable.fillGridUnit();
+					productForms.fillFormUnit(0);
+					productControl.unit();
+				};
+				(result && result.result && result.result.success) ? toastr.success('Data saved') : toastr.error((result && result.result && result.result.error) || 'Data not saved');
+			})
+			.catch(function (error) { console.error('SaveUnit failed', error); })
+			.finally(function () {
+				// Close loading indicator
+				$('#buttonSaveCategory').prop('disabled', false);
+				$('#buttonCloseCategory').prop('disabled', false);
+				$('#buttonSaveCategory .spinner-border').hide();
+			});
+	},
+	saveProduct: function () {
+		const formData = $('#productForm').serializeArray().reduce((acc, cur) => { acc[cur.name] = cur.value; return acc; }, {});
+		// Show loading indicator
+		$('#buttonSave').prop('disabled', true);
+		$('#buttonSave .spinner-border').show();
 
-        $.ajax({
-            url: 'SaveUnit',
-            type: 'POST',
-            data: formData,
-            success: function (result) {
-                toastr.options.onShown = function () {
-                    // Successful response from the server
-                    Table.FillGridUnit();
-                    Forms.FillFormUnit(0);
-                    Control.Unit();
-                }
-                result.result.success ? toastr.success('Data saved') : toastr.error(result.result.error, 'Data not saved');
-                // Close loading indicator
-                $('#buttonSaveCategory').prop('disabled', false); // Enable the button
-                $('#buttonCloseCategory').prop('disabled', false); // Disable the button
+		Common.Api.post('SaveProduct', formData)
+			.then(function (result) {
+				toastr.options.onShown = function () {
+					productForms.resetProductForm();
+				};
+				(result && result.result && result.result.success) ? toastr.success('Data saved') : toastr.error((result && result.result && result.result.error) || 'Data not saved');
+			})
+			.catch(function () { Swal.close(); })
+			.finally(function () {
+				// Close loading indicator
+				$('#buttonSave').prop('disabled', false);
+				$('#buttonSave .spinner-border').hide();
+			});
+	},
+	resetProductForm: function () {
+		$('#productForm :input').each(function () { $(this).val(''); });
+		$('#productForm').removeClass('was-validated');
+		$('.invalid-feedback').hide();
+	}
+};
 
-                $('#buttonSaveCategory .spinner-border').hide(); // Hide the spinner
-            },
-            error: function (error) {
-                // Handle errors if needed
-                console.error('Error loading user data:', error);
-            }
-        });
-    },
-    SaveProduct: function () {
-        // Serialize the form data
-        var formData = $('#productForm').serialize();
-        // Show loading indicator
-        $('#buttonSave').prop('disabled', true); // Disable the button
-        $('#buttonSave .spinner-border').show(); // Show the spinner
-        $.ajax({
-            url: 'SaveProduct',
-            type: 'POST',
-            data: formData,
-            success: function (result) {
-                toastr.options.onShown = function () {
-                    Forms.ResetProductForm();
-                }
-                result.result.success ? toastr.success('Data saved') : toastr.error(result.result.error, 'Data not saved');
-                // Close loading indicator
-                $('#buttonSave').prop('disabled', false); // Enable the button
-                $('#buttonSave .spinner-border').hide(); // Hide the spinner
-            },
-            error: function (error) {
-                Swal.close();
-            }
-        });
-    },
-    ResetProductForm: function () {
-        $('#productForm :input').each(function () {
-            $(this).val(''); // Set the value of each input field to an empty string
-        });
-
-        // Remove the validation classes and messages
-        $('#productForm').removeClass('was-validated');
-        $('.invalid-feedback').hide();
-    }
-}
-let Control = {
-    Category: function () {
-        let id = '#comboBoxCategory';
-        let data = Common.GetData.Get('GetCategoryList');
-        $(id).html('');
-        $(id).append('<option selected value="">' + 'Select category' + '</option>');
-        if (data.result != null && data.result.length > 0) {
-            $.each(data.result, function (i, item) {
-                if (categoryID == item.id) {
-                    $(id).append('<option selected value="' + item.id + '">' + item.categoryName + '</option>');
-                }
-                else {
-                    $(id).append('<option value="' + item.id + '">' + item.categoryName + '</option>');
-                }
-            });
-        }
-    },
-    Unit: function () {
-        let id = '#comboBoxUnit';
-        let data = Common.GetData.Get('GetUnitList');
-        $(id).html('');
-        $(id).append('<option selected value="">' + 'Select unit' + '</option>');
-        if (data.result != null && data.result.length > 0) {
-            $.each(data.result, function (i, item) {
-                if (unitID == item.id) {
-                    $(id).append('<option selected value="' + item.id + '">' + item.unitName + '</option>');
-                } else {
-                    $(id).append('<option value="' + item.id + '">' + item.unitName + '</option>');
-                }
-            });
-        }
-    },
-    Supplier: function () {
-        let id = '#comboBoxSupplier';
-        let data = Common.GetData.Get('GetSupplierList');
-        $(id).html('');
-        $(id).append('<option selected value="">' + 'Select supplier' + '</option>');
-        if (data.result != null && data.result.length > 0) {
-            $.each(data.result, function (i, item) {
-                if (supplierID == item.id) {
-                    $(id).append('<option selected value="' + item.id + '">' + item.supplierName + '</option>');
-                } else {
-                    $(id).append('<option value="' + item.id + '">' + item.supplierName + '</option>');
-                }
-            });
-        }
-    },
-}
+const productControl = {
+	init: function () { this.category(); this.unit(); this.supplier(); },
+	category: function () {
+		const id = '#comboBoxCategory';
+		Common.Api.get('GetCategoryList').then(data => {
+			const list = (data && data.result) ? data.result : data || [];
+			$(id).empty().append('<option selected value="">Select category</option>');
+			list.forEach(item => { $(id).append(`<option value='${item.id}'${(typeof categoryID !== 'undefined' && categoryID == item.id) ? ' selected' : ''}>${item.categoryName}</option>`); });
+		});
+	},
+	unit: function () {
+		const id = '#comboBoxUnit';
+		Common.Api.get('GetUnitList').then(data => {
+			const list = (data && data.result) ? data.result : data || [];
+			$(id).empty().append('<option selected value="">Select unit</option>');
+			list.forEach(item => { $(id).append(`<option value='${item.id}'${(typeof unitID !== 'undefined' && unitID == item.id) ? ' selected' : ''}>${item.unitName}</option>`); });
+		});
+	},
+	supplier: function () {
+		const id = '#comboBoxSupplier';
+		Common.Api.get('GetSupplierList').then(data => {
+			const list = (data && data.result) ? data.result : data || [];
+			$(id).empty().append('<option selected value="">Select supplier</option>');
+			list.forEach(item => { $(id).append(`<option value='${item.id}'${(typeof supplierID !== 'undefined' && supplierID == item.id) ? ' selected' : ''}>${item.supplierName}</option>`); });
+		});
+	}
+};

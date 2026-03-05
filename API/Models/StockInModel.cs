@@ -8,6 +8,8 @@
 
         public short? StatusID { get; set; }
         public string No { get; set; }
-        public List<StockInDetailModel> StockInDetails { get; set; }
+        public int? PurchaseOrderID { get; set; }
+        public string PurchaseOrderNo { get; set; }
+        public List<StockInDetailModel> StockInDetails { get; set; } = new();
     }
 }

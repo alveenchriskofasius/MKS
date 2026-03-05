@@ -16,13 +16,15 @@ namespace API.Repository
         {
             try
             {
-                _context.Roles.Remove(await _context.Roles.FindAsync(id));
+                var role = await _context.Roles.FindAsync(id);
+                if (role == null) return new { success = false, result = "Role not found" };
+                _context.Roles.Remove(role);
                 await DeleteRolePermission(id);
                 await _context.SaveChangesAsync();
             }
             catch (Exception e)
             {
-                await Task.FromResult<object>(new { success = false, result = e.Message });
+                return new { success = false, result = e.Message };
             }
             return new { success = true };
         }
@@ -74,7 +76,7 @@ namespace API.Repository
             }
             catch (Exception e)
             {
-                await Task.FromResult<object>(new { success = false, result = e.Message });
+                return new { success = false, result = e.Message };
             }
             return new { success = true };
         }
@@ -99,7 +101,7 @@ namespace API.Repository
             }
             catch (Exception e)
             {
-                await Task.FromResult<object>(new { success = false, result = e.Message });
+                return new { success = false, result = e.Message };
             }
             return new { success = true };
         }

@@ -1,9 +1,12 @@
 using API.Models;
 using API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using MitraKaryaSystem.Security;
 
 namespace MitraKaryaSystem.Controllers
 {
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    [HasPermission("StockCount")]
     public class StockCountController : Controller
     {
         private readonly IStockCountService _service;

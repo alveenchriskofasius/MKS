@@ -3,6 +3,7 @@
 <form id="stockInForm">
     <input type="text" id="stockInID" hidden asp-for="@Model.ID" />
     <input type="hidden" id="stockInStatusID" value="@Model.StatusID" />
+    <input type="hidden" id="stockInPurchaseOrderID" value="@Model.PurchaseOrderID" />
     <div class="row mb-3">
         <label for="stockInNumber" class="form-label col-sm-2">No</label>
         <div class="col-md-6 col-lg-6">
@@ -13,6 +14,14 @@
         <label for="stockInDate" class="form-label col-sm-2">Date</label>
         <div class="col-sm-6">
             <input type="date" asp-for=Date class="form-control" id="stockInDate">
+        </div>
+    </div>
+    <div class="row mb-3">
+        <label for="stockInPO" class="form-label col-sm-2">Purchase Order</label>
+        <div class="col-sm-6">
+            <select class="form-control" id="stockInPO">
+                <option value="">-- None (Manual) --</option>
+            </select>
         </div>
     </div>
 </form>

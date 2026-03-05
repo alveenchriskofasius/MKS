@@ -28,6 +28,7 @@ namespace API.Repository
                 else
                 {
                     Unit unit = await _context.Units.FindAsync(unitModel.ID);
+                    if (unit == null) return new { success = false, error = "Unit not found" };
                     unit.Name = unitModel.UnitName;
                     _context.Units.Update(unit);
                 }
@@ -35,12 +36,12 @@ namespace API.Repository
             }
             catch (Exception e)
             {
-                return Task.FromResult<object>(new { success = false, error = e.Message });
+                return new { success = false, error = e.Message };
 
             }
-            return Task.FromResult<object>(new { success = true });
+            return new { success = true };
         }
-        public async Task<object> GetUnitList() => Task.FromResult<object>(await _context.Units.Select(x => new { x.ID, UnitName = x.Name }).ToListAsync());
+        public async Task<object> GetUnitList() => await _context.Units.AsNoTracking().Select(x => new { x.ID, UnitName = x.Name }).ToListAsync();
 
         public async Task<UnitModel> FillFormUnit(int id)
         {
@@ -64,15 +65,16 @@ namespace API.Repository
         {
             try
             {
-                _context.Units.Remove(await _context.Units.FindAsync(id));
+                var u = await _context.Units.FindAsync(id);
+                if (u != null) _context.Units.Remove(u);
                 await _context.SaveChangesAsync();
             }
             catch (Exception e)
             {
-                return Task.FromResult<object>(new { success = false, error = e.Message });
+                return new { success = false, error = e.Message };
 
             }
-            return Task.FromResult<object>(new { success = true });
+            return new { success = true };
         }
     }
 }

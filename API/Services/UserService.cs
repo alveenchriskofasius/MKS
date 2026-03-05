@@ -34,5 +34,15 @@ namespace API.Services
         {
             return await _userRepository.SaveUser(user);
         }
+
+        public async Task<List<RoleModel>> GetUserRoles(int userId)
+        {
+            return await _userRepository.GetUserRoles(userId);
+        }
+
+        public async Task<object> SaveUserRoles(int userId, List<int> roleIds)
+        {
+            return await _userRepository.SaveUserRoles(userId, roleIds);
+        }
     }
 }

@@ -1,0 +1,400 @@
+/* ========================================================================
+   MitraKaryaSystem – Custom Theme
+   Consistent UI skin applied on top of AdminLTE + Bootstrap 5
+   ======================================================================== */
+
+/* ---------- CSS Variables ---------- */
+:root {
+  --mks-primary: #2563eb;
+  --mks-primary-light: #dbeafe;
+  --mks-primary-dark: #1d4ed8;
+  --mks-success: #16a34a;
+  --mks-success-light: #dcfce7;
+  --mks-warning: #f59e0b;
+  --mks-warning-light: #fef3c7;
+  --mks-danger: #dc2626;
+  --mks-danger-light: #fee2e2;
+  --mks-info: #0891b2;
+  --mks-info-light: #cffafe;
+  --mks-gray-50: #f8fafc;
+  --mks-gray-100: #f1f5f9;
+  --mks-gray-200: #e2e8f0;
+  --mks-gray-600: #475569;
+  --mks-gray-700: #334155;
+  --mks-gray-800: #1e293b;
+  --mks-radius: 10px;
+  --mks-radius-lg: 14px;
+  --mks-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --mks-shadow-md: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -2px rgba(0,0,0,.06);
+}
+
+/* ---------- Body & Content ---------- */
+.content-wrapper {
+  background: var(--mks-gray-50) !important;
+}
+
+/* ---------- Sidebar ---------- */
+.main-sidebar {
+  background: linear-gradient(180deg, #1e3a5f 0%, #1a2e4a 100%) !important;
+  border-right: none !important;
+  box-shadow: 2px 0 8px rgba(0,0,0,.12);
+}
+.main-sidebar .brand-link {
+  border-bottom: 1px solid rgba(255,255,255,.1) !important;
+  padding: .85rem 1rem;
+  background: rgba(0,0,0,.15) !important;
+}
+.main-sidebar .brand-text {
+  color: #fff !important;
+  font-weight: 600;
+  font-size: .95rem;
+}
+.main-sidebar .brand-image {
+  border: 2px solid rgba(255,255,255,.3);
+}
+.sidebar .nav-sidebar .nav-link {
+  color: rgba(255,255,255,.72) !important;
+  border-radius: 8px;
+  margin: 2px 8px;
+  padding: .55rem .85rem;
+  font-size: .84rem;
+  transition: all .2s ease;
+}
+.sidebar .nav-sidebar .nav-link:hover {
+  background: rgba(255,255,255,.1) !important;
+  color: #fff !important;
+}
+.sidebar .nav-sidebar .nav-link.active {
+  background: var(--mks-primary) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(37,99,235,.35);
+}
+.sidebar .nav-sidebar .nav-link i {
+  width: 22px;
+  text-align: center;
+  margin-right: 6px;
+  font-size: .9rem;
+}
+/* sidebar section headers */
+.sidebar .nav-section {
+  color: rgba(255,255,255,.38);
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: .9rem .85rem .3rem 1.1rem;
+  margin-top: .35rem;
+}
+
+/* ---------- Navbar ---------- */
+.main-header.navbar {
+  background: #fff !important;
+  border-bottom: 1px solid var(--mks-gray-200);
+  box-shadow: var(--mks-shadow);
+}
+
+/* ---------- Cards ---------- */
+.card {
+  border: 1px solid var(--mks-gray-200);
+  border-radius: var(--mks-radius-lg) !important;
+  box-shadow: var(--mks-shadow);
+  overflow: hidden;
+}
+.card .card-header {
+  background: #fff;
+  border-bottom: 1px solid var(--mks-gray-200);
+  padding: .85rem 1.15rem;
+}
+.card .card-header h5,
+.card .card-header .card-title h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mks-gray-800);
+  margin-bottom: 0;
+}
+.card .card-footer {
+  background: var(--mks-gray-50);
+  border-top: 1px solid var(--mks-gray-200);
+  padding: .85rem 1.15rem;
+}
+
+/* Page-level card header accent – gradient strip */
+.card-header-accent {
+  background: linear-gradient(135deg, #1e3a5f 0%, var(--mks-primary) 100%) !important;
+  color: #fff !important;
+}
+.card-header-accent h5,
+.card-header-accent .card-title h5,
+.card-header-accent .card-title {
+  color: #fff !important;
+}
+.card-header-accent .btn-outline-light {
+  border-color: rgba(255,255,255,.45);
+  color: #fff;
+}
+.card-header-accent .btn-outline-light:hover {
+  background: rgba(255,255,255,.15);
+}
+
+/* ---------- Status Badges ---------- */
+.badge-status {
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .3px;
+  padding: .35em .7em;
+  border-radius: 50rem;
+}
+.badge-draft      { background: var(--mks-gray-200); color: var(--mks-gray-700); }
+.badge-submitted  { background: var(--mks-info-light); color: var(--mks-info); }
+.badge-approved,
+.badge-paid,
+.badge-verified   { background: var(--mks-success-light); color: var(--mks-success); }
+.badge-rejected   { background: var(--mks-danger-light); color: var(--mks-danger); }
+.badge-warning    { background: var(--mks-warning-light); color: #92400e; }
+.badge-pending    { background: #fef3c7; color: #92400e; }
+.badge-assigned   { background: var(--mks-info-light); color: var(--mks-info); }
+.badge-outfordelivery { background: #e0e7ff; color: #3730a3; }
+.badge-delivered  { background: var(--mks-success-light); color: var(--mks-success); }
+.badge-canceled   { background: var(--mks-gray-200); color: var(--mks-gray-600); }
+.badge-debt       { background: var(--mks-warning-light); color: #92400e; }
+.badge-completed  { background: #d1fae5; color: #065f46; }
+.badge-refund     { background: #fce7f3; color: #9d174d; }
+.badge-exchange   { background: #ede9fe; color: #5b21b6; }
+
+/* ---------- Tables ---------- */
+.table thead th {
+  background: var(--mks-gray-50);
+  color: var(--mks-gray-700);
+  font-weight: 600;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  border-bottom: 2px solid var(--mks-gray-200);
+  white-space: nowrap;
+}
+.table tbody td {
+  vertical-align: middle;
+  font-size: .85rem;
+  color: var(--mks-gray-700);
+}
+.table-hover tbody tr:hover {
+  background: var(--mks-primary-light) !important;
+}
+.table tfoot td,
+.table tfoot th {
+  font-weight: 700;
+  background: var(--mks-gray-50);
+  border-top: 2px solid var(--mks-gray-200);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: .84rem;
+  transition: all .2s ease;
+}
+.btn-primary {
+  background: var(--mks-primary);
+  border-color: var(--mks-primary);
+}
+.btn-primary:hover {
+  background: var(--mks-primary-dark);
+  border-color: var(--mks-primary-dark);
+  box-shadow: 0 4px 12px rgba(37,99,235,.3);
+  transform: translateY(-1px);
+}
+.btn-success {
+  background: var(--mks-success);
+  border-color: var(--mks-success);
+}
+.btn i {
+  margin-right: 4px;
+}
+
+/* Action button row (page footer) */
+.card-footer .btn + .btn {
+  margin-left: .35rem;
+}
+
+/* ---------- Form Controls ---------- */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--mks-primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+}
+
+/* ---------- Modals ---------- */
+.modal-content {
+  border-radius: var(--mks-radius-lg);
+  border: none;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+.modal-header {
+  border-radius: var(--mks-radius-lg) var(--mks-radius-lg) 0 0;
+}
+.modal-header.mks-modal-header {
+  background: linear-gradient(135deg, #1e3a5f 0%, var(--mks-primary) 100%);
+  color: #fff;
+  border-bottom: none;
+}
+.modal-header.mks-modal-header .modal-title {
+  font-weight: 600;
+}
+
+/* ---------- DataTables overrides ---------- */
+div.dataTables_wrapper .dataTables_filter input {
+  border-radius: 8px;
+  border: 1px solid var(--mks-gray-200);
+  padding: .35rem .65rem;
+}
+div.dataTables_wrapper .dataTables_length select {
+  border-radius: 8px;
+}
+
+/* ---------- Page Header Area ---------- */
+.page-header-card {
+  margin-bottom: 1rem;
+}
+.page-header-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+/* ---------- Stats / KPI mini cards (for DO page) ---------- */
+.kpi-row {
+  display: flex;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.kpi-card {
+  flex: 1;
+  min-width: 140px;
+  background: #fff;
+  border: 1px solid var(--mks-gray-200);
+  border-radius: var(--mks-radius);
+  padding: .75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  box-shadow: var(--mks-shadow);
+  cursor: pointer;
+  transition: all .2s;
+}
+.kpi-card:hover {
+  box-shadow: var(--mks-shadow-md);
+  transform: translateY(-2px);
+}
+.kpi-card.active {
+  border-color: var(--mks-primary);
+  background: var(--mks-primary-light);
+}
+.kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.kpi-icon.pending   { background: #fef3c7; color: #d97706; }
+.kpi-icon.assigned  { background: var(--mks-info-light); color: var(--mks-info); }
+.kpi-icon.otw       { background: #e0e7ff; color: #4f46e5; }
+.kpi-icon.delivered { background: var(--mks-success-light); color: var(--mks-success); }
+.kpi-icon.all       { background: var(--mks-gray-100); color: var(--mks-gray-600); }
+.kpi-body .kpi-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--mks-gray-800);
+}
+.kpi-body .kpi-label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--mks-gray-600);
+  margin-top: 2px;
+}
+
+/* ---------- Workflow stepper (PO / SO) ---------- */
+.workflow-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: .5rem 0;
+}
+.wf-step {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .3rem .7rem;
+  border-radius: 50rem;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .3px;
+  color: var(--mks-gray-600);
+  background: var(--mks-gray-100);
+  transition: all .3s;
+}
+.wf-step.active {
+  background: var(--mks-primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(37,99,235,.3);
+}
+.wf-step.done {
+  background: var(--mks-success-light);
+  color: var(--mks-success);
+}
+.wf-step .wf-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.wf-arrow {
+  color: var(--mks-gray-200);
+  font-size: .7rem;
+  margin: 0 .15rem;
+}
+
+/* ---------- Empty State ---------- */
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--mks-gray-600);
+}
+.empty-state i {
+  font-size: 2.5rem;
+  color: var(--mks-gray-200);
+  margin-bottom: .75rem;
+  display: block;
+}
+.empty-state p {
+  font-size: .9rem;
+  margin: 0;
+}
+
+/* ---------- Animations ---------- */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-slide-up {
+  animation: fadeSlideUp .35s ease;
+}
+
+/* ---------- Select2 skin ---------- */
+.select2-container--default .select2-selection--single {
+  border-radius: 8px !important;
+  border-color: var(--mks-gray-200) !important;
+  height: 38px !important;
+  padding-top: 4px;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  top: 5px !important;
+}

@@ -1,0 +1,59 @@
+@{
+    ViewData["Title"] = "Audit Log";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-clock-rotate-left fa-lg"></i>
+                <h5 class="mb-0">Audit Log</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-2 mb-3">
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Entity</label>
+                    <input type="text" class="form-control form-control-sm" id="filterEntity" placeholder="e.g. PurchaseOrder" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Action</label>
+                    <input type="text" class="form-control form-control-sm" id="filterAction" placeholder="e.g. Create" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">User</label>
+                    <input type="text" class="form-control form-control-sm" id="filterUser" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">From</label>
+                    <input type="date" class="form-control form-control-sm" id="filterFrom" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">To</label>
+                    <input type="date" class="form-control form-control-sm" id="filterTo" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary btn-sm" id="btnSearch"><i class="fa fa-search me-1"></i> Search</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle" id="tableAuditLog" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Entity</th>
+                            <th>Action</th>
+                            <th>Entity ID</th>
+                            <th>User</th>
+                            <th>IP</th>
+                            <th>Changes</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/AuditLog.js" asp-append-version="true"></script>
+}

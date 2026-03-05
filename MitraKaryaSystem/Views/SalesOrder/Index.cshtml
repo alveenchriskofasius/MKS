@@ -3,147 +3,81 @@
     ViewData["Title"] = "Sales Order";
 }
 <style>
-    .do-progress {
-        position: relative;
-        width: 100%;
-    }
+    /* DO progress stepper (SO-specific) */
+    .do-progress { position: relative; width: 100%; }
+    .do-step { text-align: center; flex: 1 1 0; position: relative; min-width: 100px; margin-bottom: 8px; }
+    .do-step .circle { width: 32px; height: 32px; line-height: 32px; border-radius: 50%; background: var(--mks-gray-200); color: #555; margin: 0 auto 4px; font-weight: 600; transition: all .3s; font-size: .8rem; }
+    .do-step.active-step .circle { background: var(--mks-primary); color: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,.2); }
+    .do-step .label { font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--mks-gray-600); }
+    .do-step.active-step .label { color: var(--mks-primary); }
+    .do-line { flex: 0 0 28px; height: 2px; background: var(--mks-gray-200); margin: 0 4px 24px 4px; position: relative; top: 15px; border-radius: 2px; }
+    .do-step.active-step + .do-line { background: var(--mks-primary); }
 
-    .do-step {
-        text-align: center;
-        flex: 1 1 0;
-        position: relative;
-        min-width: 110px;
-        margin-bottom: 10px;
-    }
-
-        .do-step .circle {
-            width: 34px;
-            height: 34px;
-            line-height: 34px;
-            border-radius: 50%;
-            background: #e0e0e0;
-            color: #555;
-            margin: 0 auto 4px;
-            font-weight: 600;
-            transition: all .3s;
-            box-shadow: 0 0 0 2px #fff inset,0 0 0 3px #ccc;
-        }
-
-        .do-step.active-step .circle {
-            background: #0d6efd;
-            color: #fff;
-            box-shadow: 0 0 0 2px #0d6efd inset,0 0 0 3px rgba(13,110,253,.35);
-        }
-
-        .do-step .label {
-            font-size: .65rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            color: #777;
-            max-width: 100px;
-            margin: 0 auto;
-        }
-
-        .do-step.active-step .label {
-            color: #0d6efd;
-            font-weight: 600;
-        }
-
-    .do-line {
-        flex: 0 0 32px;
-        height: 2px;
-        background: linear-gradient(90deg,#ccc,#ccc);
-        margin: 0 4px 28px 4px;
-        position: relative;
-        top: 16px;
-        border-radius: 2px;
-    }
-
-    .do-step.active-step + .do-line {
-        background: linear-gradient(90deg,#0d6efd,#0d6efd);
-    }
-    /* SweetAlert2 container adjustments */
-    .swal2-html-container {
-        text-align: left;
-        width: 100%;
-    }
-
-    #assignDriverContainer select {
-        min-width: 140px;
-    }
-
-    #btnCreateDO {
-        transition: all .25s;
-    }
-
-        #btnCreateDO:not(.d-none):hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(0,0,0,.1);
-        }
-
-    #deliveryOrderSection {
-        animation: fadeIn .4s ease;
-    }
-
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-4px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+    .swal2-html-container { text-align: left; width: 100%; }
+    #assignDriverContainer select { min-width: 140px; }
+    #deliveryOrderSection { animation: fadeSlideUp .4s ease; }
 </style>
-<div class="card">
-    <div class="card-header" style="background-color:#f0f0f0">
-        <div class="card-title">
-            <h5>Sales Order</h5>
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-file-invoice-dollar fa-lg"></i>
+                <h5 class="mb-0">Sales Order</h5>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" id="buttonNew" class="btn btn-sm btn-outline-light"><i class="fa-solid fa-plus"></i> New</button>
+                <button type="button" id="buttonSearch" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+            </div>
         </div>
-        <div class="card-tools">
-            <button type="button" id="buttonNew" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-circle-plus"></i> Add</button>
-            <button type="button" id="buttonSearch" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-        </div>
-    </div>
-    <div class="card-body">
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div class="card-title mb-0">
-                    <span class="badge rounded-pill text-bg-warning" id="salesOrderStatus">Draft</span>
+        <div class="card-body">
+            <!-- Status & workflow -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="workflow-bar" id="soWorkflowBar">
+                    <div class="wf-step active" data-step="1"><span class="wf-dot"></span> Draft</div>
+                    <i class="fa fa-chevron-right wf-arrow"></i>
+                    <div class="wf-step" data-step="2"><span class="wf-dot"></span> Paid</div>
+                    <i class="fa fa-chevron-right wf-arrow"></i>
+                    <div class="wf-step" data-step="8"><span class="wf-dot"></span> Completed</div>
                 </div>
-                <div>
-                    <button class="btn btn-outline-success btn-sm d-none" id="btnCreateDO"><i class="fa fa-truck"></i> Create Delivery Order</button>
-                    <button class="btn btn-outline-primary btn-sm" id="btnAddPayment"><i class="fa fa-cash-register"></i> Save & Pay</button>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge-status badge-draft" id="salesOrderStatus">Draft</span>
+                    <button class="btn btn-outline-success btn-sm d-none" id="btnCreateDO"><i class="fa fa-truck"></i> Create DO</button>
+                    <button class="btn btn-outline-primary btn-sm" id="btnAddPayment"><i class="fa fa-cash-register"></i> Save &amp; Pay</button>
                 </div>
             </div>
-            <div class="card-body" id="salesOrderHeaderBody">
-                <partial name="_Form" model="new SalesOrderViewModel()" />
+
+            <!-- Form -->
+            <div class="card mb-3">
+                <div class="card-body" id="salesOrderHeaderBody">
+                    <partial name="_Form" model="new SalesOrderViewModel()" />
+                </div>
+                <div id="deliveryOrderSection" class="px-3 pb-3" style="display:none">
+                    <div class="small text-muted mb-1"><i class="fa fa-truck me-1"></i>Delivery</div>
+                    <div><strong>DO No:</strong> <span id="deliveryOrderNo">-</span> &nbsp; <span class="badge-status" id="deliveryOrderStatusBadge">-</span> <button class="btn btn-link btn-sm d-none" id="btnViewDO">view</button></div>
+                </div>
             </div>
-            <div id="deliveryOrderSection" class="px-3 pb-3" style="display:none">
-                <div class="small text-muted mb-1">Delivery</div>
-                <div><strong>DO No:</strong> <span id="deliveryOrderNo">-</span> &nbsp; <span class="badge" id="deliveryOrderStatusBadge">-</span> <button class="btn btn-link btn-sm d-none" id="btnViewDO">view</button></div>
-            </div>
-        </div>
-        <div class="card mb-3">
-            <div class="card-body">
-                <div class="row mb-3">
-                    <label for="barcode" class="form-label col-sm-2">Select Product</label>
-                    <div class="col-md-10 col-lg-10">
-                        <select class="form-control select2" id="selectProduct" autofocus></select>
+
+            <!-- Product selection -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-10">
+                            <label class="form-label small fw-semibold">Add Product</label>
+                            <select class="form-control select2" id="selectProduct" autofocus></select>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <partial name="_TableProduct" />
-        <partial name="_Table" />
 
-    </div>
-    <div class="card-footer">
-        <button type="submit" class="btn btn-primary" id="buttonSave">Save</button>
-        <a class="btn btn-secondary" asp-action="Index" asp-controller="Home" id="buttonCancel">Cancel</a>
+            <!-- Items table -->
+            <partial name="_TableProduct" />
+            <partial name="_Table" />
+
+        </div>
+        <div class="card-footer d-flex gap-2 flex-wrap">
+            <button type="submit" class="btn btn-primary" id="buttonSave"><i class="fa fa-save"></i> Save</button>
+            <a class="btn btn-secondary ms-auto" asp-action="Index" asp-controller="Home" id="buttonCancel"><i class="fa fa-arrow-left"></i> Back</a>
+        </div>
     </div>
 </div>
 

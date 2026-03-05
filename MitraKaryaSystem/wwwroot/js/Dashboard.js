@@ -1,50 +1,67 @@
-$(document).ready(function(){ Dashboard.Init(); });
-var Dashboard = {
-    Init: function(){ this.LoadSalesToday(); this.LoadStockAlerts(); this.LoadPendingDO(); },
-    LoadSalesToday: function(){
-        $.get('/Home/SalesToday', function(res){
-            if(!res || !res.success){ $('#salesTodayContainer').text('Error load'); return; }
-            // Prefer server-calculated total; fall back to previous client calculation if missing
+$(document).ready(function () { dashboard.init(); });
+
+const dashboard = (function () {
+    function setHtml(selector, html) { $(selector).html(html); }
+
+    async function loadSalesToday() {
+        $.get('/Home/SalesToday', function (res) {
+            if (!res || !res.success) { setHtml('#salesTodayContainer', 'Error load'); return; }
+            // Prefer server-calculated total; fall back to client calculation
             if (res.total !== undefined && res.total !== null) {
-                $('#salesTodayContainer').html(`<h3>${Number(res.total).toFixed(2)}</h3><small>Total sales today</small>`);
+                setHtml('#salesTodayContainer', `<h3>${Number(res.total).toFixed(2)}</h3><small>Total sales today</small>`);
                 return;
             }
-            var data = res.result;
-            var rows = [];
-            if(Array.isArray(data)) rows = data;
-            else if(data && Array.isArray(data.result)) rows = data.result;
-            var today = new Date().toISOString().slice(0,10);
-            var sum = 0;
-            rows.forEach(function(r){
-                var dateStr = (r.date || r.Date || '').toString().slice(0,10);
-                if(dateStr === today){ sum += parseFloat(r.amount || r.Amount || 0); }
-            });
-            $('#salesTodayContainer').html(`<h3>${sum.toFixed(2)}</h3><small>Total sales today</small>`);
-        }).fail(function(){ $('#salesTodayContainer').text('Error load'); });
-    },
-    LoadStockAlerts: function(){
-        $.get('/Home/StockAlerts', function(res){
-            if(!res || !res.success){ $('#stockAlertsContainer').text('Error load'); return; }
-            var data = res.result;
-            // server returns only low-stock items
-            var rows = [];
-            if(Array.isArray(data)) rows = data;
-            else if(data && Array.isArray(data.result)) rows = data.result;
-            if(rows.length==0) { $('#stockAlertsContainer').text('No alerts'); return; }
-            var html = '<ul class="list-unstyled mb-0">';
-            rows.forEach(function(p){ html += `<li>${(p.name||p.Name)} - ${(p.stockQuantity||p.StockQuantity||0)}</li>`; });
-            html += '</ul>';
-            $('#stockAlertsContainer').html(html);
-        }).fail(function(){ $('#stockAlertsContainer').text('Error load'); });
-    },
-    LoadPendingDO: function(){
-        $.get('/Home/PendingDeliveryOrders', function(res){
-            if(!res || !res.success){ $('#pendingDOContainer').text('Error'); return; }
-            var rows = res.result || [];
-            var html = '<ul class="list-unstyled mb-0">';
-            rows.forEach(function(d){ html += `<li>${d.no||d.No} - SO:${d.salesOrderID||d.SalesOrderID}</li>`; });
-            html += '</ul>';
-            $('#pendingDOContainer').html(html);
-        }).fail(function(){ $('#pendingDOContainer').text('Error'); });
+            const data = Array.isArray(res.result) ? res.result : (Array.isArray(res) ? res : []);
+            const today = new Date().toISOString().slice(0,10);
+            const sum = data.reduce((acc, r) => {
+                const dateStr = (r.date || r.Date || '').toString().slice(0,10);
+                if (dateStr === today) return acc + parseFloat(r.amount || r.Amount ||0);
+                return acc;
+            },0);
+            setHtml('#salesTodayContainer', `<h3>${sum.toFixed(2)}</h3><small>Total sales today</small>`);
+        }).fail(function () { setHtml('#salesTodayContainer', 'Error load'); });
     }
-}
+
+    function loadStockAlerts() {
+        $.get('/Home/StockAlerts', function (res) {
+            if (!res || !res.success) { setHtml('#stockAlertsContainer', 'Error load'); return; }
+            const data = Array.isArray(res.result) ? res.result : (Array.isArray(res) ? res : []);
+            if (!data.length) { setHtml('#stockAlertsContainer', '<span class="text-muted">No low stock alerts</span>'); return; }
+            const items = data.map(p => {
+                const name = p.name || p.Name;
+                const qty = p.stockQuantity ?? p.StockQuantity ?? 0;
+                const thr = p.lowStockThreshold ?? p.LowStockThreshold ?? 5;
+                const cls = qty === 0 ? 'text-danger fw-bold' : 'text-warning';
+                return `<li class="${cls}">${name} — <strong>${qty}</strong> / ${thr}</li>`;
+            }).join('');
+            setHtml('#stockAlertsContainer', `<ul class="list-unstyled mb-0">${items}</ul>`);
+        }).fail(function () { setHtml('#stockAlertsContainer', 'Error load'); });
+    }
+
+    function loadPendingDO() {
+        $.get('/Home/PendingDeliveryOrders', function (res) {
+            if (!res || !res.success) { setHtml('#pendingDOContainer', 'Error'); return; }
+            const rows = res.result || [];
+            const items = rows.map(d => `<li>${d.no || d.No} - SO:${d.salesOrderID || d.SalesOrderID}</li>`).join('');
+            setHtml('#pendingDOContainer', `<ul class="list-unstyled mb-0">${items}</ul>`);
+        }).fail(function () { setHtml('#pendingDOContainer', 'Error'); });
+    }
+
+    function loadPendingPO() {
+        $.get('/Home/PendingPurchaseOrders', function (res) {
+            if (!res || !res.success) { setHtml('#pendingPOContainer', 'Error'); return; }
+            const count = res.count || 0;
+            if (count === 0) { setHtml('#pendingPOContainer', '<span class="text-muted">No pending approvals</span>'); return; }
+            setHtml('#pendingPOContainer', `<h3>${count}</h3><small>Purchase Orders awaiting approval</small>`);
+        }).fail(function () { setHtml('#pendingPOContainer', 'Error'); });
+    }
+
+    function init() {
+        loadSalesToday();
+        loadStockAlerts();
+        loadPendingPO();
+        loadPendingDO();
+    }
+
+    return { init };
+})();

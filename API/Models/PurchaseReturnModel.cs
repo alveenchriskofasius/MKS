@@ -8,6 +8,7 @@ public class PurchaseReturnModel
     public int SupplierID { get; set; }
     public string Note { get; set; }
     public decimal Amount { get; set; }
+    public short? StatusID { get; set; }
     public List<PurchaseReturnDetailModel> Details { get; set; } = new();
 }
 public class PurchaseReturnDetailModel

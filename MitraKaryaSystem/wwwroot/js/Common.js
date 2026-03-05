@@ -1,869 +1,466 @@
-﻿
-var Common = {
-    MakeCSRFExtendedData: function (data) {
-        var extData = $.extend(data, { "_RequestVerificationToken": $('input[name="_RequestVerificationToken"]').val() });
-        return extData;
-    },
-    GetData: {
-        Post: function (_url, _data) {
-            //$.blockUI({
-            //    css: {
-            //        padding: '15px',
-            //        opacity: 5
-            //    },
-            //    message: " please wait..."
-            //});
-            var result = [];
-            var csrfToken = $('input[name="_RequestVerificationToken"]').val();
-
-            $.ajax({
-                url: _url,
-                type: 'POST',
-                headers: {
-                    "_RequestVerificationToken": csrfToken
-                },
-                dataType: 'json',
-                data: Common.MakeCSRFExtendedData(_data),
-                async: false,
-                cache: false,
-            }).done(function (data, textStatus, jqXHR) {
-                result = data;
-                /*   $.unblockUI();*/
-            }).fail(function (jqXHR, textStatus, errorThrown) {
-                result = [];
-                /*  $.unblockUI();*/
-            });
-            return result;
-        },
-        Get: function (_url) {
-            var csrfToken = $('input[name="_RequestVerificationToken"]').val();
-
-            //$.blockUI({
-            //    css: {
-            //        padding: '15px',
-            //        opacity: 5
-            //    },
-            //    message: " please wait..."
-            //});
-            var result = [];
-            $.ajax({
-                url: _url,
-                type: "Get",
-                headers: {
-                    "_RequestVerificationToken": csrfToken
-                },
-                async: false,
-                cache: false,
-            }).done(function (data, textStatus, jqXHR) {
-                result = data;
-                //$.unblockUI();
-            }).fail(function (jqXHR, textStatus, errorThrown) {
-                result = [];
-                //$.unblockUI();
-            });
-            return result;
-        },
-        //Get: function (_url, param) {
-        //    var csrfToken = $('input[name="_RequestVerificationToken"]').val();
-        //    var result = [];
-        //    $.ajax({
-        //        url: _url,
-        //        data: param,
-        //        headers: {
-        //            "_RequestVerificationToken": csrfToken
-        //        },
-        //        type: "Get",
-        //        async: false,
-        //        cache: false,
-        //    }).done(function (data, textStatus, jqXHR) {
-        //        result = data;
-        //    }).fail(function (jqXHR, textStatus, errorThrown) {
-        //        result = [];
-        //    });
-        //    return result;
-        //},
-    },
-    Validation: {
-        Number: function (number) {
-            var charCode = (number.which) ? number.which : number.keyCode;
-            if (charCode != 46 && charCode > 31
-                && (charCode < 48 || charCode > 57))
-                return false;
-
-            return true;
-            //var numbers = /^[0-9]+$/;
-            //if (number.match(numbers)) {
-            //    return true;
-            //} else {
-            //    return false;
-            //}
-        },
-        Digit: function (number) {
-
-            var numbers = /^[0-9]+$/;
-            if (number.match(numbers)) {
-                return true;
-            } else {
-                return false;
-            }
-        },
-        Decimal: function (number) {
-
-            if (parseInt(number) == 0)
-                return true;
-
-            var regex = /((\d+)(\.\d{0,2}))$/;
-            if (regex.test(number)) {
-                return true;
-            } else {
-                return false;
-            }
-        },
-    },
-    Helper: {
-        CommaSeparation: function (yourNumber) {
-            var temp = yourNumber + "";
-            var value = parseFloat(temp.replace(/,/g, ""));
-            if (value != "" && !isNaN(value)) {
-                var n = parseFloat(value).toFixed(2).toString().split(".");
-                //Comma-fies the first part
-                n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                //Combines the two sections
-                return n.join(".");
-            } else {
-                return "";
-            }
-        },
-
-        CommaSeparation2: function (yourNumber) {
-            var temp = yourNumber + "";
-            var value = parseFloat(temp.replace(/,/g, ""));
-            if (value != "" && !isNaN(value)) {
-                var n = parseFloat(value).toString().split(".");
-                if (parseFloat(value) > 1)
-                    n = parseFloat(value).toFixed(2).toString().split(".");
-                //Comma-fies the first part
-                n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                //Combines the two sections
-                return n.join(".");
-            } else {
-                return "";
-            }
-        },
-
-        ReplaceComa: function (number) {
-            return number.replace(/\s*,\s*|\s+,/g, '');
-        },
-        Datepicker: function () {
-            var dateToday = new Date();
-            $('.date-picker').datepicker({
-                dateFormat: "dd-M-yy",
-                autoclose: true,
-                changeMonth: true
-            });
-        },
-    },
-    Form: {
-
-        Save: function (_url, _data) {
-            return new Promise(function (resolve, reject) {
-                var csrfToken = $('input[name="_RequestVerificationToken"]').val();
-                $.ajax({
-                    url: _url,
-                    headers: {
-                        "_RequestVerificationToken": csrfToken
-                    },
-                    type: 'POST',
-                    dataType: 'json',
-                    data: Common.MakeCSRFExtendedData(_data),
-                    async: true, // Set this to true for asynchronous operation
-                    cache: false,
-                    success: function (data, textStatus, jqXHR) {
-                        resolve(data);
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        reject(jqXHR);
-                    }
-                });
-            });
-        },
-        SaveWithJSON: function (_url, data) {
-            var result = [];
-            $.ajax({
-                url: _url,
-                headers: {
-                    "_RequestVerificationToken": $('input[name="_RequestVerificationToken"]').val()
-                },
-                type: "POST",
-                datatype: "json",
-                contentType: "application/json; charset=utf-8",
-                data: Common.MakeCSRFExtendedData(data),
-                cache: false
-            }).done(function (data, textStatus, jqXHR) {
-                result = data;
-            }).fail(function (jqXHR, textStatus, errorThrown) {
-                result.respon.errorMessage = 'Save data failed!';
-                result.respon.errorType = 1;
-            });
-            return result;
-
-        },
-        Delete: function (_url, _data) {
-            var result = '';
-            $.ajax({
-                url: _url,
-                headers: {
-                    "_RequestVerificationToken": $('input[name="_RequestVerificationToken"]').val()
-                },
-                type: 'GET',
-                data: Common.MakeCSRFExtendedData(_data),
-                async: false,
-                cache: false,
-            }).done(function (data, textStatus, jqXHR) {
-                result = data;
-            }).fail(function (jqXHR, textStatus, errorThrown) {
-                result.respon.errorMessage = 'Delete data failed!'
-                result.respon.errorType = 1;
-
-            });
-            return result;
-        },
-        HandleFormSubmit: function (form, constraints) {
-            // validate the form aainst the constraints
-            var result = false;
-            var errors = validate(form, constraints);
-            // then we update the form to reflect the results
-            Common.Form.ShowErrors(form, errors || {});
-
-            if (errors == undefined) {
-                result = true;
-            }
-            return result;
-        },
-        ShowErrors: function (form, errors) {
-
-            // We loop through all the inputs and show the errors for that input
-            $.each(form.elements, function (input, element) {
-                // Since the errors can be null if no errors were found we need to handle
-                // that
-                Common.Form.ShowErrorsForInput(element, errors && errors[element.id]);
-            });
-        },
-        ShowErrorsForInput: function (input, errors) {
-            // This is the root of the input
-
-            var formGroup = Common.Form.ClosestParent(input.parentNode, "form-group");
-            var messages = input.parentNode.querySelector(".messages");
-            // Find where the error messages will be insert into
-
-            //var messages = ".messages";//formGroup.querySelector(".messages");
-            // First we remove any old messages and resets the classes
-            Common.Form.ResetFormGroup(formGroup);
-            // If we have errors
-            if (errors) {
-                // we first mark the group has having errors
-                formGroup.classList.add("has-error");
-                // then we append all the errors
-                $.each(errors, function (i, error) {
-                    Common.Form.AddError(messages, error, input);
-                });
-            } else {
-                // otherwise we simply mark it as success
-                if (formGroup != null)
-                    formGroup.classList.add("has-success");
-            }
-        },
-        ResetFormGroup: function (formGroup) {
-
-            // Remove the success and error classes
-            //var hasError = formGroup.getElementsByClassName("has-error");
-            //while (hasError.length) {
-            //    formGroup.classList.remove("has-error");
-            //}
-            if (formGroup != null) {
-                if (formGroup.classList.value.includes("has-error"))
-                    formGroup.classList.remove("has-error");
-
-
-                if (formGroup.classList.value.includes("has-success"))
-                    formGroup.classList.remove("has-success");
-                // and remove any old messages
-                $.each(formGroup.querySelectorAll(".text-danger"), function (i, el) {
-                    el.parentNode.removeChild(el);
-                });
-            }
-        },
-        AddError: function (messages, error, input) {
-
-            var block = document.createElement("p");
-            block.classList.add("text-danger");
-            block.classList.add("error");
-            block.innerText = error;
-            messages.appendChild(block);
-            $(input).addClass("input-danger");
-        },
-        ClosestParent: function (child, className) {
-            if (!child || child == document) {
-                return null;
-            }
-            if (child.classList.contains(className)) {
-                return child;
-            } else {
-                return Common.Form.ClosestParent(child.parentNode, className);
-            }
-        },
-        SetValue: function bindObjectToForm(obj) {
-            for (var prop in obj) {
-                if (obj.hasOwnProperty(prop)) {
-                    var element = document.getElementById(prop);
-                    if (element) {
-                        element.value = obj[prop];
-                    }
-                }
-            }
-        }
-
-    },
-    Format: {
-        Comma: function (yourNumber) {
-            var temp = yourNumber + "";
-            var value = parseFloat(temp.replace(/,/g, ""));
-
-            if (value != "" && !isNaN(value)) {
-                var n = parseFloat(value).toFixed(2).toString().split(".");
-                //Comma-fies the first part
-                n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                //Combines the two sections
-                value = n.join(".");
-            } else {
-                value = "";
-            }
-            return value;
-        },
-        Comma2: function (yourNumber) {
-            var temp = yourNumber + "";
-            var value = parseFloat(temp.replace(/,/g, ""));
-
-            if (value != "" && !isNaN(value)) {
-                var n = parseFloat(value).toFixed(2).toString().split(".");
-                //Comma-fies the first part
-                n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                //Combines the two sections
-                value = n.join(".");
-            } else {
-                value = "0";
-            }
-            value = value.replace(".00", "");
-            value = value.replace(".0", "");
-            return value;
-        },
-        Date: function (value) {
-            if (value === null) return "";
-            var dt = new Date(value);
-            var month = dt.getMonth() + 1;
-
-            return ((parseInt(dt.getDate()) < 10) ? "0" + dt.getDate() : dt.getDate()) + "/" + (month < 10 ? '0' + month : month) + "/" + dt.getFullYear();
-
-        },
-        DateByForm: function (value) {
-            if (value === null) return "";
-            var dt = new Date(value);
-
-            var day = ("0" + dt.getDate()).slice(-2);
-            var weekAgo = ("0" + (dt.getDate() - 7)).slice(-2);
-            var month = ("0" + (dt.getMonth() + 1)).slice(-2);
-
-            var today = dt.getFullYear() + "-" + (month) + "-" + (day);
-
-            return today;
-        },
-        Datetime: function (value) {
-            if (value === null) return "";
-            var dt = new Date(value);
-            var month = dt.getMonth() + 1;
-
-            var minutes = dt.getMinutes();
-            minutes = (minutes < 10) ? ("0" + minutes) : minutes;
-
-            var seconds = dt.getSeconds();
-            seconds = (seconds < 10) ? ("0" + seconds) : seconds;
-
-            return ((parseInt(dt.getDate()) < 10) ? "0" + dt.getDate() : dt.getDate()) + "-" + month + "-" + dt.getFullYear() + " " + dt.getHours() + ":" + minutes + ":" + seconds;
-
-        },
-        Money: function (id) {
-
-            $(id).each(function (index, el) {
-                var elType = null; // input or other
-                var value = null;
-                // get value
-                if ($(el).is('input') || $(el).is('textarea')) {
-                    value = $(el).val().replace(/,/g, '');
-                    elType = 'input';
-                } else {
-                    value = $(el).text().replace(/,/g, '');
-                    elType = 'other';
-                }
-                // if value changes
-                $(el).on('paste keyup', function () {
-                    value = $(el).val().replace(/,/g, '');
-                    Common.Format.MoneyCurrency(el, elType, value); // format element
-                });
-                Common.Format.MoneyCurrency(el, elType, value); // format element
-            });
-
-        },
-        MoneyCurrency: function (el, elType, value) {
-            var result = '';
-            var valueArray = value.split('');
-            var resultArray = [];
-            var counter = 0;
-            var temp = '';
-            for (var i = valueArray.length - 1; i >= 0; i--) {
-                temp += valueArray[i];
-                counter++
-                if (counter == 3) {
-                    resultArray.push(temp);
-                    counter = 0;
-                    temp = '';
-                }
-            };
-            if (counter > 0) {
-                resultArray.push(temp);
-            }
-            for (var i = resultArray.length - 1; i >= 0; i--) {
-                var resTemp = resultArray[i].split('');
-                for (var j = resTemp.length - 1; j >= 0; j--) {
-                    result += resTemp[j];
-                };
-                if (i > 0) {
-                    result += ','
-                }
-            };
-            if (elType == 'input') {
-                $(el).val(result);
-            } else {
-                $(el).empty().text(result);
-            }
-
-
-        },
-        Currency: function (bilangan) {
-            var minus = '';
-
-            bilangan = bilangan.toString().replace(/,/g, "");
-            if (bilangan.includes('-')) {
-                bilangan = bilangan.replace('-', '');
-                minus = '-';
-            }
-            var number_string = bilangan.toString(),
-                sisa = number_string.length % 3,
-                rupiah = number_string.substr(0, sisa),
-                ribuan = number_string.substr(sisa).match(/\d{3}/g);
-
-            if (ribuan) {
-                separator = sisa ? ',' : '';
-                rupiah += separator + ribuan.join(',');
-            }
-            return minus + rupiah;
-
-        },
-    },
-    Table: {
-        InitClient: function (idTB) {
-            $(idTB).DataTable({
-                "destroy": true,
-                "filter": true,
-                "serverSide": false,
-                "language": {
-                    "emptyTable": "No data available in table"
-                },
-                "data": [],
-                "dom": "<'row' <'col-md-12'B>><'row'<'col-md-6 col-sm-12'l><'col-md-6 col-sm-12'f>r><'table-scrollable't><'row'<'col-md-5 col-sm-12'i><'col-md-7 col-sm-12'p>>",
-                "buttons": [
-                    'copyHtml5',
-                    'excelHtml5',
-                ],
-            });
-        },
-        LoadTableClientWithPaging: function (_idTB, _data, _columns, _lengthMenu, _columnDefs, _tableName, _orderColumn, _sCrollX = false) {
-            var ordering = true;
-            if (_orderColumn == null || _orderColumn.length == 0)
-                ordering = false;
-
-            $(_idTB).DataTable({
-                "deferRender": true,
-                "proccessing": true,
-                "serverSide": false,
-                "ordering": ordering,
-                "destroy": true,
-                "filter": true,
-                "language": { "emptyTable": "No data available in table" },
-                "dom": "<'row' <'col-md-12'B>><'row'<'col-md-6 col-sm-12'l><'col-md-6 col-sm-12'f>r><'table-scrollable't><'row'<'col-md-5 col-sm-12'i><'col-md-7 col-sm-12'p>>",
-                "buttons": [{ extend: 'copyHtml5', }, { extend: 'excelHtml5', title: _tableName }],
-                "data": _data,
-                "lengthMenu": _lengthMenu,
-                "columns": _columns,
-                "columnDefs": _columnDefs,
-                "order": _orderColumn,
-                //"scrollY": true, /* Enable vertical scroll to allow fixed columns */
-                "scrollX": _sCrollX, /* Enable horizontal scroll to allow fixed columns */
-            });
-        },
-        LoadTableClientNoPaging: function (_idTB, _data, _columns, _columnDefs, _tableName, _orderColumn) {
-            $(_idTB).DataTable({
-                "deferRender": true,
-                "proccessing": true,
-                "serverSide": false,
-                "destroy": true,
-                "filter": false,
-                "paging": false,
-                "language": { "emptyTable": "No data available in table" },
-                "dom": "<'row' <'col-md-12'B>><'row'<'col-md-6 col-sm-12'l><'col-md-6 col-sm-12'f>r><'table-scrollable't><'row'<'col-md-5 col-sm-12'i><'col-md-7 col-sm-12'p>>",
-                "buttons": [{ extend: 'copyHtml5', }, { extend: 'excelHtml5', title: _tableName }],
-                "data": _data,
-                "columns": _columns,
-                "columnDefs": _columnDefs,
-                "order": _orderColumn,
-            });
-        },
-        LoadTableClient: function (_idTB, _data, _columns, _columnDefs) {
-            $(_idTB).DataTable({
-                "deferRender": true,
-                "proccessing": true,
-                "serverSide": false,
-                "destroy": true,
-                "filter": false,
-                "lengthChange": false,
-                "paging": false,
-                "data": _data,
-                "columns": _columns,
-                "columnDefs": _columnDefs,
-                "order": false,
-            });
-        },
-    },
-    Alert: {
-        Error: function (message) {
-            new swal("Error System!", message, "error");
-            //alert(message);
-        },
-        Success: function (message) {
-            new swal("Success!", message, "success");
-            //alert("Proses Berhasil");
-        },
-        Warning: function (message) {
-            new swal("Warning!", message, "warning");
-            //alert(message);
-        },
-        AlertType: function (errorType, message) {
-            // 0 Success
-            // 1 Error System
-            // 2 Warning 
-            if (errorType == 0) {
-                Common.Alert.Success(message);
-            }
-            else if (errorType == 1) {
-                Common.Alert.Error(message);
-            }
-            else if (errorType == 2) {
-                Common.Alert.Warning(message);
-            } else {
-                Common.Alert.Error(message);
-            }
-        },
-        BolokUi: function () {
-            $.blockUI({
-                css: {
-                    padding: '15px',
-                    opacity: 5
-                },
-                message: "processing encryption your data import...  please wait..."
-            });
-        },
-    },
-    CheckError: {
-        Object: function (data) {
-            var result = true;
-            if (result.ErrorType == 0) {
-                result = true;
-            } else if (result.ErrorType == 1) {
-                result = false;
-            } else if (result.ErrorType == 2) {
-                result = false;
-            }
-            return result;
-        }
-    },
-    Convert: {
-        Base64: function (file) {
-            var result = "";
-            var reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = function () {
-                result = reader.result;
-            };
-            reader.onerror = function (error) {
-                result = 'Error: ' + error;
-            };
-
-            //result=  await toBase64(file)
-            return result;
-        }
-
-    },
-    Chart: {
-        SetStepChart: function (maxTop) {
-
-            if (maxTop == null) {
-                return { topChartValue: 1, stepSize: 0.1 }
-
-            }
-
-            if (Number.isNaN(maxTop)) {
-                return { topChartValue: 1, stepSize: 0.1 }
-            }
-
-            if (maxTop > 1) {
-                maxTop = Math.ceil(maxTop);
-            }
-
-
-
-            var stepSize = 0;
-            var topChartValue = 0;
-
-            if (maxTop == 0) {
-                return { topChartValue: 1, stepSize: 0.1 }
-            }
-            if (maxTop > 10000000) {
-                stepSize = 10000000;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 10000000);
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop > 1000000) {
-                stepSize = 1000000;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 1000000)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop > 100000) {
-                stepSize = 100000;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 100000)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop > 10000) {
-                stepSize = 10000;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 10000)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop > 1000) {
-                stepSize = 1000;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 1000)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop > 100) {
-                stepSize = 100;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 100)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop > 10) {
-                stepSize = 10;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 10)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop > 1) {
-                stepSize = 1;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 1)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-
-            if (maxTop > 0.1) {
-                stepSize = 0.1;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 0.1)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop > 0.01) {
-                stepSize = 0.01;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 0.01)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop => 0.010) {
-                stepSize = 0.01;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 0.01)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-            if (maxTop => 0.001) {
-                stepSize = 0.001;
-                topChartValue = Common.Chart.GetMaxValue(maxTop, 0.001)
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-        },
-        SetStepChartPercent: function (maxTop) {
-            var stepSize = 20;
-            var topChartValue = 100;
-
-            if (maxTop == null || Number.isNaN(maxTop) || maxTop == 0) {
-                return { topChartValue: topChartValue, stepSize: stepSize }
-            }
-
-            if (maxTop > 1) {
-                maxTop = Math.ceil(maxTop);
-            }
-
-            topChartValue = Common.Chart.GetMaxValue(maxTop, stepSize) + stepSize;
-            return { topChartValue: topChartValue, stepSize: stepSize }
-        },
-        GetMaxValue: function (maxTop, counter) {
-
-            var result = 0;
-            for (var i = counter; i < maxTop; i = i + counter) {
-                result += counter;
-            }
-            result = result + counter;
-            return result;
-        },
-        SetYValue: function (value, type) {
-            var maxTop = 0;
-            if (type == "Daily")
-                maxTop = YValueDaily.topChartValue;
-            else
-                maxTop = YValueCumulative.topChartValue;
-            if (value < 1) {
-                maxTop = value.toFixed(2);
-            }
-            if (value > 1) {
-                maxTop = Math.ceil(value);
-            }
-
-
-            if (maxTop > 1000) {
-                if (value === 50000000) return "50M";
-                if (value === 30000000) return "30M";
-                if (value === 20000000) return "20M";
-                if (value === 10000000) return "10M";
-                if (value === 5000000) return "5M";
-                if (value === 4000000) return "4M";
-                if (value === 3000000) return "3M";
-                if (value === 2000000) return "2M";
-                if (value === 1000000) return "1M";
-                if (value === 900000) return "900K";
-                if (value === 800000) return "800K";
-                if (value === 700000) return "700K";
-                if (value === 600000) return "600K";
-                if (value === 500000) return "500K";
-                if (value === 400000) return "400K";
-                if (value === 300000) return "300K";
-                if (value === 200000) return "200K";
-                if (value === 100000) return "100K";
-                if (value === 50000) return "50K";
-                if (value === 40000) return "40K";
-                if (value === 30000) return "30K";
-                if (value === 20000) return "20K";
-                if (value === 10000) return "10K";
-                if (value === 9000) return "9K";
-                if (value === 8000) return "8K";
-                if (value === 7000) return "7K";
-                if (value === 6000) return "6K";
-                if (value === 5000) return "5K";
-                if (value === 4000) return "4K";
-                if (value === 3000) return "3K";
-                if (value === 2000) return "2K";
-                if (value === 1000) return "1K";
-            }
-            else if (maxTop > 100) {
-                if (value === 1000) return "1K";
-                if (value === 900) return "0.9K";
-                if (value === 800) return "0.8K";
-                if (value === 700) return "0.7K";
-                if (value === 600) return "0.6K";
-                if (value === 500) return "0.5K";
-                if (value === 400) return "0.4K";
-                if (value === 300) return "0.5K";
-                if (value === 200) return "0.2K";
-                if (value === 100) return "0.1K";
-            }
-            else if (maxTop > 10) {
-                if (value === 100) return "100";
-                if (value === 90) return "90";
-                if (value === 80) return "80";
-                if (value === 70) return "70";
-                if (value === 60) return "60";
-                if (value === 50) return "50";
-                if (value === 40) return "40";
-                if (value === 30) return "30";
-                if (value === 20) return "20";
-                if (value === 10) return "10";
-
-            }
-
-            else if (maxTop > 1) {
-                if (value === 10) return "10";
-                if (value === 9) return "9";
-                if (value === 8) return "8";
-                if (value === 7) return "7";
-                if (value === 6) return "6";
-                if (value === 5) return "5";
-                if (value === 4) return "4";
-                if (value === 3) return "3";
-                if (value === 2) return "2";
-                if (value === 1) return "1";
-            }
-
-            else if (maxTop > 0.1) {
-                if (value === 1) return "1";
-                if (value === 0.9) return "0.9";
-                if (value === 0.8) return "0.8";
-                if (value === 0.7) return "0.7";
-                if (value === 0.6) return "0.6";
-                if (value === 0.5) return "0.5";
-                if (value === 0.4) return "0.4";
-                if (value === 0.3) return "0.3";
-                if (value === 0.2) return "0.2";
-                if (value === 0.1) return "0.1";
-            }
-            else {
-                if (value === 0.1) return "0.1";
-                if (value === 0.09) return "0.09";
-                if (value === 0.08) return "0.08";
-                if (value === 0.07) return "0.07";
-                if (value === 0.06) return "0.06";
-                if (value === 0.05) return "0.05";
-                if (value === 0.04) return "0.04";
-                if (value === 0.03) return "0.03";
-                if (value === 0.02) return "0.02";
-                if (value === 0.01) return "0.01";
-            }
-            return null;
-        }
-    },
-    ImageValidate: function (fileType) {
-        var result = false;
-        if (fileType == "image/png" || fileType == "image/jpeg" || fileType == "image/jpg")
-            result = true;
-
-        return result;
-    }
-}
-
-//const FileSize = {
-//    Kb100: (1024),
-//    Kb300: (3 * 1024),
-//    Kb500: (5 * 1024),
-//    Kb700: (7 * 1024),
-//    Mb1: (10 * 1024),
-//    Mb2: (2 * 10 * 1024),
-
-
-//}
-
-//const toBase64 = file => new Promise((resolve, reject) => {
-//    const reader = new FileReader();
-//    reader.readAsDataURL(file);
-//    reader.onload = () => resolve(reader.result);
-//    reader.onerror = error => reject(error);
-//});
-
-//async function Main() {
-//    const file = document.querySelector('#myfile').files[0];
-//    console.log(await toBase64(file));
-//}
+﻿var Common = {
+ getCsrfToken: function () {
+ // Try common sources: hidden input, meta tag, then cookie
+ const $input = $('input[name="__RequestVerificationToken"], input[name="_RequestVerificationToken"]');
+ if ($input.length) return $input.val();
+ const meta = $('meta[name="csrf-token"]').attr('content');
+ if (meta) return meta;
+ // Look for common antiforgery cookies
+ const cookieVal = (name) => (document.cookie.match(new RegExp('(?:^|;\\s*)' + name.replace(/[-./\\^$*+?()|[\]{}]/g, '\\$&') + '=([^;]+)')) || [])[1];
+ const xsrf = cookieVal('XSRF-TOKEN') || cookieVal('.AspNetCore.Antiforgery') || (document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('.AspNetCore.Antiforgery')) || '').split('=')[1];
+ return xsrf ? decodeURIComponent(xsrf) : undefined;
+ },
+
+ MakeCSRFExtendedData: function (data) {
+ const token = Common.getCsrfToken();
+ const base = data || {};
+ if (!token) return $.extend({}, base);
+ // Add both keys for broader compatibility if not already present
+ const extra = {};
+ if (base._RequestVerificationToken == null) extra._RequestVerificationToken = token;
+ if (base.__RequestVerificationToken == null) extra.__RequestVerificationToken = token;
+ return $.extend({}, base, extra);
+ },
+
+ // New: Promise-based async helpers using fetch
+ Api: {
+ async fetchJson(url, opts) {
+ const controller = new AbortController();
+ const timeout = setTimeout(() => controller.abort(), (opts && opts.timeout) ||30000);
+ const headers = new Headers((opts && opts.headers) || {});
+ // Default headers
+ if (!headers.has('Accept')) headers.set('Accept', 'application/json, text/plain, */*');
+ // Attach CSRF header if available and not already set
+ if (!headers.has('RequestVerificationToken')) {
+ const t = Common.getCsrfToken();
+ if (t) headers.set('RequestVerificationToken', t);
+ }
+ const finalOpts = Object.assign({ method: 'GET', credentials: 'same-origin' }, opts, { headers, signal: controller.signal });
+
+ let res;
+ try {
+ res = await fetch(url, finalOpts);
+ } finally {
+ clearTimeout(timeout);
+ }
+
+ const text = await res.text();
+ let data = null;
+ const ct = res.headers.get('content-type') || '';
+ if (ct.includes('application/json')) {
+ try { data = text ? JSON.parse(text) : null; } catch (e) { /* ignore parse error */ }
+ }
+ if (!res.ok) {
+ const msg = (data && (data.message || data.result)) || text || res.statusText || `HTTP ${res.status}`;
+ const err = new Error(msg);
+ err.status = res.status;
+ err.data = data;
+ throw err;
+ }
+ return data != null ? data : text;
+ },
+
+ // GET with CSRF header (where applicable)
+ async get(url) {
+ return Common.Api.fetchJson(url, { method: 'GET' });
+ },
+
+ async post(url, data) {
+ // send form-encoded by default to match existing server expectations
+ const form = new URLSearchParams(Common.MakeCSRFExtendedData(data)).toString();
+ return Common.Api.fetchJson(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: form });
+ },
+
+ async postJson(url, json) {
+ // send JSON (for API endpoints)
+ // attach CSRF as header rather than mixing into payload
+ return Common.Api.fetchJson(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json; charset=utf-8' }, body: JSON.stringify(json) });
+ },
+
+ async put(url, data) {
+ const form = new URLSearchParams(Common.MakeCSRFExtendedData(data)).toString();
+ return Common.Api.fetchJson(url, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: form });
+ },
+
+ async delete(url, data) {
+ // Some servers expect DELETE body, some do not. Support both by sending form body when provided
+ const hasBody = data != null;
+ return Common.Api.fetchJson(url, {
+ method: 'DELETE',
+ credentials: 'same-origin',
+ headers: hasBody ? { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' } : undefined,
+ body: hasBody ? new URLSearchParams(Common.MakeCSRFExtendedData(data)).toString() : undefined
+ });
+ }
+ },
+
+ // Backward-compatible synchronous helpers (DEPRECATED) kept for existing code
+ GetData: {
+ Post: function (_url, _data) {
+ // synchronous behavior preserved for compatibility
+ console.warn('[Common.GetData.Post] Synchronous AJAX is deprecated; use Common.Api.post or GetData.PostAsync instead.');
+ let result = [];
+ const csrfToken = Common.getCsrfToken();
+
+ $.ajax({
+ url: _url,
+ type: 'POST',
+ headers: { "_RequestVerificationToken": csrfToken },
+ dataType: 'json',
+ data: Common.MakeCSRFExtendedData(_data),
+ async: false,
+ cache: false
+ }).done(function (data) { result = data; }).fail(function () { result = []; });
+
+ return result;
+ },
+ Get: function (_url) {
+ // synchronous behavior preserved for compatibility
+ console.warn('[Common.GetData.Get] Synchronous AJAX is deprecated; use Common.Api.get or GetData.GetAsync instead.');
+ const csrfToken = Common.getCsrfToken();
+ let result = [];
+ $.ajax({
+ url: _url,
+ type: 'GET',
+ headers: { "_RequestVerificationToken": csrfToken },
+ async: false,
+ cache: false
+ }).done(function (data) { result = data; }).fail(function () { result = []; });
+ return result;
+ },
+
+ // New async methods that should be used by modernized code
+ GetAsync: async function (url) {
+ return Common.Api.get(url);
+ },
+ PostAsync: async function (url, data) {
+ return Common.Api.post(url, data);
+ },
+ PostJsonAsync: async function (url, json) {
+ return Common.Api.postJson(url, json);
+ }
+ },
+
+ Validation: {
+ Number: function (evt) {
+ const charCode = (evt.which) ? evt.which : evt.keyCode;
+ if (charCode !==46 && charCode >31 && (charCode <48 || charCode >57)) return false;
+ return true;
+ },
+ Digit: function (number) {
+ return /^[0-9]+$/.test(number);
+ },
+ Decimal: function (number) {
+ if (parseInt(number) ===0) return true;
+ const regex = /^(\d+)(\.\d{1,2})?$/; // up to2 decimal places
+ return regex.test(String(number).trim());
+ }
+ },
+ Helper: {
+ CommaSeparation: function (yourNumber) {
+ const temp = String(yourNumber);
+ const value = parseFloat(temp.replace(/,/g, ''));
+ if (value !== "" && !isNaN(value)) {
+ const n = parseFloat(value).toFixed(2).toString().split('.');
+ n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+ return n.join('.');
+ }
+ return '';
+ },
+ CommaSeparation2: function (yourNumber) {
+ const temp = String(yourNumber);
+ const value = parseFloat(temp.replace(/,/g, ''));
+ if (value !== "" && !isNaN(value)) {
+ let n = parseFloat(value).toString().split('.');
+ if (parseFloat(value) >1) n = parseFloat(value).toFixed(2).toString().split('.');
+ n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+ return n.join('.');
+ }
+ return '';
+ },
+ ReplaceComa: function (number) { return number.replace(/\s*,\s*|\s+,/g, ''); },
+ ReplaceComma: function (number) { return Common.Helper.ReplaceComa(number); }, // alias
+ Datepicker: function () { $('.date-picker').datepicker({ dateFormat: 'dd-M-yy', autoclose: true, changeMonth: true }); }
+ },
+ Form: {
+ Save: function (_url, _data) {
+ return new Promise(function (resolve, reject) {
+ const csrfToken = Common.getCsrfToken();
+ $.ajax({
+ url: _url,
+ headers: { "_RequestVerificationToken": csrfToken },
+ type: 'POST',
+ dataType: 'json',
+ data: Common.MakeCSRFExtendedData(_data),
+ async: true,
+ cache: false,
+ success: function (data) { resolve(data); },
+ error: function (jqXHR) { reject(jqXHR); }
+ });
+ });
+ },
+ SaveWithJSON: function (_url, data) {
+ let result = [];
+ $.ajax({
+ url: _url,
+ headers: { "_RequestVerificationToken": Common.getCsrfToken() },
+ type: 'POST',
+ dataType: 'json',
+ contentType: 'application/json; charset=utf-8',
+ data: Common.MakeCSRFExtendedData(data),
+ cache: false,
+ async: false
+ }).done(function (data) { result = data; }).fail(function () { result = { respon: { errorMessage: 'Save data failed!', errorType:1 } }; });
+ return result;
+ },
+ Delete: function (_url, _data) {
+ let result = '';
+ $.ajax({
+ url: _url,
+ headers: { "_RequestVerificationToken": Common.getCsrfToken() },
+ type: 'GET',
+ data: Common.MakeCSRFExtendedData(_data),
+ async: false,
+ cache: false
+ }).done(function (data) { result = data; }).fail(function () { result = { respon: { errorMessage: 'Delete data failed!', errorType:1 } }; });
+ return result;
+ },
+ HandleFormSubmit: function (form, constraints) {
+ const errors = validate(form, constraints);
+ Common.Form.ShowErrors(form, errors || {});
+ return (errors === undefined);
+ },
+ ShowErrors: function (form, errors) {
+ $.each(form.elements, function (_i, element) { Common.Form.ShowErrorsForInput(element, errors && errors[element.id]); });
+ },
+ ShowErrorsForInput: function (input, errors) {
+ const formGroup = Common.Form.ClosestParent(input.parentNode, 'form-group');
+ const messages = input.parentNode.querySelector('.messages');
+ Common.Form.ResetFormGroup(formGroup);
+ if (!messages) return; // nothing to render into
+ if (errors) {
+ if (formGroup) formGroup.classList.add('has-error');
+ $.each(errors, function (_i, error) { Common.Form.AddError(messages, error, input); });
+ } else if (formGroup != null) {
+ formGroup.classList.add('has-success');
+ }
+ },
+ ResetFormGroup: function (formGroup) {
+ if (formGroup != null) {
+ if (formGroup.classList.value.includes('has-error')) formGroup.classList.remove('has-error');
+ if (formGroup.classList.value.includes('has-success')) formGroup.classList.remove('has-success');
+ $.each(formGroup.querySelectorAll('.text-danger'), function (_i, el) { el.parentNode.removeChild(el); });
+ }
+ },
+ AddError: function (messages, error, input) {
+ const block = document.createElement('p');
+ block.classList.add('text-danger', 'error');
+ block.innerText = error;
+ messages.appendChild(block);
+ $(input).addClass('input-danger');
+ },
+ ClosestParent: function (child, className) {
+ if (!child || child === document) return null;
+ if (child.classList && child.classList.contains(className)) return child;
+ return Common.Form.ClosestParent(child.parentNode, className);
+ },
+ SetValue: function bindObjectToForm(obj) {
+ for (const prop in obj) {
+ if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+ const element = document.getElementById(prop);
+ if (element) element.value = obj[prop];
+ }
+ }
+ }
+ },
+ Format: {
+ Comma: function (yourNumber) {
+ const temp = String(yourNumber);
+ let value = parseFloat(temp.replace(/,/g, ''));
+ if (value !== '' && !isNaN(value)) {
+ const n = parseFloat(value).toFixed(2).toString().split('.');
+ n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+ value = n.join('.');
+ } else value = '';
+ return value;
+ },
+ Comma2: function (yourNumber) {
+ const temp = String(yourNumber);
+ let value = parseFloat(temp.replace(/,/g, ''));
+ if (value !== '' && !isNaN(value)) {
+ const n = parseFloat(value).toFixed(2).toString().split('.');
+ n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+ value = n.join('.');
+ } else value = '0';
+ value = value.replace('.00', '').replace('.0', '');
+ return value;
+ },
+ Date: function (value) {
+ if (value === null) return '';
+ const dt = new Date(value);
+ const month = dt.getMonth() +1;
+ return ((dt.getDate() <10) ? '0' + dt.getDate() : dt.getDate()) + '/' + (month <10 ? '0' + month : month) + '/' + dt.getFullYear();
+ },
+ DateByForm: function (value) {
+ if (value === null) return '';
+ const dt = new Date(value);
+ const day = ('0' + dt.getDate()).slice(-2);
+ const month = ('0' + (dt.getMonth() +1)).slice(-2);
+ return dt.getFullYear() + '-' + month + '-' + day;
+ },
+ Datetime: function (value) {
+ if (value === null) return '';
+ const dt = new Date(value);
+ const month = dt.getMonth() +1;
+ const minutes = (dt.getMinutes() <10) ? ('0' + dt.getMinutes()) : dt.getMinutes();
+ const seconds = (dt.getSeconds() <10) ? ('0' + dt.getSeconds()) : dt.getSeconds();
+ return ((dt.getDate() <10) ? '0' + dt.getDate() : dt.getDate()) + '-' + month + '-' + dt.getFullYear() + ' ' + dt.getHours() + ':' + minutes + ':' + seconds;
+ },
+ Money: function (id) {
+ $(id).each(function (_index, el) {
+ const $el = $(el);
+ const elType = $el.is('input') || $el.is('textarea') ? 'input' : 'other';
+ let value = (elType === 'input') ? $el.val().replace(/,/g, '') : $el.text().replace(/,/g, '');
+ $el.on('paste keyup', function () { value = $el.val().replace(/,/g, ''); Common.Format.MoneyCurrency($el, elType, value); });
+ Common.Format.MoneyCurrency($el, elType, value);
+ });
+ },
+ MoneyCurrency: function (el, elType, value) {
+ let result = '';
+ const valueArray = String(value).split('');
+ const resultArray = [];
+ let counter =0;
+ let temp = '';
+ for (let i = valueArray.length -1; i >=0; i--) {
+ temp += valueArray[i];
+ counter++;
+ if (counter ===3) { resultArray.push(temp); counter =0; temp = ''; }
+ }
+ if (counter >0) resultArray.push(temp);
+ for (let i = resultArray.length -1; i >=0; i--) {
+ const resTemp = resultArray[i].split('');
+ for (let j = resTemp.length -1; j >=0; j--) result += resTemp[j];
+ if (i >0) result += ',';
+ }
+ if (elType === 'input') $(el).val(result); else $(el).empty().text(result);
+ },
+ Currency: function (bilangan) {
+ let minus = '';
+ bilangan = String(bilangan).replace(/,/g, '');
+ if (bilangan.includes('-')) { bilangan = bilangan.replace('-', ''); minus = '-'; }
+ const numberString = bilangan.toString();
+ const sisa = numberString.length %3;
+ let rupiah = numberString.substr(0, sisa);
+ const ribuan = numberString.substr(sisa).match(/\d{3}/g);
+ if (ribuan) { const separator = sisa ? ',' : ''; rupiah += separator + ribuan.join(','); }
+ return minus + rupiah;
+ }
+ },
+ Table: {
+ InitClient: function (idTB) {
+ $(idTB).DataTable({ destroy: true, filter: true, serverSide: false, language: { emptyTable: 'No data available in table' }, data: [], dom: "<'row' <'col-md-12'B>><'row'<'col-md-6 col-sm-12'l><'col-md-6 col-sm-12'f>r><'table-scrollable't><'row'<'col-md-5 col-sm-12'i><'col-md-7 col-sm-12'p>>", buttons: ['copyHtml5', 'excelHtml5'] });
+ },
+ LoadTableClientWithPaging: function (_idTB, _data, _columns, _lengthMenu, _columnDefs, _tableName, _orderColumn, _sCrollX = false) {
+ const ordering = !(!_orderColumn || _orderColumn.length ===0);
+ $(_idTB).DataTable({ deferRender: true, processing: true, serverSide: false, ordering: ordering, destroy: true, filter: true, language: { emptyTable: 'No data available in table' }, dom: "<'row' <'col-md-12'B>><'row'<'col-md-6 col-sm-12'l><'col-md-6 col-sm-12'f>r><'table-scrollable't><'row'<'col-md-5 col-sm-12'i><'col-md-7 col-sm-12'p>>", buttons: [{ extend: 'copyHtml5' }, { extend: 'excelHtml5', title: _tableName }], data: _data, lengthMenu: _lengthMenu, columns: _columns, columnDefs: _columnDefs, order: _orderColumn, scrollX: _sCrollX });
+ },
+ LoadTableClientNoPaging: function (_idTB, _data, _columns, _columnDefs, _tableName, _orderColumn) {
+ $(_idTB).DataTable({ deferRender: true, processing: true, serverSide: false, destroy: true, filter: false, paging: false, language: { emptyTable: 'No data available in table' }, dom: "<'row' <'col-md-12'B>><'row'<'col-md-6 col-sm-12'l><'col-md-6 col-sm-12'f>r><'table-scrollable't><'row'<'col-md-5 col-sm-12'i><'col-md-7 col-sm-12'p>>", buttons: [{ extend: 'copyHtml5' }, { extend: 'excelHtml5', title: _tableName }], data: _data, columns: _columns, columnDefs: _columnDefs, order: _orderColumn });
+ },
+ LoadTableClient: function (_idTB, _data, _columns, _columnDefs) {
+ $(_idTB).DataTable({ deferRender: true, processing: true, serverSide: false, destroy: true, filter: false, lengthChange: false, paging: false, data: _data, columns: _columns, columnDefs: _columnDefs, order: false });
+ }
+ },
+ Alert: {
+ Error: function (message) { if (window.Swal && Swal.fire) Swal.fire('Error System!', message, 'error'); else alert('Error: ' + message); },
+ Success: function (message) { if (window.Swal && Swal.fire) Swal.fire('Success!', message, 'success'); else alert('Success: ' + message); },
+ Warning: function (message) { if (window.Swal && Swal.fire) Swal.fire('Warning!', message, 'warning'); else alert('Warning: ' + message); },
+ AlertType: function (errorType, message) {
+ if (errorType ===0) Common.Alert.Success(message);
+ else if (errorType ===1) Common.Alert.Error(message);
+ else if (errorType ===2) Common.Alert.Warning(message);
+ else Common.Alert.Error(message);
+ },
+ BolokUi: function () { $.blockUI({ css: { padding: '15px', opacity:5 }, message: 'processing encryption your data import... please wait...' }); },
+ BlockUi: function () { return Common.Alert.BolokUi(); } // alias
+ },
+ CheckError: {
+ Object: function (data) {
+ // preserve original shape but this method seemed incorrect; return true if no error
+ if (!data) return true;
+ if (data.ErrorType ===0) return true;
+ return false;
+ }
+ },
+ Convert: {
+ // Deprecated: returns empty string initially as FileReader is async. Use Base64Async instead
+ Base64: function (file) {
+ console.warn('[Common.Convert.Base64] Use Base64Async(file) which returns a Promise.');
+ let result = '';
+ const reader = new FileReader();
+ reader.readAsDataURL(file);
+ reader.onload = function () { result = reader.result; };
+ reader.onerror = function (error) { result = 'Error: ' + error; };
+ return result;
+ },
+ Base64Async: function (file) {
+ return new Promise((resolve, reject) => {
+ const reader = new FileReader();
+ reader.onload = () => resolve(reader.result);
+ reader.onerror = (e) => reject(e);
+ reader.readAsDataURL(file);
+ });
+ }
+ },
+ Chart: {
+ SetStepChart: function (maxTop) {
+ if (maxTop == null || Number.isNaN(maxTop)) return { topChartValue:1, stepSize:0.1 };
+ if (maxTop >1) maxTop = Math.ceil(maxTop);
+ if (maxTop ===0) return { topChartValue:1, stepSize:0.1 };
+
+ const thresholds = [10000000,1000000,100000,10000,1000,100,10,1,0.1,0.01,0.001];
+ for (let i =0; i < thresholds.length; i++) {
+ const t = thresholds[i];
+ if (maxTop > t) {
+ const stepSize = t;
+ const topChartValue = Common.Chart.GetMaxValue(maxTop, stepSize);
+ return { topChartValue: topChartValue, stepSize: stepSize };
+ }
+ }
+ return { topChartValue: Common.Chart.GetMaxValue(maxTop,0.001), stepSize:0.001 };
+ },
+ SetStepChartPercent: function (maxTop) {
+ const stepSize =20; let topChartValue =100;
+ if (maxTop == null || Number.isNaN(maxTop) || maxTop ==0) return { topChartValue, stepSize };
+ if (maxTop >1) maxTop = Math.ceil(maxTop);
+ topChartValue = Common.Chart.GetMaxValue(maxTop, stepSize) + stepSize;
+ return { topChartValue, stepSize };
+ },
+ GetMaxValue: function (maxTop, counter) {
+ let result =0;
+ for (let i = counter; i < maxTop; i += counter) result += counter;
+ result += counter;
+ return result;
+ },
+ SetYValue: function (value, type) {
+ let maxTop = (type === 'Daily') ? YValueDaily.topChartValue : YValueCumulative.topChartValue;
+ if (value <1) maxTop = value.toFixed(2);
+ if (value >1) maxTop = Math.ceil(value);
+ // simplified mapping; keep original cases where needed
+ if (maxTop >1000) {
+ const map = {
+50000000: '50M',30000000: '30M',20000000: '20M',10000000: '10M',
+5000000: '5M',4000000: '4M',3000000: '3M',2000000: '2M',1000000: '1M',
+900000: '900K',800000: '800K',700000: '700K',600000: '600K',500000: '500K',
+400000: '400K',300000: '300K',200000: '200K',100000: '100K',50000: '50K'
+ };
+ return map[value] || value;
+ }
+ // fallback
+ return String(value);
+ }
+ },
+ ImageValidate: function (fileType) {
+ return (fileType && fileType.startsWith('image/')) || fileType === 'image/png' || fileType === 'image/jpeg' || fileType === 'image/jpg';
+ }
+};

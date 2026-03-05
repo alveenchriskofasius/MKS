@@ -10,5 +10,6 @@ namespace API.Services.Interfaces
         public Task<object> Save(CustomerModel customer);
         public Task<CustomerModel> FillForm(int id);
         public Task<object> Delete(int id);
+        public Task<object> GetDepositBalance(int supplierId);
     }
 }

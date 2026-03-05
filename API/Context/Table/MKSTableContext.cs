@@ -13,6 +13,8 @@ public partial class MKSTableContext : DbContext
     {
     }
 
+    public virtual DbSet<AuditLog> AuditLogs { get; set; }
+
     public virtual DbSet<Category> Categories { get; set; }
 
     public virtual DbSet<Customer> Customers { get; set; }
@@ -26,6 +28,8 @@ public partial class MKSTableContext : DbContext
     public virtual DbSet<DeliveryOrderItem> DeliveryOrderItems { get; set; }
 
     public virtual DbSet<Lookup> Lookups { get; set; }
+
+    public virtual DbSet<Numbering> Numberings { get; set; }
 
     public virtual DbSet<PaymentIn> PaymentIns { get; set; }
 
@@ -55,6 +59,8 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<StockInItem> StockInItems { get; set; }
 
+    public virtual DbSet<StockLedger> StockLedgers { get; set; }
+
     public virtual DbSet<Trade> Trades { get; set; }
 
     public virtual DbSet<TradeType> TradeTypes { get; set; }
@@ -67,6 +73,26 @@ public partial class MKSTableContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__AuditLog__3214EC27C01FF08C");
+
+            entity.ToTable("AuditLog");
+
+            entity.Property(e => e.Action)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.EntityId).HasMaxLength(100);
+            entity.Property(e => e.EntityName)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(e => e.IpAddress).HasMaxLength(45);
+            entity.Property(e => e.UserName)
+                .IsRequired()
+                .HasMaxLength(150);
+        });
+
         modelBuilder.Entity<Category>(entity =>
         {
             entity.ToTable("Category");
@@ -206,6 +232,21 @@ public partial class MKSTableContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<Numbering>(entity =>
+        {
+            entity.HasKey(e => new { e.Prefix, e.DateKey });
+
+            entity.ToTable("Numbering");
+
+            entity.Property(e => e.Prefix)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+            entity.Property(e => e.DateKey)
+                .HasMaxLength(6)
+                .IsUnicode(false)
+                .IsFixedLength();
+        });
+
         modelBuilder.Entity<PaymentIn>(entity =>
         {
             entity.HasKey(e => e.ID).HasName("PK__PaymentI__3214EC2735E28B9F");
@@ -290,6 +331,7 @@ public partial class MKSTableContext : DbContext
             entity.Property(e => e.Description)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.LowStockThreshold).HasDefaultValue(0);
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50)
@@ -362,6 +404,8 @@ public partial class MKSTableContext : DbContext
 
             entity.ToTable("SalesOrderItem");
 
+            entity.HasIndex(e => e.TradeID, "IX_SalesOrderItem_TradeID");
+
             entity.Property(e => e.QtyExchanged).HasDefaultValue(0);
         });
 
@@ -430,11 +474,29 @@ public partial class MKSTableContext : DbContext
             entity.ToTable("StockInItem");
         });
 
+        modelBuilder.Entity<StockLedger>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__StockLed__3214EC27F5D05B1F");
+
+            entity.ToTable("StockLedger");
+
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(150);
+            entity.Property(e => e.Note).HasMaxLength(500);
+            entity.Property(e => e.RefNo).HasMaxLength(100);
+            entity.Property(e => e.RefType)
+                .IsRequired()
+                .HasMaxLength(100);
+        });
+
         modelBuilder.Entity<Trade>(entity =>
         {
             entity.HasKey(e => e.ID).HasName("PK__Trade__3214EC27E417F279");
 
             entity.ToTable("Trade");
+
+            entity.HasIndex(e => e.No, "IX_Trade_No");
 
             entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.CreatedAt)

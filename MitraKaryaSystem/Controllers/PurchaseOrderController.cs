@@ -5,6 +5,7 @@ using MitraKaryaSystem.Security;
 
 namespace MitraKaryaSystem.Controllers
 {
+    [Microsoft.AspNetCore.Authorization.Authorize]
     [HasPermission("Purchase Order")]
     public class PurchaseOrderController : Controller
     {
@@ -31,6 +32,18 @@ namespace MitraKaryaSystem.Controllers
         public async Task<object> DeleteItem(int id) => Json(await _service.DeleteItem(id));
         public async Task<object> Delete(int id) => Json(await _service.Delete(id));
         public async Task<JsonResult> ListBySupplier(int supplierId) => Json(await _service.GetListBySupplier(supplierId));
+
+        [HttpPost]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<JsonResult> Submit(int id) => Json(await _service.ChangeStatus(id, 2, null));
+
+        [HttpPost]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<JsonResult> Approve(int id) => Json(await _service.ChangeStatus(id, 3, null));
+
+        [HttpPost]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<JsonResult> Reject(int id, string? reason) => Json(await _service.ChangeStatus(id, 4, reason));
         public async Task<JsonResult> Get(int id)
         {
             var po = await _service.FillForm(id);

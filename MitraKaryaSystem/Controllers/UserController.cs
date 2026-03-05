@@ -21,5 +21,11 @@ namespace MitraKaryaSystem.Controllers
         public async Task<IActionResult> FillForm(int id) => PartialView("_UserModal", await _userService.FillForm(id));
         [HttpPost]
         public async Task<JsonResult> DeleteUser(int id) => Json(await _userService.DeleteUser(id));
+
+        [HttpGet]
+        public async Task<JsonResult> GetUserRoles(int userId) => Json(await _userService.GetUserRoles(userId));
+
+        [HttpPost]
+        public async Task<JsonResult> SaveUserRoles(int userId, [FromBody] List<int> roleIds) => Json(await _userService.SaveUserRoles(userId, roleIds ?? new()));
     }
 }

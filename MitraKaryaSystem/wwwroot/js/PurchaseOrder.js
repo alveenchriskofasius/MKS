@@ -1,16 +1,90 @@
 ﻿$(document).ready(function () { POControl.Init(); POButtons.Init(); });
 
-const POStatus = { 1: 'Draft', 2: 'Approved', 3: 'Closed' };
-function UpdatePOStatusBadge(statusID) { const $b = $('#purchaseOrderStatus'); const txt = POStatus[statusID] || 'Draft'; $b.text(txt); $b.removeClass('text-bg-warning text-bg-success text-bg-secondary'); if (statusID === 2) $b.addClass('text-bg-success'); else if (statusID === 3) $b.addClass('text-bg-secondary'); else $b.addClass('text-bg-warning'); }
+const POStatus = { 1: 'Draft', 2: 'Submitted', 3: 'Approved', 4: 'Rejected' };
+const POStatusBadge = { 1: 'badge-draft', 2: 'badge-submitted', 3: 'badge-approved', 4: 'badge-rejected' };
+function UpdatePOStatusBadge(statusID) {
+    const $b = $('#purchaseOrderStatus');
+    const txt = POStatus[statusID] || 'Draft';
+    $b.text(txt);
+    $b.attr('class', 'badge-status ' + (POStatusBadge[statusID] || 'badge-draft'));
+    // Update workflow bar
+    $('#poWorkflowBar .wf-step').each(function() {
+        const step = parseInt($(this).data('step'));
+        $(this).removeClass('active done');
+        if (statusID === 4) {
+            // Rejected: highlight step 1 only, show rejected badge
+            if (step === 1) $(this).addClass('done');
+        } else if (step < statusID) {
+            $(this).addClass('done');
+        } else if (step === statusID) {
+            $(this).addClass('active');
+        }
+    });
+}
+
+function IsPOLockedForEdit(statusID) {
+    // After submit or approve, editing should be blocked (approval workflow)
+    return statusID === 2 || statusID === 3;
+}
 
 let POButtons = { Init: function () { $('#buttonSave').click(function (e) { e.preventDefault(); let table = $('#tablePurchaseOrderProduct').DataTable(); if (table.rows().count() <= 0) { toastr.info('Insert at least 1 product', 'Cannot save'); return; } PurchaseOrderForm.Save(); }); $('#buttonNew').click(function () { PurchaseOrderForm.Reset(); }); $('#buttonSearch').click(function () { POTable.Search(); }); } };
+
+// Approval workflow actions (require server permission + Admin role)
+async function POChangeStatus(action, extra) {
+    const id = parseInt($('#purchaseOrderID').val() || '0', 10);
+    if (!id) { toastr.info('Save Purchase Order first'); return; }
+    const url = `/PurchaseOrder/${action}?id=${encodeURIComponent(id)}` + (extra ? `&${extra}` : '');
+    try {
+        const res = await Common.Api.fetchJson(url, { method: 'POST' });
+        if (res && res.success) {
+            if (res.statusID) {
+                $('#purchaseOrderStatusID').val(res.statusID);
+                UpdatePOStatusBadge(res.statusID);
+            }
+            toastr.success('Success');
+        } else {
+            toastr.error(res && (res.result || res.error) ? (res.result || res.error) : 'Failed');
+        }
+    } catch (e) {
+        toastr.error(e && e.message ? e.message : 'Request failed');
+    }
+}
+
+// Wire buttons if present in the view
+$(document).on('click', '#buttonSubmitPO', function (e) { e.preventDefault(); POChangeStatus('Submit'); });
+$(document).on('click', '#buttonApprovePO', function (e) { e.preventDefault(); POChangeStatus('Approve'); });
+$(document).on('click', '#buttonRejectPO', async function (e) {
+    e.preventDefault();
+    const { value: reason } = await Swal.fire({ title: 'Reject Purchase Order', input: 'text', inputPlaceholder: 'Reason', showCancelButton: true });
+    if (reason == null) return;
+    POChangeStatus('Reject', `reason=${encodeURIComponent(reason)}`);
+});
+$(document).on('click', '#buttonCreateStockIn', async function (e) {
+    e.preventDefault();
+    const id = parseInt($('#purchaseOrderID').val() || '0', 10);
+    if (!id) { toastr.info('Save Purchase Order first'); return; }
+    const statusID = parseInt($('#purchaseOrderStatusID').val() || '1', 10);
+    if (statusID !== 3) { toastr.info('Purchase Order must be Approved first'); return; }
+    const $btn = $(this);
+    $btn.prop('disabled', true);
+    try {
+        const res = await Common.Api.fetchJson(`/StockIn/CreateFromPO?poId=${id}`, { method: 'POST' });
+        if (res && res.success) {
+            toastr.success('Stock In created: ' + (res.no || ''));
+            window.location.href = '/StockIn';
+        } else {
+            toastr.error(res && (res.result || res.error) ? (res.result || res.error) : 'Failed');
+        }
+    } catch (err) { toastr.error(err && err.message ? err.message : 'Request failed'); }
+    finally { $btn.prop('disabled', false); }
+});
 
 let POTable = {
     Init: function (dataList) {
         let tableID = $('#tablePurchaseOrderProduct');
         // determine current PO status to decide column renderers
         const statusID = parseInt($('#purchaseOrderStatusID').val() || '1', 10);
-        const isLocked = (statusID === 2 || statusID === 3); // PartialPaid or Paid
+        const isLocked = IsPOLockedForEdit(statusID);
         let columns = [
             { data: 'productID', visible: false },
             { data: 'product' },
@@ -92,11 +166,11 @@ let POTable = {
             { data: 'no' }, { data: 'date' }, { data: 'amount' },
             // status column (robust renderer)
             { data: null, render: function (_data, _type, row) {
-                const raw = row && (row.statusID ?? row.StatusID ?? row.status ?? row.Status);
-                const sid = raw != null && raw !== '' ? Number(raw) : 0;
-                const txt = POStatus[sid] || (raw || '');
-                const cls = (sid === 2) ? 'bg-success' : (sid === 3 ? 'bg-secondary' : 'bg-warning');
-                return `<span class="badge ${cls}">${txt}</span>`;
+                const sid = row && (row.statusID ?? row.StatusID) != null ? Number(row.statusID ?? row.StatusID) : 0;
+                // Prefer server lookup text from PurchaseOrderStatus (row.status)
+                const statusText = (row && (row.status ?? row.Status)) || (sid ? (POStatus[sid] || '') : '');
+                let cls = POStatusBadge[sid] || 'badge-draft';
+                return `<span class="badge-status ${cls}">${statusText || ''}</span>`;
             } },
              { data: 'supplierName' }, { data: 'createdBy' }, { data: 'updatedBy' },
              { data: null, orderable: false, render: () => `<div class="btn-group" role="group"><a class="btn btn-warning po-edit"><i class="fa fa-pencil"></i> Edit</a><a class="btn btn-danger po-delete-row"><i class="fa fa-trash"></i> Delete</a></div>` }
@@ -169,7 +243,19 @@ let POControl = {
     LoadForm: function (id) {
         $('#purchaseOrderHeaderBody').html('<div class="text-center p-2"><div class="spinner-border"></div></div>');
         $.get('/PurchaseOrder/FillForm', { id: id || 0 }, function (html) {
-            $('#purchaseOrderHeaderBody').html(html); let statusID = parseInt($('#purchaseOrderStatusID').val() || '1'); UpdatePOStatusBadge(statusID);
+            $('#purchaseOrderHeaderBody').html(html);
+            let statusID = parseInt($('#purchaseOrderStatusID').val() || '1');
+            UpdatePOStatusBadge(statusID);
+
+            // Lock UI after submit/approve
+            const locked = IsPOLockedForEdit(statusID);
+            $('#buttonSave').prop('disabled', locked);
+            $('#buttonSubmitPO').prop('disabled', locked);
+            $('#buttonApprovePO').prop('disabled', statusID !== 2); // approve only after submitted
+            $('#buttonRejectPO').prop('disabled', statusID !== 2); // reject only after submitted
+            $('#selectProduct').prop('disabled', locked);
+            $('#filterSupplier').prop('disabled', locked);
+
             // apply UI locking: hide delete buttons and make qty read-only when status is Paid or PartialPaid accordingly
             setTimeout(function () {
                 const stat = parseInt($('#purchaseOrderStatusID').val() || '1');
@@ -182,8 +268,8 @@ let POControl = {
                         if (!row) return;
                         const $qtyInput = $(this).find('input.po-qty');
                         const $delBtn = $(this).find('.po-delete');
-                        // When PartialPaid (2) or Paid (3) -> lock quantity and remove delete action
-                        if (stat === 2 || stat === 3) {
+                        // When submitted/approved -> lock quantity and remove delete action
+                        if (IsPOLockedForEdit(stat)) {
                             if ($qtyInput.length) { $qtyInput.prop('readonly', true).addClass('form-control-plaintext').removeClass('form-control'); }
                             if ($delBtn.length) { $delBtn.closest('td').html(''); }
                         } else {
@@ -218,7 +304,32 @@ let POControl = {
                 dataType: 'json',
                 delay: 250,
                 data: params => ({ name: params.term, supplierId: $('#filterSupplier').val() || null }),
-                processResults: data => ({ results: $.map(data.result, item => ({ id: item.id, text: item.name + ' - ' + item.supplierName, name: item.name, unitPrice: item.unitPrice, supplierName: item.supplierName, stockQuantity: item.stockQuantity })) })
+                processResults: data => {
+                    const list = Array.isArray(data)
+                        ? data
+                        : (data && data.result && Array.isArray(data.result))
+                            ? data.result
+                            : [];
+
+                    const supplierFilter = Number($('#filterSupplier').val() || 0) || null;
+                    const filtered = supplierFilter
+                        ? list.filter(x => Number(x.supplierID || x.SupplierID || 0) === supplierFilter)
+                        : list;
+
+                    return {
+                        results: $.map(filtered, item => ({
+                            id: item.id || item.ID,
+                            text: (item.name || item.Name) + ' - ' + (item.supplierName || item.SupplierName),
+                            supplierID: item.supplierID || item.SupplierID,
+                            name: item.name || item.Name,
+                            unitPrice: item.unitPrice || item.UnitPrice,
+                            supplierName: item.supplierName || item.SupplierName,
+                            unit: item.unit || item.Unit,
+                            stockQuantity: item.stockQuantity || item.StockQuantity,
+                            barcode: item.barcode || item.Barcode
+                        }))
+                    };
+                }
             },
             templateResult: d => d.text,
             templateSelection: d => d.text

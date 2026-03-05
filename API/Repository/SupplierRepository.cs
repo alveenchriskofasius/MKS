@@ -42,7 +42,7 @@ namespace API.Repository
             return supplierModel;
         }
 
-        public async Task<object> GetSupplierList() => Task.FromResult<object>(await _context.Customers.Select(x => new { x.ID, SupplierName = x.Name, x.ContactPerson, x.ContactNumber, x.IsSupplier }).Where(x => x.IsSupplier).ToListAsync());
+        public async Task<object> GetSupplierList() => await _context.Customers.AsNoTracking().Where(x => x.IsSupplier).Select(x => new { x.ID, SupplierName = x.Name, x.ContactPerson, x.ContactNumber, x.IsSupplier }).ToListAsync();
 
         public async Task SaveSupplier(SupplierModel supplierModel)
         {
