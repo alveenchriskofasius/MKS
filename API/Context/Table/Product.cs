@@ -35,5 +35,9 @@ public partial class Product
 
     public int? LowStockThreshold { get; set; }
 
+    public bool HasDiscount { get; set; }
+
+    public decimal DiscountPercentage { get; set; }
+
     public virtual ICollection<StockCountItem> StockCountItems { get; set; } = new List<StockCountItem>();
 }

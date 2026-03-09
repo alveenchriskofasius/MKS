@@ -46,7 +46,7 @@ const doPages = (function () {
  { data: 'statusID', render: d => `<span class="badge-status ${doStatusBadge[d] || 'badge-draft'}">${doStatusMap[d] || d}</span>` },
  { data: 'driverName', render: d => d || '<span class="text-muted">—</span>' },
  { data: 'deliveryAddress', render: d => d ? (d.length > 40 ? d.substring(0,40)+'…' : d) : '<span class="text-muted">—</span>' },
- { data: null, orderable: false, className: 'text-center', render: () => `<button class='btn btn-sm btn-outline-primary do-view' title='View details'><i class='fa fa-eye'></i></button>` }
+ { data: null, orderable: false, className: 'text-center', render: () => `<button class='btn btn-sm btn-outline-primary do-view' title='View details'><i class='fa fa-eye'></i></button> <button class='btn btn-sm btn-outline-secondary do-print' title='Print'><i class='fa fa-print'></i></button>` }
  ]
  });
 
@@ -54,6 +54,15 @@ const doPages = (function () {
  const row = $('#tableDeliveryOrder').DataTable().row($(this).closest('tr')).data();
  if (!row) return;
  deliveryOrderModal.open(row.id || row.ID);
+ });
+
+ $('#tableDeliveryOrder').off('click', '.do-print').on('click', '.do-print', function () {
+ const row = $('#tableDeliveryOrder').DataTable().row($(this).closest('tr')).data();
+ if (!row) return;
+ $.get('/DeliveryOrder/Get', { id: row.id || row.ID }, function (data) {
+   if (!data) { toastr.error('Failed to load'); return; }
+   MksPrint.deliveryOrder({ no: data.no || data.No, salesOrderNo: data.salesOrderNo || data.SalesOrderNo || '-', driverName: data.driverName || data.DriverName || '-', address: data.deliveryAddress || data.DeliveryAddress || '-', status: doStatusMap[data.statusID || data.StatusID] || '-', items: data.items || data.Items || [] });
+ }).fail(() => toastr.error('Failed to load'));
  });
  }
 

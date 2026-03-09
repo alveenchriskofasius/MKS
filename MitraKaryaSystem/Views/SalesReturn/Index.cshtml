@@ -9,59 +9,140 @@
       <div class="d-flex gap-2">
         <button class="btn btn-sm btn-outline-light" id="srNew"><i class="fa fa-plus"></i> New</button>
         <button class="btn btn-sm btn-outline-light" id="srSearch"><i class="fa fa-search"></i> Search</button>
+        <button class="btn btn-sm btn-outline-light" id="srPrint"><i class="fa fa-print"></i> Print</button>
         <button class="btn btn-sm btn-warning" id="srSave"><span class="spinner-border spinner-border-sm d-none"></span> <i class="fa fa-save"></i> Save</button>
       </div>
     </div>
     <div class="card-body">
-  <div id="srHeader"></div>
-  <div class="card shadow-sm mt-3" id="panelReturned">
-    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
-      <div><i class="fa fa-box-open me-1"></i> Returned Items</div>
-      <div class="input-group input-group-sm" style="width:340px">
-        <span class="input-group-text"><i class="fa fa-barcode"></i></span>
-        <input id="srProduct" class="form-control" placeholder="Scan / type product" />
-        <button class="btn btn-outline-danger" id="srAdd"><i class="fa fa-plus"></i></button>
+      <div id="srHeader"></div>
+
+      <!-- Returned Items -->
+      <div class="card shadow-sm mt-3" id="panelReturned">
+        <div class="card-header bg-light py-2">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="fw-semibold text-danger"><i class="fa fa-box-open me-1"></i> Returned Items</div>
+          </div>
+          <div class="mt-2 mks-search-wrap" style="max-width:500px">
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="fa fa-barcode text-muted"></i></span>
+              <input id="srProduct" class="form-control" placeholder="Type product name or scan barcode..." autocomplete="off" />
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <table class="table table-sm table-hover align-middle mb-0" id="tableSalesReturnItems" style="width:100%">
+            <thead>
+              <tr>
+                <th style="display:none">ProductID</th>
+                <th>Product</th>
+                <th class="text-end" style="width:100px">Qty</th>
+                <th class="text-end" style="width:120px">Unit Price</th>
+                <th class="text-end" style="width:120px">Subtotal</th>
+                <th style="width:50px"></th>
+              </tr>
+            </thead>
+          </table>
+          <div class="d-flex justify-content-end align-items-center mt-3 pe-1 gap-2">
+            <span class="text-muted small fw-semibold">RETURNED TOTAL</span>
+            <span id="srTotal" class="fs-5 fw-bold text-danger">0.00</span>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="card-body p-2">
-      <table class="table table-sm table-bordered align-middle" id="tableSalesReturnItems" style="width:100%">
-        <thead class="table-danger">
-          <tr><th style="display:none">ProductID</th><th>Product</th><th class="text-end" style="width:90px">Qty</th><th class="text-end" style="width:110px">Unit Price</th><th class="text-end" style="width:110px">Subtotal</th><th style="width:40px"></th></tr>
-        </thead>
-      </table>
-      <div class="text-end mt-2 pe-1"><small class="text-muted">Returned Total:</small> <span id="srTotal" class="badge text-bg-danger">0.00</span></div>
+
+      <!-- Replacement Items (Exchange mode) -->
+      <div class="card shadow-sm mt-3 border-primary d-none" id="srExchangePanel">
+        <div class="card-header bg-primary bg-opacity-10 py-2">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="fw-semibold text-primary"><i class="fa fa-right-left me-1"></i> Replacement Items</div>
+          </div>
+          <div class="mt-2 mks-search-wrap" style="max-width:500px">
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="fa fa-barcode text-muted"></i></span>
+              <input id="srProductReplacement" class="form-control" placeholder="Type replacement product name or scan barcode..." autocomplete="off" />
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <table class="table table-sm table-hover align-middle mb-0" id="tableSalesReturnReplacement" style="width:100%">
+            <thead>
+              <tr>
+                <th style="display:none">ProductID</th>
+                <th>Product</th>
+                <th style="width:170px">Source Returned</th>
+                <th class="text-end" style="width:100px">Qty</th>
+                <th class="text-end" style="width:120px">Unit Price</th>
+                <th class="text-end" style="width:120px">Subtotal</th>
+                <th style="width:50px"></th>
+              </tr>
+            </thead>
+          </table>
+          <div class="d-flex justify-content-end align-items-center mt-3 pe-1 gap-2">
+            <span class="text-muted small fw-semibold">REPLACEMENT TOTAL</span>
+            <span id="srReplacementTotal" class="fs-5 fw-bold text-primary">0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="card shadow-sm mt-3">
+        <div class="card-body py-2 px-3">
+          <div class="d-flex justify-content-end">
+            <div class="text-end small">
+              <div class="d-flex justify-content-between gap-4 mb-1">
+                <span class="text-muted">Returned Total:</span>
+                <strong id="lblSummaryReturned">0.00</strong>
+              </div>
+              <div id="rowSummaryReplacement" class="d-none d-flex justify-content-between gap-4 mb-1">
+                <span class="text-muted">Replacement Total:</span>
+                <strong id="lblSummaryReplacement">0.00</strong>
+              </div>
+              <div id="rowSummaryNet" class="d-none d-flex justify-content-between gap-4 mb-1">
+                <span class="text-muted">Net Difference:</span>
+                <strong id="lblSummaryNet" class="text-primary">0.00</strong>
+                <span id="lblSummaryNetNote" class="badge bg-info-subtle text-dark ms-1"></span>
+              </div>
+              <div id="rowSummaryRefund" class="d-flex justify-content-between gap-4">
+                <span class="text-muted">Refund / Diff Amount:</span>
+                <strong id="lblSummaryRefund">0.00</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
-  <div class="card shadow-sm mt-3 border-primary d-none" id="srExchangePanel">
-    <div class="card-header bg-primary bg-opacity-10 py-2 d-flex justify-content-between align-items-center">
-      <div class="text-primary"><i class="fa fa-right-left me-1"></i> Replacement Items</div>
-      <div class="input-group input-group-sm" style="width:340px">
-        <span class="input-group-text"><i class="fa fa-barcode"></i></span>
-        <input id="srProductReplacement" class="form-control" placeholder="Scan / type product" />
-        <button class="btn btn-outline-primary" id="srAddReplacement"><i class="fa fa-plus"></i></button>
-      </div>
-    </div>
-    <div class="card-body p-2">
-      <table class="table table-sm table-bordered align-middle" id="tableSalesReturnReplacement" style="width:100%">
-        <thead class="table-primary">
-          <tr><th style="display:none">ProductID</th><th>Product</th><th style="width:170px">Source Returned</th><th class="text-end" style="width:90px">Qty</th><th class="text-end" style="width:110px">Unit Price</th><th class="text-end" style="width:110px">Subtotal</th><th style="width:40px"></th></tr>
-        </thead>
-      </table>
-      <div class="text-end mt-2 pe-1"><small class="text-muted">Replacement Total:</small> <span id="srReplacementTotal" class="badge text-bg-primary">0.00</span></div>
-    </div>
-  </div>
-  <div class="row mt-3">
-    <div class="col-lg-12 text-end">
-      <div class="d-inline-block text-start border rounded p-2 bg-light small">
-        <div><span class="text-muted">Returned Total:</span> <strong id="lblSummaryReturned">0.00</strong></div>
-        <div id="rowSummaryReplacement" class="d-none"><span class="text-muted">Replacement Total:</span> <strong id="lblSummaryReplacement">0.00</strong></div>
-        <div id="rowSummaryNet" class="d-none"><span class="text-muted">Net Difference:</span> <strong id="lblSummaryNet" class="text-primary">0.00</strong> <span id="lblSummaryNetNote" class="badge bg-info-subtle text-dark"></span></div>
-        <div id="rowSummaryRefund" class=""><span class="text-muted">Refund / Diff Amount:</span> <strong id="lblSummaryRefund">0.00</strong></div>
-      </div>
-    </div>
-  </div>
-  </div></div>
 </div>
-<div class="modal fade" id="srSearchModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header mks-modal-header"><h5 class="modal-title"><i class="fa fa-search me-2"></i>Search Sales Return</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-2"><table class="table table-sm" id="tableSalesReturnSearch" style="width:100%"><thead class="table-light"><tr><th>No</th><th>Date</th><th>Customer</th><th>Amount</th><th></th></tr></thead></table></div></div></div></div>
-<div class="modal fade" id="pickSOModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content"><div class="modal-header mks-modal-header"><h5 class="modal-title"><i class="fa fa-file-invoice me-2"></i>Pick Sales Order</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-2"><table class="table table-sm table-striped" id="tablePickSO" style="width:100%"><thead class="table-light"><tr><th>ID</th><th>No</th><th>Date</th><th>Amount</th><th></th></tr></thead></table></div></div></div></div>
-@section Scripts { <script src="/js/SalesReturn.js"></script> }
+<!-- Search Modal -->
+<div class="modal fade" id="srSearchModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header mks-modal-header">
+        <h5 class="modal-title"><i class="fa fa-search me-2"></i>Search Sales Return</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <table class="table table-sm table-hover" id="tableSalesReturnSearch" style="width:100%">
+          <thead><tr><th>No</th><th>Date</th><th>Customer</th><th class="text-end">Amount</th><th style="width:140px"></th></tr></thead>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Pick SO Modal -->
+<div class="modal fade" id="pickSOModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header mks-modal-header">
+        <h5 class="modal-title"><i class="fa fa-file-invoice me-2"></i>Pick Sales Order</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <table class="table table-sm table-striped table-hover" id="tablePickSO" style="width:100%">
+          <thead><tr><th>ID</th><th>No</th><th>Date</th><th class="text-end">Amount</th><th style="width:60px"></th></tr></thead>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+@section Scripts { <script src="~/js/SalesReturn.js" asp-append-version="true"></script> }

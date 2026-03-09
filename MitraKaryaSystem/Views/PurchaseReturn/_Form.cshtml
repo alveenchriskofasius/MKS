@@ -1,10 +1,44 @@
 @model API.Models.PurchaseReturnModel
 <div class="card shadow-sm">
- <div class="card-body row g-3 align-items-end">
+ <div class="card-body">
   <input type="hidden" id="prID" value="@Model.ID" />
-  <div class="col-auto"><label class="form-label small mb-0">No</label><input id="prNo" class="form-control form-control-sm" value="@Model.No" readonly /></div>
-  <div class="col-auto"><label class="form-label small mb-0">Date</label><input type="date" id="prDate" class="form-control form-control-sm" value="@Model.Date.ToString("yyyy-MM-dd")" /></div>
-  <div class="col-auto"><label class="form-label small mb-0">SupplierID</label><input id="prSupplierID" class="form-control form-control-sm" value="@Model.SupplierID" /></div>
-  <div class="col-3"><label class="form-label small mb-0">Note</label><input id="prNote" class="form-control form-control-sm" value="@Model.Note" /></div>
+  <input type="hidden" id="prFormStatusID" value="@(Model.StatusID ?? 1)" />
+  <div class="row g-3 align-items-end">
+   <div class="col-auto">
+    <label class="form-label small mb-0 fw-semibold">No</label>
+    <input id="prNo" class="form-control form-control-sm" value="@Model.No" readonly style="width:160px" />
+   </div>
+   <div class="col-auto">
+    <label class="form-label small mb-0 fw-semibold">Date</label>
+    <input type="date" id="prDate" class="form-control form-control-sm" value="@Model.Date.ToString("yyyy-MM-dd")" />
+   </div>
+   <div class="col-md-3">
+    <label class="form-label small mb-0 fw-semibold">Supplier</label>
+    <select id="prSupplierID" class="form-select form-select-sm">
+     <option value="">-- Select Supplier --</option>
+    </select>
+    <span id="prSupplierName" class="d-none"></span>
+   </div>
+   <div class="col-md-3">
+    <label class="form-label small mb-0 fw-semibold">Note</label>
+    <input id="prNote" class="form-control form-control-sm" value="@Model.Note" placeholder="Optional note..." />
+   </div>
+  </div>
  </div>
 </div>
+<script>
+(function(){
+ var selVal = '@Model.SupplierID';
+ $.get('/Product/GetSupplierList', function(data){
+  var list = (data && data.result) ? data.result : (Array.isArray(data) ? data : []);
+  var $sel = $('#prSupplierID');
+  list.forEach(function(s){
+   var id = s.id || s.ID;
+   var name = s.supplierName || s.SupplierName || s.name || s.Name;
+   $sel.append('<option value="' + id + '"' + (String(id) === String(selVal) ? ' selected' : '') + '>' + name + '</option>');
+  });
+  var selectedText = $sel.find('option:selected').text();
+  if (selectedText && selectedText !== '-- Select Supplier --') $('#prSupplierName').text(selectedText);
+ });
+})();
+</script>

@@ -23,6 +23,9 @@ namespace MitraKaryaSystem.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login(LoginModel user)
         {
+            // Always clear existing cookie first so stale claims never survive a login attempt
+            await HttpContext.SignOutAsync("AuthScheme");
+
             if (ModelState.IsValid)
             {
                 if (await _authService.Login(user.UserName, user.Password))

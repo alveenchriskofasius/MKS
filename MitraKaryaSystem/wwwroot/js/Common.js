@@ -296,10 +296,11 @@
  return value;
  },
  Date: function (value) {
- if (value === null) return '';
+ if (value === null || value === '' || value === undefined) return '';
  const dt = new Date(value);
+ if (isNaN(dt)) return '';
  const month = dt.getMonth() +1;
- return ((dt.getDate() <10) ? '0' + dt.getDate() : dt.getDate()) + '/' + (month <10 ? '0' + month : month) + '/' + dt.getFullYear();
+ return ((dt.getDate() <10) ? '0' + dt.getDate() : dt.getDate()) + '-' + (month <10 ? '0' + month : month) + '-' + dt.getFullYear();
  },
  DateByForm: function (value) {
  if (value === null) return '';
@@ -314,7 +315,7 @@
  const month = dt.getMonth() +1;
  const minutes = (dt.getMinutes() <10) ? ('0' + dt.getMinutes()) : dt.getMinutes();
  const seconds = (dt.getSeconds() <10) ? ('0' + dt.getSeconds()) : dt.getSeconds();
- return ((dt.getDate() <10) ? '0' + dt.getDate() : dt.getDate()) + '-' + month + '-' + dt.getFullYear() + ' ' + dt.getHours() + ':' + minutes + ':' + seconds;
+ return ((dt.getDate() <10) ? '0' + dt.getDate() : dt.getDate()) + '-' + (month <10 ? '0' + month : month) + '-' + dt.getFullYear() + ' ' + dt.getHours() + ':' + minutes + ':' + seconds;
  },
  Money: function (id) {
  $(id).each(function (_index, el) {

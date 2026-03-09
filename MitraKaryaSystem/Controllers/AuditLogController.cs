@@ -42,7 +42,7 @@ namespace MitraKaryaSystem.Controllers
                     x.UserName,
                     x.IpAddress,
                     x.Changes,
-                    CreatedAt = x.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                    CreatedAt = x.CreatedAt.ToString("dd-MM-yyyy HH:mm:ss")
                 })
                 .ToListAsync();
             return Json(list);

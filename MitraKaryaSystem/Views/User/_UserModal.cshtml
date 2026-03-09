@@ -1,71 +1,102 @@
 ﻿@model UserModel
+@{
+    var isNew = Model == null || Model.ID == 0;
+}
 
-<form id="userForm">
-    <input type="text" hidden asp-for="@Model.ID" />
+<form id="userForm" novalidate>
+    <input type="hidden" name="ID" value="@(Model?.ID ?? 0)" />
 
-    <div class="form-group">
-        <label asp-for="@Model.UserName" class="form-label">User Name</label>
-        <input asp-for="@Model.UserName" id="UserName" autocomplete="off" required class="form-control" aria-required="true" />
-        <div class="invalid-feedback">Please enter a user name.</div>
-    </div>
-    @if (Model != null)
-    {
-
-        @if (Model.ID == 0)
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <span class="section-label">
+            <i class="fa @(isNew ? "fa-user-plus" : "fa-pen-to-square") me-1"></i>
+            @(isNew ? "New User" : "Edit User")
+        </span>
+        @if (!isNew)
         {
-            <div class="form-group">
-                <label asp-for="@Model.Password" class="form-label">Password</label>
-                <input asp-for="@Model.Password" id="Password" autocomplete="off" required type="password" class="form-control" aria-required="true" />
+            <div class="d-flex align-items-center gap-2">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" name="IsActive" id="isActive"
+                           @(Model!.IsActive ? "checked" : "") value="true" />
+                    <label class="form-check-label small fw-semibold" for="isActive">Active</label>
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="btnDeleteUser" data-id="@Model.ID">
+                    <i class="fa fa-trash"></i> Delete
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" name="IsActive" id="isActive" checked value="true" />
+                <label class="form-check-label small fw-semibold" for="isActive">Active</label>
+            </div>
+        }
+    </div>
+
+    <!-- User fields -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <label class="form-label small fw-semibold">Username <span class="text-danger">*</span></label>
+            <input type="text" name="UserName" class="form-control" value="@Model?.UserName" placeholder="e.g. john.doe" required autocomplete="off" />
+            <div class="invalid-feedback">Please enter a username.</div>
+        </div>
+        @if (isNew)
+        {
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
+                <input type="password" name="Password" class="form-control" placeholder="Enter password" required autocomplete="new-password" />
                 <div class="invalid-feedback">Please enter a password.</div>
             </div>
         }
-    }
-    <div class="form-group">
-        <label asp-for="@Model.Email" class="form-label">Email</label>
-        <input asp-for="@Model.Email" id="Email" type="email" class="form-control" required aria-required="true" />
-        <div class="invalid-feedback">Please enter a valid email address.</div>
-    </div>
-    <div class="form-group">
-        <label asp-for="@Model.Name" class="form-label">Full Name</label>
-        <input asp-for="@Model.Name" id="FullName" autocomplete="off" class="form-control" required aria-required="true" />
-        <div class="invalid-feedback">Please enter a full name.</div>
-
-    </div>
-    <div class="form-group">
-        <label asp-for="@Model.PhoneNumber" class="form-label">Phone Number</label>
-        <input asp-for="@Model.PhoneNumber" id="PhoneNumber" autocomplete="off" class="form-control" required aria-required="true" />
-        <div class="invalid-feedback">Please enter a phone number.</div>
-
-    </div>
-    <div class="form-group">
-        <label asp-for="@Model.KTP" class="form-label">KTP</label>
-        <input asp-for="@Model.KTP" id="KTP" class="form-control" aria-required="true" required />
-        <div class="invalid-feedback">Please enter a KTP.</div>
-    </div>
-    <div class="row">
-        <div class="col-sm-2 col-lg-1">
-            <label>Status</label>
+        else
+        {
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">New Password</label>
+                <input type="password" name="Password" class="form-control" placeholder="Leave blank to keep current" autocomplete="new-password" />
+            </div>
+        }
+        <div class="col-md-6">
+            <label class="form-label small fw-semibold">Full Name <span class="text-danger">*</span></label>
+            <input type="text" name="Name" class="form-control" value="@Model?.Name" placeholder="e.g. John Doe" required autocomplete="off" />
+            <div class="invalid-feedback">Please enter a full name.</div>
         </div>
-        <div class="col-sm-11">
-            <input type="checkbox" asp-for="@Model.IsActive" checked="@(Model !=null && Model.IsActive ? true:false)" id="isActive">
-            <label asp-for="@Model.IsActive" class="form-label">Active</label>
+        <div class="col-md-6">
+            <label class="form-label small fw-semibold">Email <span class="text-danger">*</span></label>
+            <input type="email" name="Email" class="form-control" value="@Model?.Email" placeholder="e.g. john@@example.com" required />
+            <div class="invalid-feedback">Please enter a valid email.</div>
         </div>
-
+        <div class="col-md-6">
+            <label class="form-label small fw-semibold">Phone Number <span class="text-danger">*</span></label>
+            <input type="text" name="PhoneNumber" class="form-control" value="@Model?.PhoneNumber" placeholder="e.g. 08123456789" required autocomplete="off" />
+            <div class="invalid-feedback">Please enter a phone number.</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label small fw-semibold">KTP <span class="text-danger">*</span></label>
+            <input type="text" name="KTP" class="form-control" value="@Model?.KTP" placeholder="Enter KTP number" required />
+            <div class="invalid-feedback">Please enter a KTP number.</div>
+        </div>
     </div>
 
-    @if (Model != null && Model.ID > 0)
+    <!-- Roles section -->
+    @if (!isNew)
     {
-        <hr />
-        <div class="form-group">
-            <label class="form-label fw-bold">Assigned Roles</label>
-            <div id="userRolesContainer"><span class="text-muted">Loading roles...</span></div>
+        <div class="mb-4">
+            <span class="section-label d-block mb-2"><i class="fa fa-shield-halved me-1"></i> Assigned Roles</span>
+            <div id="userRolesContainer" class="role-toggle-list">
+                <span class="text-muted small">Loading roles…</span>
+            </div>
         </div>
     }
 
+    <!-- Actions -->
+    <div class="d-flex gap-2 pt-3 border-top">
+        <button type="button" class="btn btn-primary" id="buttonSave">
+            <span class="spinner-border spinner-border-sm d-none"></span>
+            <i class="fa fa-save"></i> Save
+        </button>
+        <button type="button" class="btn btn-outline-secondary" id="btnCancelEdit">
+            <i class="fa fa-xmark"></i> Cancel
+        </button>
+    </div>
 </form>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}

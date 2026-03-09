@@ -151,7 +151,7 @@ public class SalesInvoiceRepository : ISalesInvoiceRepository
             {
                 ID = t.ID,
                 No = t.No,
-                Date = t.Date,
+                Date = t.Date.ToString("yyyy-MM-dd"),
                 CustomerID = t.CustomerID,
                 CustomerName = _ctx.Customers.Where(c => c.ID == t.CustomerID).Select(c => c.Name).FirstOrDefault() ?? "-",
                 Amount = t.Amount,

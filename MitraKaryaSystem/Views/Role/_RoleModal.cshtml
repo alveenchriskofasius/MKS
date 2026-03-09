@@ -1,23 +1,159 @@
 ﻿@model RoleViewModel
+@{
+    var categoryMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
+        ["Point of Sale"] = "Overview",
+        ["Sales Order"] = "Sales", ["Sales Invoice"] = "Sales",
+        ["Delivery Order"] = "Sales", ["Sales Return"] = "Sales", ["Payment In"] = "Sales",
+        ["Purchase Order"] = "Purchasing", ["Purchase Return"] = "Purchasing", ["Payment Out"] = "Purchasing",
+        ["Product"] = "Inventory", ["Stock In"] = "Inventory", ["Stock Count"] = "Inventory",
+        ["Customer"] = "Master Data", ["Driver"] = "Master Data",
+        ["User"] = "Administration", ["Role"] = "Administration", ["Audit Log"] = "Administration"
+    };
+    var categoryMeta = new Dictionary<string, (string Icon, string Color)> {
+        ["Overview"] = ("fa-chart-line", "info"),
+        ["Sales"] = ("fa-file-invoice-dollar", "primary"),
+        ["Purchasing"] = ("fa-cart-shopping", "warning"),
+        ["Inventory"] = ("fa-boxes-stacked", "success"),
+        ["Master Data"] = ("fa-database", "secondary"),
+        ["Administration"] = ("fa-shield-halved", "danger")
+    };
+    var permIcons = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
+        ["Point of Sale"] = "fa-cash-register",
+        ["Sales Order"] = "fa-file-invoice-dollar", ["Sales Invoice"] = "fa-file-invoice",
+        ["Delivery Order"] = "fa-truck-fast", ["Sales Return"] = "fa-rotate-left",
+        ["Payment In"] = "fa-hand-holding-dollar",
+        ["Purchase Order"] = "fa-cart-shopping", ["Purchase Return"] = "fa-rotate-right",
+        ["Payment Out"] = "fa-money-bill-wave",
+        ["Product"] = "fa-cubes-stacked", ["Stock In"] = "fa-boxes-stacked",
+        ["Stock Count"] = "fa-clipboard-check",
+        ["Customer"] = "fa-user-group", ["Driver"] = "fa-id-badge",
+        ["User"] = "fa-users", ["Role"] = "fa-shield-halved", ["Audit Log"] = "fa-clock-rotate-left"
+    };
+    var categoryOrder = new[] { "Overview", "Sales", "Purchasing", "Inventory", "Master Data", "Administration" };
+
+    // Split permissions into parent (no dot) and sub-actions (has dot)
+    var allPerms = Model.Permissions ?? new List<PermissionModel>();
+    var parentPerms = allPerms.Where(p => !(p.Name ?? "").Contains('.')).ToList();
+    var subPerms = allPerms.Where(p => (p.Name ?? "").Contains('.')).ToList();
+
+    // Build lookup: normalize parent key by trying both with-space and without-space
+    var subByParent = new Dictionary<string, List<PermissionModel>>(StringComparer.OrdinalIgnoreCase);
+    foreach (var sub in subPerms)
+    {
+        var parentKey = (sub.Name ?? "").Split('.')[0].Trim();
+        // Try to find matching parent permission name (e.g., "StockIn" -> "Stock In")
+        var matchedParent = parentPerms.FirstOrDefault(p =>
+            string.Equals(p.Name, parentKey, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals((p.Name ?? "").Replace(" ", ""), parentKey, StringComparison.OrdinalIgnoreCase));
+        var key = matchedParent?.Name ?? parentKey;
+        if (!subByParent.ContainsKey(key)) subByParent[key] = new List<PermissionModel>();
+        subByParent[key].Add(sub);
+    }
+
+    var grouped = parentPerms
+        .GroupBy(p => categoryMap.TryGetValue(p.Name ?? "", out var cat) ? cat : "Other")
+        .OrderBy(g => { var idx = Array.IndexOf(categoryOrder, g.Key); return idx < 0 ? 999 : idx; });
+    var isNew = Model.Role.ID == 0;
+}
 
 <form id="roleForm">
-    <input type="text" hidden asp-for="@Model.Role.ID" />
+    <input type="hidden" name="Role.ID" value="@Model.Role.ID" />
 
-    <div class="form-group">
-        <label asp-for="@Model.Role.Name" class="form-label"> Name</label>
-        <input asp-for="@Model.Role.Name" id="Name" autocomplete="off" class="form-control" aria-required="true" />
-        <span asp-validation-for="@Model.Role.Name" class="text-danger"></span>
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <span class="section-label">
+            <i class="fa @(isNew ? "fa-plus-circle" : "fa-pen-to-square") me-1"></i>
+            @(isNew ? "New Role" : "Edit Role")
+        </span>
+        @if (!isNew)
+        {
+            <button type="button" class="btn btn-outline-danger btn-sm" id="btnDeleteRole" data-id="@Model.Role.ID">
+                <i class="fa fa-trash"></i> Delete
+            </button>
+        }
+    </div>
 
+    <!-- Role fields -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <label class="form-label small fw-semibold">Role Name <span class="text-danger">*</span></label>
+            <input type="text" name="Role.Name" class="form-control" value="@Model.Role.Name" placeholder="e.g. Admin, Cashier" required />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label small fw-semibold">Description</label>
+            <input type="text" name="Role.Description" class="form-control" value="@Model.Role.Description" placeholder="Brief description of this role" />
+        </div>
     </div>
-    <div class="form-group">
-        <label asp-for="@Model.Role.Description" class="form-label"> Description</label>
-        <textarea asp-for="@Model.Role.Description" id="Description" autocomplete="off" class="form-control" aria-required="true"></textarea>
-        <span asp-validation-for="@Model.Role.Description" class="text-danger"></span>
+
+    <!-- Permissions -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <span class="section-label"><i class="fa fa-key me-1"></i> Menu Permissions</span>
+        <div class="d-flex gap-1">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btnSelectAll"><i class="fa fa-check-double"></i> All</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeselectAll"><i class="fa fa-xmark"></i> Clear</button>
+        </div>
     </div>
-    <br />
-    <div class="form-group">
-        <!-- Include your table permission here -->
-        <partial model="@Model" name="_TablePermission" />
+
+    <div class="row">
+        @foreach (var group in grouped)
+        {
+            var meta = categoryMeta.TryGetValue(group.Key, out var m) ? m : ("fa-circle", "secondary");
+            var groupIcon = meta.Item1;
+            var groupColor = meta.Item2;
+            <div class="col-md-6 mb-3">
+                <div class="perm-group">
+                    <div class="perm-group-header">
+                        <i class="fa-solid @groupIcon text-@groupColor"></i>
+                        <span>@group.Key</span>
+                        <span class="toggle-all" data-group="@group.Key">toggle all</span>
+                    </div>
+                    @foreach (var perm in group)
+                    {
+                        var icon = permIcons.TryGetValue(perm.Name ?? "", out var ic) ? ic : "fa-circle";
+                        var hasSubs = subByParent.ContainsKey(perm.Name ?? "");
+                        <div class="perm-item">
+                            <div class="perm-item-label">
+                                <i class="fa-solid @icon"></i>
+                                <span>@perm.Name</span>
+                            </div>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input permission-toggle" type="checkbox"
+                                       name="permission" value="@perm.ID" data-group="@group.Key"
+                                       @(perm.IsSelected ? "checked" : "") />
+                            </div>
+                        </div>
+                        @if (hasSubs)
+                        {
+                            <div class="ps-4 pb-1">
+                                @foreach (var sub in subByParent[perm.Name ?? ""])
+                                {
+                                    var actionName = (sub.Name ?? "").Contains('.') ? (sub.Name ?? "").Split('.').Last().Trim() : sub.Name;
+                                    <div class="d-flex align-items-center justify-content-between py-1 border-bottom" style="border-color:#eee !important;">
+                                        <span class="small text-muted"><i class="fa fa-angle-right me-1"></i>@actionName</span>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input permission-toggle" type="checkbox"
+                                                   name="permission" value="@sub.ID" data-group="@group.Key"
+                                                   @(sub.IsSelected ? "checked" : "") />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex gap-2 mt-3 pt-3 border-top">
+        <button type="button" class="btn btn-primary" id="buttonSave">
+            <span class="spinner-border spinner-border-sm d-none"></span>
+            <i class="fa fa-save"></i> Save
+        </button>
+        <button type="button" class="btn btn-outline-secondary" id="btnCancelEdit">
+            <i class="fa fa-xmark"></i> Cancel
+        </button>
     </div>
 </form>
 

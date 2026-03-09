@@ -62,33 +62,30 @@ const productTable = {
 		const columns = [
 			{ data: 'categoryName' },
 			{
-				data: null, render: function () {
-					return `
-                    <a class="btn btn-warning edit" href="#"><i class="fa fa-pencil"></i></a>
-                    <span style="margin:05px;"></span>
-                    <a class="btn btn-danger delete"><i class="fa fa-trash"></i></a>`;
-				}, orderable: false
-			}
-		];
+					data: null, className: 'text-center', render: function () {
+							return `<div class="btn-group btn-group-sm"><button class="btn btn-outline-primary edit" title="Edit"><i class="fa fa-pencil"></i></button><button class="btn btn-outline-danger delete" title="Delete"><i class="fa fa-trash"></i></button></div>`;
+						}, orderable: false
+					}
+				];
 
-		$table.DataTable({
-			deferRender: true,
-			processing: true,
-			serverSide: false,
-			destroy: true,
-			filter: true,
-			searching: false,
-			responsive: true,
-			columns: columns,
-			dom: 'lBfrtip',
-			columnDefs: [{ targets: [0], className: 'text-left' }],
-			data: data
-		});
+				$table.DataTable({
+					deferRender: true,
+					processing: true,
+					serverSide: false,
+					destroy: true,
+					filter: true,
+					searching: false,
+					responsive: true,
+					columns: columns,
+					dom: 'lBfrtip',
+					columnDefs: [{ targets: [0], className: 'text-left' }],
+					data: data
+				});
 
-		const tb = $table.DataTable();
-		$table.find('tbody').off().on('click', '.edit', function () {
-			const row = tb.row($(this).closest('tr')).data();
-			productForms.fillFormCategory(row.id);
+				const tb = $table.DataTable();
+				$table.find('tbody').off().on('click', '.edit', function () {
+					const row = tb.row($(this).closest('tr')).data();
+					productForms.fillFormCategory(row.id);
 		});
 
 		$table.find('tbody').on('click', '.delete', function () {
@@ -122,29 +119,26 @@ const productTable = {
 		const columns = [
 			{ data: 'unitName' },
 			{
-				data: null, render: function () {
-					return `
-                    <a class="btn btn-warning edit" href="#"><i class="fa fa-pencil"></i></a>
-                    <span style="margin:05px;"></span>
-                    <a class="btn btn-danger delete"><i class="fa fa-trash"></i></a>`;
-				}, orderable: false
-			}
-		];
-		$table.DataTable({
-			deferRender: true,
-			processing: true,
-			serverSide: false,
-			destroy: true,
-			filter: true,
-			searching: false,
-			responsive: true,
-			columns: columns,
-			dom: 'lBfrtip',
-			columnDefs: [{ targets: [0], className: 'text-left' }],
-			data: data
-		});
-		const tb = $table.DataTable();
-		$table.find('tbody').off().on('click', '.edit', function () { const row = tb.row($(this).closest('tr')).data(); productForms.fillFormUnit(row.id); });
+					data: null, className: 'text-center', render: function () {
+							return `<div class="btn-group btn-group-sm"><button class="btn btn-outline-primary edit" title="Edit"><i class="fa fa-pencil"></i></button><button class="btn btn-outline-danger delete" title="Delete"><i class="fa fa-trash"></i></button></div>`;
+						}, orderable: false
+					}
+				];
+				$table.DataTable({
+					deferRender: true,
+					processing: true,
+					serverSide: false,
+					destroy: true,
+					filter: true,
+					searching: false,
+					responsive: true,
+					columns: columns,
+					dom: 'lBfrtip',
+					columnDefs: [{ targets: [0], className: 'text-left' }],
+					data: data
+				});
+				const tb = $table.DataTable();
+				$table.find('tbody').off().on('click', '.edit', function () { const row = tb.row($(this).closest('tr')).data(); productForms.fillFormUnit(row.id); });
 		$table.find('tbody').on('click', '.delete', function () {
 			const row = tb.row($(this).closest('tr')).data();
 			// Show a confirmation dialog
@@ -210,7 +204,7 @@ const productForms = {
 					productForms.fillFormCategory(0);
 					productControl.category();
 				};
-				(result && result.result && result.result.success) ? toastr.success('Data saved') : toastr.error((result && result.result && result.result.error) || 'Data not saved');
+				(result && result.success) ? toastr.success('Data saved') : toastr.error((result && result.error) || 'Data not saved');
 			})
 			.catch(function (error) { console.error('SaveCategory failed', error); })
 			.finally(function () {
@@ -234,7 +228,7 @@ const productForms = {
 					productForms.fillFormUnit(0);
 					productControl.unit();
 				};
-				(result && result.result && result.result.success) ? toastr.success('Data saved') : toastr.error((result && result.result && result.result.error) || 'Data not saved');
+				(result && result.success) ? toastr.success('Data saved') : toastr.error((result && result.error) || 'Data not saved');
 			})
 			.catch(function (error) { console.error('SaveUnit failed', error); })
 			.finally(function () {
@@ -246,16 +240,20 @@ const productForms = {
 	},
 	saveProduct: function () {
 		const formData = $('#productForm').serializeArray().reduce((acc, cur) => { acc[cur.name] = cur.value; return acc; }, {});
+		// Manually handle checkbox - serializeArray with reduce loses checked state due to hidden input
+		formData['ProductModel.HasDiscount'] = $('#chkHasDiscount').is(':checked');
 		// Show loading indicator
 		$('#buttonSave').prop('disabled', true);
 		$('#buttonSave .spinner-border').show();
 
 		Common.Api.post('SaveProduct', formData)
 			.then(function (result) {
-				toastr.options.onShown = function () {
-					productForms.resetProductForm();
-				};
-				(result && result.result && result.result.success) ? toastr.success('Data saved') : toastr.error((result && result.result && result.result.error) || 'Data not saved');
+				if (result && result.success) {
+					toastr.success('Data saved');
+					window.location.href = '/Product';
+				} else {
+					toastr.error((result && result.error) || 'Data not saved');
+				}
 			})
 			.catch(function () { Swal.close(); })
 			.finally(function () {

@@ -6,6 +6,7 @@
 <div class="pos-container fade-slide-up">
   <div class="pos-action-bar">
     <span class="me-auto fw-semibold"><i class="fa fa-cash-register me-1 text-primary"></i> Point of Sale</span>
+    <button class="btn btn-outline-secondary btn-sm me-1" id="posBtnHistory"><i class="fa fa-clock-rotate-left"></i> History</button>
     <button class="btn btn-outline-secondary btn-sm" id="posBtnCancel"><i class="fa fa-refresh"></i> Reset</button>
   </div>
   <div class="pos-panels">
@@ -23,7 +24,7 @@
       <h5 class="mt-2"><i class="fa fa-receipt me-1 text-muted"></i> Cart Summary</h5>
       <div class="pos-summary p-3 mt-1">
         <div class="line"><span>Subtotal</span><span id="posSubtotal" class="fw-semibold">Rp 0</span></div>
-        <div class="line"><span>Tax (10%)</span><span id="posTax">Rp 0</span></div>
+        <div class="line"><span>Tax (11%)</span><span id="posTax">Rp 0</span></div>
         <hr />
         <div class="line total"><span>Total</span><span id="posTotal">Rp 0</span></div>
         <hr />
@@ -73,6 +74,39 @@
     </div>
   </div>
 </div>
+
+<!-- History Modal -->
+<div class="modal fade" id="posHistoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header mks-modal-header">
+        <h5 class="modal-title"><i class="fa fa-clock-rotate-left me-2"></i>POS Transaction History</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-2">
+        <table class="table table-sm table-hover" id="tablePosHistory" style="width:100%">
+          <thead class="table-light">
+            <tr>
+              <th>No</th>
+              <th>Date</th>
+              <th class="text-end">Amount</th>
+              <th class="text-end">Paid</th>
+              <th>Customer</th>
+              <th>Status</th>
+              <th>Cashier</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @section Scripts{
   <script src="~/js/Pos.js" asp-append-version="true"></script>
 }

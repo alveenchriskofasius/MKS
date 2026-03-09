@@ -1,9 +1,11 @@
 using API.Models;
 using API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MitraKaryaSystem.Security;
 namespace MitraKaryaSystem.Controllers;
 
+[Authorize]
 [HasPermission("Sales Return")]
 public class SalesReturnController : Controller
 {

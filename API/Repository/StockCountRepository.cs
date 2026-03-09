@@ -1,13 +1,15 @@
 using API.Context.Table;
 using API.Models;
 using API.Repository.Interfaces;
+using API.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Repository;
 
 public class StockCountRepository : BaseRepository, IStockCountRepository
 {
-    public StockCountRepository(MKSTableContext ctx, IHttpContextAccessor accessor) : base(ctx, accessor) { }
+    private readonly IStockLedgerService _stockLedger;
+    public StockCountRepository(MKSTableContext ctx, IHttpContextAccessor accessor, IStockLedgerService stockLedger = null) : base(ctx, accessor) { _stockLedger = stockLedger; }
 
     public async Task<StockCountModel> FillForm(int id)
     {
@@ -77,7 +79,7 @@ public class StockCountRepository : BaseRepository, IStockCountRepository
                     Date = model.Date.Date,
                     No = await GenerateNo(model.Date.Date),
                     Note = model.Note,
-                    AutoAdjust = model.AutoAdjust,
+                    AutoAdjust = false,
                     CreatedAt = DateTime.Now,
                     CreatedBy = user
                 };
@@ -87,9 +89,10 @@ public class StockCountRepository : BaseRepository, IStockCountRepository
             else
             {
                 entity = await _context.StockCounts.Include(x => x.StockCountItems).FirstOrDefaultAsync(x => x.ID == model.ID) ?? throw new Exception("Stock Count not found");
+                if (entity.AutoAdjust)
+                    return new { success = false, result = "Cannot edit — stock has already been adjusted" };
                 entity.Date = model.Date.Date;
                 entity.Note = model.Note;
-                entity.AutoAdjust = model.AutoAdjust;
                 entity.UpdatedAt = DateTime.Now;
                 entity.UpdatedBy = user;
                 await SaveChangesAsync();
@@ -130,11 +133,6 @@ public class StockCountRepository : BaseRepository, IStockCountRepository
             }
             await SaveChangesAsync();
 
-            if (model.AutoAdjust)
-            {
-                await AutoAdjust(entity.ID); // simple call; ignore result here
-            }
-
             return new { success = true, id = entity.ID, no = entity.No };
         }
         catch (Exception ex)
@@ -149,7 +147,27 @@ public class StockCountRepository : BaseRepository, IStockCountRepository
         {
             var entity = await _context.StockCounts.FindAsync(id);
             if (entity == null) return new { success = false, result = "Not found" };
-            var items = _context.StockCountItems.Where(x => x.StockCountID == id);
+            var items = await _context.StockCountItems.Where(x => x.StockCountID == id).ToListAsync();
+
+            // Reverse stock adjustments if this stock count was already adjusted
+            if (entity.AutoAdjust)
+            {
+                foreach (var item in items)
+                {
+                    var product = await _context.Products.FindAsync(item.ProductID);
+                    if (product != null)
+                    {
+                        int reversal = item.SystemQty - item.PhysicalQty;
+                        product.StockQuantity += reversal;
+                        _context.Products.Update(product);
+                        if (_stockLedger != null && reversal != 0)
+                        {
+                            try { await _stockLedger.WriteAsync(product.ID, reversal, "StockCount", id, entity.No, "Reverse - SC Deleted"); } catch { }
+                        }
+                    }
+                }
+            }
+
             _context.StockCountItems.RemoveRange(items);
             _context.StockCounts.Remove(entity);
             await SaveChangesAsync();
@@ -173,16 +191,30 @@ public class StockCountRepository : BaseRepository, IStockCountRepository
 
     public async Task<object> AutoAdjust(int id)
     {
+        var sc = await _context.Set<StockCount>().FindAsync(id);
+        if (sc == null) return new { success = false, result = "Stock Count not found" };
+        if (sc.AutoAdjust) return new { success = false, result = "Stock has already been adjusted for this count" };
+
         var items = await _context.StockCountItems.Where(x => x.StockCountID == id).ToListAsync();
         foreach (var item in items)
         {
             var product = await _context.Products.FindAsync(item.ProductID);
             if (product != null)
             {
+                int diff = item.PhysicalQty - product.StockQuantity;
                 product.StockQuantity = item.PhysicalQty;
                 _context.Products.Update(product);
+                if (_stockLedger != null && diff != 0)
+                {
+                    try { await _stockLedger.WriteAsync(product.ID, diff, "StockCount", id, sc.No, "Auto Adjust"); } catch { }
+                }
             }
         }
+
+        sc.AutoAdjust = true;
+        sc.UpdatedAt = DateTime.Now;
+        sc.UpdatedBy = GetCurrentUserName();
+        _context.Update(sc);
         await SaveChangesAsync();
 
         var totalDiffValue = items.Sum(i => (i.PhysicalQty - i.SystemQty) * i.UnitPrice);

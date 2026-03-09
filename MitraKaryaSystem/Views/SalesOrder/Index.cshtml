@@ -47,7 +47,7 @@
             </div>
 
             <!-- Form -->
-            <div class="card mb-3">
+            <div class="card shadow-sm mb-3">
                 <div class="card-body" id="salesOrderHeaderBody">
                     <partial name="_Form" model="new SalesOrderViewModel()" />
                 </div>
@@ -57,14 +57,13 @@
                 </div>
             </div>
 
-            <!-- Product selection -->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-10">
-                            <label class="form-label small fw-semibold">Add Product</label>
-                            <select class="form-control select2" id="selectProduct" autofocus></select>
-                        </div>
+            <!-- Product search (inline, no card wrapper) -->
+            <div class="mb-3">
+                <label class="form-label small fw-semibold mb-1"><i class="fa fa-cart-plus me-1 text-primary"></i> Add Product</label>
+                <div class="mks-search-wrap" style="max-width:600px">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="fa fa-barcode text-muted"></i></span>
+                        <input type="text" class="form-control" id="soProductSearch" placeholder="Type product name or scan barcode..." autocomplete="off" />
                     </div>
                 </div>
             </div>
@@ -76,6 +75,7 @@
         </div>
         <div class="card-footer d-flex gap-2 flex-wrap">
             <button type="submit" class="btn btn-primary" id="buttonSave"><i class="fa fa-save"></i> Save</button>
+            <button type="button" class="btn btn-outline-secondary" id="buttonPrint"><i class="fa fa-print"></i> Print</button>
             <a class="btn btn-secondary ms-auto" asp-action="Index" asp-controller="Home" id="buttonCancel"><i class="fa fa-arrow-left"></i> Back</a>
         </div>
     </div>

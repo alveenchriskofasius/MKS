@@ -1,7 +1,9 @@
 ﻿$(document).ready(function () {
     ControlStockIn.Init();
     ButtonStockIn.Init();
-    FormStockIn.FillForm(0, true);
+    const params = new URLSearchParams(window.location.search);
+    const loadId = parseInt(params.get('loadId') || '0', 10);
+    FormStockIn.FillForm(loadId || 0, true);
     FormStockIn.LoadApprovedPOs();
 });
 
@@ -11,8 +13,13 @@ function UpdateStockInStatusBadge(statusID) {
  const $b = $('#stockInStatus');
  const txt = StockInStatus[statusID] || 'Draft';
  $b.text(txt);
- $b.removeClass('text-bg-warning text-bg-success text-bg-secondary text-bg-info');
- $b.addClass(statusID >= 3 ? 'text-bg-success' : (statusID === 2 ? 'text-bg-info' : 'text-bg-warning'));
+ $b.removeClass('badge-draft badge-submitted badge-verified text-bg-warning text-bg-success text-bg-secondary text-bg-info');
+ $b.addClass(statusID >= 3 ? 'badge-verified' : (statusID === 2 ? 'badge-submitted' : 'badge-draft'));
+ // Update workflow bar breadcrumb
+ $('#siWorkflowBar .wf-step').each(function () {
+   const step = parseInt($(this).data('step'));
+   if (step <= statusID) $(this).addClass('active'); else $(this).removeClass('active');
+ });
  const idVal = parseInt($('#stockInID').val()||'0',10);
  // toggle footer buttons with save prerequisite
  if (statusID === 1) {
@@ -20,12 +27,14 @@ function UpdateStockInStatusBadge(statusID) {
    $('#buttonVerify').addClass('d-none');
  } else if (statusID === 2) { $('#buttonSubmit').addClass('d-none'); $('#buttonVerify').removeClass('d-none'); }
  else { $('#buttonSubmit,#buttonVerify').addClass('d-none'); }
- // lock inputs if verified
- if (statusID >= 3) {
+ // lock inputs if submitted or verified
+ if (statusID >= 2) {
    lockStockInItems();
+   $('#buttonSave').prop('disabled', true);
  } else {
-   // ensure UI gets re-enabled when returning to Draft/Submitted
+   // ensure UI gets re-enabled when returning to Draft
    unlockStockInItems();
+   $('#buttonSave').prop('disabled', false);
  }
 }
 
@@ -71,6 +80,8 @@ let ButtonStockIn = {
  $('#buttonSearch').click(function () {
  TableStockIn.FillGridSearch();
  });
+
+ $('#buttonPrint').click(function () { const id = parseInt($('#stockInID').val()||'0',10); if (!id) { toastr.info('Save Stock In first'); return; } MksPrint.stockIn(); });
 
  // Submit button
  $(document).on('click', '#buttonSubmit', function(){
@@ -186,7 +197,8 @@ let TableStockIn = {
  },
  canEdit ? { 
    data: null, 
-   render: () => `<a class="btn btn-danger delete"><i class="fa fa-trash"></i></a>`, 
+   className: 'text-center',
+   render: () => `<button class="btn btn-sm btn-outline-danger delete" title="Remove"><i class="fa fa-trash"></i></button>`, 
    orderable: false 
  } : { 
    data: null, 
@@ -258,8 +270,8 @@ let TableStockIn = {
  Common.Api.get('/StockIn/GetStockInList')
  .then(data => {
  let columns = [
- { data: 'no' }, { data: 'date' }, { data: 'amount' }, { data: 'createdBy' }, { data: 'updatedBy' },
- { data: null, render: (d, t, row) => `<div class="btn-group" role="group"><a class="btn btn-warning edit"><i class="fa fa-pencil"></i> Edit</a><a class="btn btn-danger delete"><i class="fa fa-trash"></i> Delete</a></div>`, orderable: false }
+ { data: 'no' }, { data: 'date', render: d => Common.Format.Date(d) }, { data: 'amount' }, { data: 'createdBy' }, { data: 'updatedBy' },
+ { data: null, render: (d, t, row) => `<div class="btn-group btn-group-sm"><button class="btn btn-outline-primary edit" title="Edit"><i class="fa fa-pencil"></i></button><button class="btn btn-outline-danger delete" title="Delete"><i class="fa fa-trash"></i></button></div>`, orderable: false }
  ];
 
  let table = tableID.DataTable({
@@ -394,11 +406,18 @@ let FormStockIn = {
  FormStockIn.LoadApprovedPOs(function() {
    const poId = $('#stockInPurchaseOrderID').val();
    if (poId) $('#stockInPO').val(poId);
-   // lock PO dropdown if not Draft
-   if (statusVal > 1) $('#stockInPO').prop('disabled', true); else $('#stockInPO').prop('disabled', false);
+   // lock PO dropdown if not Draft or if linked to PO
+   if (statusVal > 1 || poId) $('#stockInPO').prop('disabled', true); else $('#stockInPO').prop('disabled', false);
  });
  UpdateStockInStatusBadge(statusVal);
  TableStockIn.FillGridProduct(id, isReset);
+ // If linked to a PO, lock product add controls (items come from PO)
+ const linkedPO = $('#stockInPurchaseOrderID').val();
+ if (linkedPO && parseInt(linkedPO) > 0) {
+   $('#buttonAdd').prop('disabled', true);
+   $('#selectProduct').prop('disabled', true);
+   if ($.fn.select2 && $('#selectProduct').data('select2')) $('#selectProduct').trigger('change.select2');
+ }
  }).catch(err => toastr.error(err.message || 'Error load data'));
  },
  LoadApprovedPOs: function(callback) {
@@ -407,7 +426,7 @@ let FormStockIn = {
      var current = $sel.val();
      $sel.find('option:not(:first)').remove();
      if (Array.isArray(data)) {
-       data.forEach(function(po) { $sel.append($('<option></option>').val(po.id).text(po.no + ' (' + po.date + ')')); });
+       data.forEach(function(po) { $sel.append($('<option></option>').val(po.id).text(po.no + ' (' + Common.Format.Date(po.date) + ')')); });
      }
      if (current) $sel.val(current);
      if (typeof callback === 'function') callback();

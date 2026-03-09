@@ -2,23 +2,67 @@ $(document).ready(() => SalesReturnPage.Init());
 
 const SalesReturnPage = {
  ManualPairSeq:0,
+ _searchReturned: null,
+ _searchReplacement: null,
  Init() {
  this.Bind();
  this.InitTables();
  this.LoadForm(0);
+ this.InitProductSearch();
+ },
+ // ================= PRODUCT SEARCH =================
+ InitProductSearch() {
+ if (this._searchReturned) this._searchReturned.destroy();
+ if (this._searchReplacement) this._searchReplacement.destroy();
+ this._searchReturned = MksProductSearch.attach('#srProduct', {
+  showPrice: true, showStock: false, blockZeroStock: false,
+  onSelect: (prod) => this.AddOrIncreaseProduct(prod, false)
+ });
+ this._searchReplacement = MksProductSearch.attach('#srProductReplacement', {
+  showPrice: true, showStock: false, blockZeroStock: false,
+  onSelect: (prod) => this.AddOrIncreaseProduct(prod, true)
+ });
+ },
+ AddOrIncreaseProduct(prod, isReplacement) {
+ const linked = $('#srLinkedMode').is(':checked');
+ if (linked && !isReplacement) { return toastr.info('Returned items berasal dari Sales Order. Gunakan qty kolom.'); }
+ const table = isReplacement ? $('#tableSalesReturnReplacement').DataTable() : $('#tableSalesReturnItems').DataTable();
+ let exists = false;
+ table.rows().every(function () {
+  const r = this.data();
+  if (r.productID == prod.id && !isReplacement) {
+  exists = true;
+  r.quantity += 1;
+  r.subTotal = r.quantity * r.unitPrice;
+  table.row(this).data(r).invalidate();
+  }
+ });
+ if (!exists) {
+  const baseRow = {
+  id: 0, productID: prod.id, product: prod.name,
+  quantity: 1, unitPrice: prod.unitPrice, subTotal: prod.unitPrice,
+  isReplacement: isReplacement
+  };
+  if (!isReplacement && !linked) { baseRow.manualPairId = (++this.ManualPairSeq); }
+  if (isReplacement) { baseRow.exchangeSourceItemID = null; }
+  table.row.add(baseRow).draw();
+ }
+ if (!isReplacement) this.RefreshPairingOptions();
+ this.RefreshSummary();
  },
  // ================= BINDINGS =================
  Bind() {
  $('#srNew').off('click').on('click', () => this.LoadForm(0));
  $('#srSave').off('click').on('click', () => this.Save());
  $('#srSearch').off('click').on('click', () => this.Search());
+ $('#srPrint').off('click').on('click', () => {
+  const id = parseInt($('#srID').val()||'0',10);
+  if(!id){ toastr.info('Save Sales Return first'); return; }
+  try { MksPrint.salesReturn(); } catch (e) { console.error('Print failed', e); toastr.error('Print failed'); }
+ });
  $(document).off('change.srReturnType', 'input[name="srReturnType"]').on('change.srReturnType', 'input[name="srReturnType"]', () => this.ToggleReturnType());
  $(document).off('change.srRefund', '#srRefundAmount').on('change.srRefund', '#srRefundAmount', () => this.RefreshSummary());
  $(document).off('change.srROS', '#srReturnOriginalToStock').on('change.srROS', '#srReturnOriginalToStock', () => this.RefreshSummary());
- $(document).off('click.srAdd', '#srAdd').on('click.srAdd', '#srAdd', () => this.AddProduct(false));
- $(document).off('click.srAddRep', '#srAddReplacement').on('click.srAddRep', '#srAddReplacement', () => this.AddProduct(true));
- $(document).off('keypress.srProd', '#srProduct').on('keypress.srProd', '#srProduct', (e) => { if (e.which ===13) { e.preventDefault(); this.AddProduct(false); } });
- $(document).off('keypress.srProdRep', '#srProductReplacement').on('keypress.srProdRep', '#srProductReplacement', (e) => { if (e.which ===13) { e.preventDefault(); this.AddProduct(true); } });
  $(document).off('change.srLinked', '#srLinkedMode').on('change.srLinked', '#srLinkedMode', () => this.ToggleLinkedMode());
  $(document).off('click.pickSO', '#btnPickSO').on('click.pickSO', '#btnPickSO', () => this.OpenPickSO());
  $(document).off('click.clearSO', '#btnClearSO').on('click.clearSO', '#btnClearSO', () => this.ClearSO());
@@ -41,7 +85,7 @@ const SalesReturnPage = {
  columns: [
  { data: 'id' },
  { data: 'no' },
- { data: 'date' },
+ { data: 'date', render: d => Common.Format.Date(d) },
  { data: 'amount', className: 'text-end', render: $.fn.dataTable.render.number(',', '.',2) },
  { data: null, orderable: false, render: () => `<button class='btn btn-sm btn-primary so-pick'><i class='fa fa-check'></i></button>` }
  ]
@@ -119,7 +163,7 @@ const SalesReturnPage = {
  { data: 'quantity', className: 'text-end', render: (d, t, r) => t === 'display' ? this.RenderQtyInput(d, r) : d },
  { data: 'unitPrice', className: 'text-end', render: $.fn.dataTable.render.number(',', '.',2) },
  { data: 'subTotal', className: 'text-end', render: $.fn.dataTable.render.number(',', '.',2) },
- { data: null, orderable: false, render: () => `<button class='btn btn-sm btn-danger sr-del'><i class='fa fa-trash'></i></button>` }
+ { data: null, orderable: false, className: 'text-center', render: () => `<button class='btn btn-sm btn-outline-danger sr-del' title='Remove'><i class='fa fa-trash'></i></button>` }
  ],
  data: []
  });
@@ -187,7 +231,7 @@ const SalesReturnPage = {
  { data: 'quantity', className: 'text-end', render: (d, t) => t === 'display' ? `<input type="number" class="form-control form-control-sm sr-rqty" value='${d}' min='1' />` : d },
  { data: 'unitPrice', className: 'text-end', render: $.fn.dataTable.render.number(',', '.',2) },
  { data: 'subTotal', className: 'text-end', render: $.fn.dataTable.render.number(',', '.',2) },
- { data: null, orderable: false, render: () => `<button class='btn btn-sm btn-danger sr-rdel'><i class='fa fa-trash'></i></button>` }
+ { data: null, orderable: false, className: 'text-center', render: () => `<button class='btn btn-sm btn-outline-danger sr-rdel' title='Remove'><i class='fa fa-trash'></i></button>` }
  ],
  data: []
  });
@@ -261,9 +305,10 @@ const SalesReturnPage = {
  const rep = $('#tableSalesReturnReplacement').DataTable();
  if (!id) { ret.clear().draw(); rep.clear().draw(); this.RefreshSummary(); return; }
  $.get('/SalesReturn/GetDetailList', { id: id }, (res) => {
+ const list = Array.isArray(res) ? res : (res && res.result ? res.result : []);
  ret.clear();
  rep.clear();
- (res || []).forEach((r) => {
+ (list || []).forEach((r) => {
  r.subTotal = r.quantity * r.unitPrice;
  if (r.isReplacement) rep.row.add(r);
  else ret.row.add(r);
@@ -271,46 +316,6 @@ const SalesReturnPage = {
  ret.draw();
  rep.draw();
  this.RefreshPairingOptions();
- this.RefreshSummary();
- });
- },
- // ================= ADD PRODUCT =================
- AddProduct(isReplacement) {
- const linked = $('#srLinkedMode').is(':checked');
- if (linked && !isReplacement) { return toastr.info('Returned items berasal dari Sales Order. Gunakan qty kolom.'); }
- const input = isReplacement ? '#srProductReplacement' : '#srProduct';
- const name = $(input).val();
- if (!name) return toastr.info('Type product');
- $.get('/Product/GetProductComboList', { name: name }, (data) => {
- if (!data || !data.result || data.result.length ===0) return toastr.warning('Not found');
- const prod = data.result[0];
- const table = isReplacement ? $('#tableSalesReturnReplacement').DataTable() : $('#tableSalesReturnItems').DataTable();
- let exists = false;
- table.rows().every(function () {
- const r = this.data();
- if (r.productID == prod.id && !isReplacement) {
- exists = true;
- r.quantity +=1;
- r.subTotal = r.quantity * r.unitPrice;
- table.row(this).data(r).invalidate();
- }
- });
- if (!exists) {
- const baseRow = {
- id:0,
- productID: prod.id,
- product: prod.name,
- quantity:1,
- unitPrice: prod.unitPrice,
- subTotal: prod.unitPrice,
- isReplacement: isReplacement
- };
- if (!isReplacement && !linked) { baseRow.manualPairId = (++SalesReturnPage.ManualPairSeq); }
- if (isReplacement) { baseRow.exchangeSourceItemID = null; }
- table.row.add(baseRow).draw();
- }
- $(input).val('').focus();
- if (!isReplacement) this.RefreshPairingOptions();
  this.RefreshSummary();
  });
  },
@@ -435,14 +440,17 @@ const SalesReturnPage = {
  searching: false,
  columns: [
  { data: 'no' },
- { data: 'date' },
+ { data: 'date', render: d => Common.Format.Date(d) },
  { data: 'customer' },
  { data: 'amount', className: 'text-end', render: $.fn.dataTable.render.number(',', '.',2) },
- { data: null, orderable: false, render: () => `<button class='btn btn-sm btn-primary sr-edit'><i class='fa fa-edit'></i></button> <button class='btn btn-sm btn-danger sr-del2'><i class='fa fa-trash'></i></button>` }
+ { data: null, orderable: false, className: 'text-center', render: () => `<div class="btn-group btn-group-sm"><button class='btn btn-outline-primary sr-edit' title='Edit'><i class='fa fa-pencil'></i></button><button class='btn btn-outline-danger sr-del2' title='Delete'><i class='fa fa-trash'></i></button></div>` }
  ]
  });
 
- $.get('/SalesReturn/GetSearchList', (data) => { tb.clear(); tb.rows.add(data); tb.draw(); });
+ $.get('/SalesReturn/GetSearchList', function (data) {
+ const list = Array.isArray(data) ? data : (data && data.result ? data.result : []);
+ tb.clear().rows.add(list).draw();
+ });
 
  $('#tableSalesReturnSearch').off('click.edit').on('click.edit', '.sr-edit', function () { const row = tb.row($(this).closest('tr')).data(); SalesReturnPage.LoadForm(row.id); modal.hide(); });
 

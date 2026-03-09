@@ -27,7 +27,22 @@ function IsPOLockedForEdit(statusID) {
     return statusID === 2 || statusID === 3;
 }
 
-let POButtons = { Init: function () { $('#buttonSave').click(function (e) { e.preventDefault(); let table = $('#tablePurchaseOrderProduct').DataTable(); if (table.rows().count() <= 0) { toastr.info('Insert at least 1 product', 'Cannot save'); return; } PurchaseOrderForm.Save(); }); $('#buttonNew').click(function () { PurchaseOrderForm.Reset(); }); $('#buttonSearch').click(function () { POTable.Search(); }); } };
+function UpdatePOButtons(statusID) {
+    const id = parseInt($('#purchaseOrderID').val() || '0', 10);
+    const hasId = id > 0;
+    const isLocked = IsPOLockedForEdit(statusID);
+    // Workflow buttons visibility: Draft/Rejected=Submit, Submitted=Approve+Reject, Approved=CreateStockIn
+    $('#buttonSubmitPO').toggleClass('d-none', !(hasId && (statusID === 1 || statusID === 4)));
+    $('#buttonApprovePO').toggleClass('d-none', !(hasId && statusID === 2));
+    $('#buttonRejectPO').toggleClass('d-none', !(hasId && statusID === 2));
+    $('#buttonCreateStockIn').toggleClass('d-none', !(hasId && statusID === 3));
+    // Lock editing when submitted or approved
+    $('#buttonSave').prop('disabled', isLocked);
+    $('#selectProduct').prop('disabled', isLocked);
+    $('#filterSupplier').prop('disabled', isLocked);
+}
+
+let POButtons = { Init: function () { $('#buttonSave').click(function (e) { e.preventDefault(); let table = $('#tablePurchaseOrderProduct').DataTable(); if (table.rows().count() <= 0) { toastr.info('Insert at least 1 product', 'Cannot save'); return; } PurchaseOrderForm.Save(); }); $('#buttonNew').click(function () { PurchaseOrderForm.Reset(); }); $('#buttonSearch').click(function () { POTable.Search(); }); $('#buttonPrint').click(function () { const id = parseInt($('#purchaseOrderID').val() || '0', 10); if (!id) { toastr.info('Save Purchase Order first'); return; } MksPrint.purchaseOrder(); }); } };
 
 // Approval workflow actions (require server permission + Admin role)
 async function POChangeStatus(action, extra) {
@@ -40,6 +55,12 @@ async function POChangeStatus(action, extra) {
             if (res.statusID) {
                 $('#purchaseOrderStatusID').val(res.statusID);
                 UpdatePOStatusBadge(res.statusID);
+                UpdatePOButtons(res.statusID);
+                // Lock table items if status changed to submitted/approved
+                if (IsPOLockedForEdit(res.statusID)) {
+                    $('#tablePurchaseOrderProduct').find('input.po-qty').prop('readonly', true).addClass('form-control-plaintext').removeClass('form-control');
+                    $('#tablePurchaseOrderProduct').find('.po-delete').closest('td').html('');
+                }
             }
             toastr.success('Success');
         } else {
@@ -71,7 +92,7 @@ $(document).on('click', '#buttonCreateStockIn', async function (e) {
         const res = await Common.Api.fetchJson(`/StockIn/CreateFromPO?poId=${id}`, { method: 'POST' });
         if (res && res.success) {
             toastr.success('Stock In created: ' + (res.no || ''));
-            window.location.href = '/StockIn';
+            window.location.href = '/StockIn?loadId=' + (res.id || '');
         } else {
             toastr.error(res && (res.result || res.error) ? (res.result || res.error) : 'Failed');
         }
@@ -93,7 +114,7 @@ let POTable = {
                 : { data: 'quantity', render: (d, t) => t === 'display' ? `<input type="number" class="form-control po-qty" value="${d}" min="1" />` : d },
             { data: 'unitPrice', render: $.fn.dataTable.render.number(',', '.', 2) },
             { data: 'subTotal', render: $.fn.dataTable.render.number(',', '.', 2) },
-            { data: null, orderable: false, render: () => isLocked ? '' : `<a class='btn btn-danger po-delete'><i class='fa fa-trash'></i></a>` }
+            { data: null, orderable: false, className: 'text-center', render: () => isLocked ? '' : `<button class='btn btn-sm btn-outline-danger po-delete' title='Delete'><i class='fa fa-trash'></i></button>` }
         ];
         // Diagnostic: log header th count vs defined columns
         try {
@@ -163,7 +184,7 @@ let POTable = {
         let data = Common.GetData.Get('/PurchaseOrder/FillGrid');
         if (data && data.result && Array.isArray(data.result)) data = data.result;
         let columns = [
-            { data: 'no' }, { data: 'date' }, { data: 'amount' },
+            { data: 'no' }, { data: 'date', render: d => Common.Format.Date(d) }, { data: 'amount' },
             // status column (robust renderer)
             { data: null, render: function (_data, _type, row) {
                 const sid = row && (row.statusID ?? row.StatusID) != null ? Number(row.statusID ?? row.StatusID) : 0;
@@ -173,7 +194,7 @@ let POTable = {
                 return `<span class="badge-status ${cls}">${statusText || ''}</span>`;
             } },
              { data: 'supplierName' }, { data: 'createdBy' }, { data: 'updatedBy' },
-             { data: null, orderable: false, render: () => `<div class="btn-group" role="group"><a class="btn btn-warning po-edit"><i class="fa fa-pencil"></i> Edit</a><a class="btn btn-danger po-delete-row"><i class="fa fa-trash"></i> Delete</a></div>` }
+             { data: null, orderable: false, render: () => `<div class="btn-group btn-group-sm"><button class="btn btn-outline-primary po-edit" title="Edit"><i class="fa fa-pencil"></i></button><button class="btn btn-outline-danger po-delete-row" title="Delete"><i class="fa fa-trash"></i></button></div>` }
         ];
         try {
             const thCount = $('#tableSearchPO').find('thead tr th').length;
@@ -187,8 +208,9 @@ let POTable = {
 };
 
 let POControl = {
+    _search: null,
     Init: function () {
-        this.LoadForm(0); this.SelectProduct(); this.ProductSelect(); POTable.Init(); // wire page-level filterSupplier into form submission
+        this.LoadForm(0); this.InitProductSearch(); POTable.Init(); // wire page-level filterSupplier into form submission
         // store previous supplier value for cancel behavior
         const $filter = $('#filterSupplier');
         $filter.data('prev', $filter.val());
@@ -247,14 +269,7 @@ let POControl = {
             let statusID = parseInt($('#purchaseOrderStatusID').val() || '1');
             UpdatePOStatusBadge(statusID);
 
-            // Lock UI after submit/approve
-            const locked = IsPOLockedForEdit(statusID);
-            $('#buttonSave').prop('disabled', locked);
-            $('#buttonSubmitPO').prop('disabled', locked);
-            $('#buttonApprovePO').prop('disabled', statusID !== 2); // approve only after submitted
-            $('#buttonRejectPO').prop('disabled', statusID !== 2); // reject only after submitted
-            $('#selectProduct').prop('disabled', locked);
-            $('#filterSupplier').prop('disabled', locked);
+            UpdatePOButtons(statusID);
 
             // apply UI locking: hide delete buttons and make qty read-only when status is Paid or PartialPaid accordingly
             setTimeout(function () {
@@ -295,47 +310,16 @@ let POControl = {
         }));
         POTable.Init(mapped); POControl.CalcTotal();
     },
-    SelectProduct: function () {
-        $('#selectProduct').select2({
-            placeholder: 'Type product name below',
-            minimumInputLength: 3,
-            ajax: {
-                url: '/Product/GetProductComboList',
-                dataType: 'json',
-                delay: 250,
-                data: params => ({ name: params.term, supplierId: $('#filterSupplier').val() || null }),
-                processResults: data => {
-                    const list = Array.isArray(data)
-                        ? data
-                        : (data && data.result && Array.isArray(data.result))
-                            ? data.result
-                            : [];
-
-                    const supplierFilter = Number($('#filterSupplier').val() || 0) || null;
-                    const filtered = supplierFilter
-                        ? list.filter(x => Number(x.supplierID || x.SupplierID || 0) === supplierFilter)
-                        : list;
-
-                    return {
-                        results: $.map(filtered, item => ({
-                            id: item.id || item.ID,
-                            text: (item.name || item.Name) + ' - ' + (item.supplierName || item.SupplierName),
-                            supplierID: item.supplierID || item.SupplierID,
-                            name: item.name || item.Name,
-                            unitPrice: item.unitPrice || item.UnitPrice,
-                            supplierName: item.supplierName || item.SupplierName,
-                            unit: item.unit || item.Unit,
-                            stockQuantity: item.stockQuantity || item.StockQuantity,
-                            barcode: item.barcode || item.Barcode
-                        }))
-                    };
-                }
-            },
-            templateResult: d => d.text,
-            templateSelection: d => d.text
+    InitProductSearch: function () {
+        if (this._search) this._search.destroy();
+        this._search = MksProductSearch.attach('#selectProduct', {
+            showPrice: true,
+            showStock: true,
+            blockZeroStock: false,
+            supplierId: function () { return $('#filterSupplier').val() || null; },
+            onSelect: (prod) => this.AddOrIncrease(prod)
         });
     },
-    ProductSelect: function () { $('#selectProduct').on('select2:select', function (e) { let data = e.params.data; POControl.AddOrIncrease(data); $(this).val(null).trigger('change'); $(this).select2('close'); }); },
     AddOrIncrease: function (prod) { let table = $('#tablePurchaseOrderProduct').DataTable(); let exists = false; let rows = table.rows().nodes(); $(rows).each(function () { let rowData = table.row(this).data(); if (rowData.productID == prod.id) { exists = true; let newQuantity = parseInt(rowData.quantity) + 1; rowData.quantity = newQuantity; rowData.subTotal = newQuantity * rowData.unitPrice; table.row(this).data(rowData).invalidate(); } }); if (!exists) { table.row.add({ productID: prod.id, product: prod.name, quantity: 1, unitPrice: prod.unitPrice, subTotal: prod.unitPrice, id: 0 }).draw(); } table.draw(false); this.CalcTotal(); },
     CalcTotal: function () { let table = $('#tablePurchaseOrderProduct').DataTable(); let total = 0; table.rows().every(function () { let r = this.data(); total += (parseFloat(r.unitPrice) || 0) * (parseInt(r.quantity) || 0); }); $('#poTotal').text(total.toFixed(2)); }
 };
@@ -372,7 +356,7 @@ let PurchaseOrderForm = {
             } else { toastr.error(result.result || 'Data not saved'); }
         }).fail(err => toastr.error(err.responseText || err.statusText || 'Error', 'Data not saved')).always(() => { $('#buttonSave').prop('disabled', false); $('#buttonSave .spinner-border').hide(); });
     },
-    Reset: function () { POControl.LoadForm(0); let table = $('#tablePurchaseOrderProduct').DataTable(); table.clear().draw(); $('#poTotal').text('0.00'); UpdatePOStatusBadge(1); }
+    Reset: function () { POControl.LoadForm(0); let table = $('#tablePurchaseOrderProduct').DataTable(); table.clear().draw(); $('#poTotal').text('0.00'); UpdatePOStatusBadge(1); UpdatePOButtons(1); }
 };
 
 // Refresh related payments table helper
@@ -380,7 +364,7 @@ function refreshRelatedPaymentsTable(poId) {
     try {
         if (!poId) return;
         $.get('/PaymentOut/RelatedByPO', { purchaseOrderId: poId }, function (list) {
-            let rows = (list || []).map(p => `<tr><td>${p.no || ''}</td><td>${(p.date || '').toString().substring(0, 10)}</td><td class="text-end">${(Number(p.amount || 0)).toFixed(2)}</td><td>${p.method || ''}</td><td>${p.type || ''}</td><td>${p.statusID == 2 ? '<span class="badge bg-success">Submitted</span>' : '<span class="badge bg-secondary">Draft</span>'}</td></tr>`).join('');
+            let rows = (list || []).map(p => `<tr><td>${p.no || ''}</td><td>${Common.Format.Date(p.date)}</td><td class="text-end">${(Number(p.amount || 0)).toFixed(2)}</td><td>${p.method || ''}</td><td>${p.type || ''}</td><td>${p.statusID == 2 ? '<span class="badge bg-success">Submitted</span>' : '<span class="badge bg-secondary">Draft</span>'}</td></tr>`).join('');
             $('#tablePaymentOutRelated tbody').html(rows || '<tr><td colspan="6" class="text-center text-muted">No payments</td></tr>');
         }).fail(() => $('#tablePaymentOutRelated tbody').html('<tr><td colspan="6" class="text-center text-muted">Failed load</td></tr>'));
     } catch (e) { console.error('refreshRelatedPaymentsTable failed', e); }

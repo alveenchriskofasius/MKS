@@ -35,6 +35,31 @@
     </div>
 
     <div class="row mb-3">
+        <label asp-for="ProductModel.LowStockThreshold" class="form-label col-sm-2">Low Stock Threshold</label>
+        <div class="col-sm-9">
+            <input type="number" asp-for="ProductModel.LowStockThreshold" class="form-control" min="0" placeholder="e.g. 10" />
+            <small class="text-muted">Alert will appear when stock falls to or below this value. Leave empty to use default (5).</small>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label class="form-label col-sm-2">Discount</label>
+        <div class="col-sm-9">
+            <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="chkHasDiscount" asp-for="ProductModel.HasDiscount" />
+                <label class="form-check-label" for="chkHasDiscount">Enable discount for this product</label>
+            </div>
+            <div id="discountPercentWrap" style="display:none;">
+                <div class="input-group" style="max-width:200px">
+                    <input type="number" asp-for="ProductModel.DiscountPercentage" class="form-control" id="inputDiscountPercent" min="0" max="100" step="0.01" placeholder="0" />
+                    <span class="input-group-text">%</span>
+                </div>
+                <small class="text-muted">Discount percentage applied at Point of Sale.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
         <label asp-for="ProductModel.SupplierID" class="form-label col-sm-2">Supplier<span class="asterisk">*</span></label>
         <div class="col-sm-9">
             <select asp-for="ProductModel.SupplierID" id="comboBoxSupplier" required class="form-control">
@@ -71,4 +96,11 @@
     var categoryID = @Html.Raw(Json.Serialize(categoryID));
     var supplierID = @Html.Raw(Json.Serialize(supplierID));
     var unitID = @Html.Raw(Json.Serialize(unitID));
+
+    (function () {
+        var $chk = $('#chkHasDiscount'), $wrap = $('#discountPercentWrap');
+        function toggle() { $wrap.toggle($chk.is(':checked')); if (!$chk.is(':checked')) $('#inputDiscountPercent').val(0); }
+        $chk.on('change', toggle);
+        toggle();
+    })();
 </script>

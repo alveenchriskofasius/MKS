@@ -1,5 +1,5 @@
 (function(){
-  const state = { items: [], taxRate: 0.10, suggestIndex: -1 };
+  const state = { items: [], taxRate: 0.11, suggestIndex: -1, _searchSeq: 0 };
   const fmt = n => 'Rp ' + (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:0, maximumFractionDigits:0});
 
   function recalc(){
@@ -30,12 +30,16 @@
       toastr.warning('Stok 0 / habis. Tidak bisa ditambahkan ke cart.');
       return;
     }
-    const id = p.id; const name = p.text||p.name; const price = Number(p.unitPrice||p.price||0);
+    const id = p.id; const name = p.text||p.name; let price = Number(p.unitPrice||p.price||0);
+    const hasDiscount = p.hasDiscount || p.HasDiscount || false;
+    const discPct = Number(p.discountPercentage || p.DiscountPercentage || 0);
+    if (hasDiscount && discPct > 0) price = price - (price * discPct / 100);
     let f = state.items.find(i=>i.id===id);
-    if(f) f.qty += 1; else state.items.push({ id, name, price, qty:1 });
+    if(f) f.qty += 1; else state.items.push({ id, name, price, qty:1, hasDiscount, discPct });
+    state._searchSeq++;
     render();
-    // autofocus back to search after update
-    setTimeout(()=> $('#posSearch').val('').focus(), 30);
+    destroySuggest();
+    $('#posSearch').val('').focus();
   }
 
   // Suggestion management
@@ -58,11 +62,14 @@
         else if (stock > 0 && stock <= lowThreshold) stockBadge = `<span class='badge text-bg-warning ms-2'>Low ${stock}</span>`;
       }
       const leftHtml = `${highlighted} <small class='text-muted'>${supplier}</small> ${stockBadge}`;
-      const $row = $(`<div class='pos-suggest-item d-flex justify-content-between align-items-center${isOut ? ' disabled' : ''}' data-idx='${i}' tabindex='0'><div class='text-truncate'>${leftHtml}</div><div class='ms-2 fw-semibold'>${fmt(price)}</div></div>`);
+      const hasDisc = p.hasDiscount || p.HasDiscount || false;
+      const discPct = Number(p.discountPercentage || p.DiscountPercentage || 0);
+      const discBadge = (hasDisc && discPct > 0) ? ` <span class='badge text-bg-success ms-1'>-${discPct}%</span>` : '';
+      const $row = $(`<div class='pos-suggest-item d-flex justify-content-between align-items-center${isOut ? ' disabled' : ''}' data-idx='${i}' tabindex='0'><div class='text-truncate'>${leftHtml}${discBadge}</div><div class='ms-2 fw-semibold'>${fmt(price)}</div></div>`);
       $row.on('click keydown', e=>{
         if(e.type==='click' || e.key==='Enter'){
           if(isOut){ toastr.warning('Stok 0 / habis. Tidak bisa ditambahkan ke cart.'); return; }
-          addOrInc({ id:p.id||p.ID, text:rawName, unitPrice:price, stockQuantity: stock });
+          addOrInc({ id:p.id||p.ID, text:rawName, unitPrice:price, stockQuantity: stock, hasDiscount: hasDisc, discountPercentage: discPct });
           destroySuggest();
         }
       });
@@ -120,8 +127,8 @@
 
   function wireSearch(){
     let typingTimer = null; const $input = $('#posSearch');
-    $input.on('input', function(){ clearTimeout(typingTimer); destroySuggest(); const q=this.value.trim(); if(!q) return; typingTimer=setTimeout(()=>{ searchProductsAsync(q).then(list=>{ if(list.length>0){ $input.after(buildSuggest(list,q)); state.suggestIndex=-1; } }); }, 200); });
-    $input.on('keydown', function(e){ const $items = $('.pos-suggest-item'); if(e.key==='ArrowDown'){ if($items.length){ e.preventDefault(); state.suggestIndex = (state.suggestIndex+1) % $items.length; setActiveSuggestion(); } } else if(e.key==='ArrowUp'){ if($items.length){ e.preventDefault(); state.suggestIndex = (state.suggestIndex<=0? $items.length-1 : state.suggestIndex-1); setActiveSuggestion(); } } else if(e.key==='Enter'){ e.preventDefault(); const q=this.value.trim(); if($items.length && state.suggestIndex>=0){ $items.eq(state.suggestIndex).trigger('click'); return; } if(!q) return; searchProductsAsync(q).then(list=>{ if(list.length>0){ const p=list[0]; addOrInc({ id:p.id||p.ID, text:p.name||p.Name, unitPrice:p.unitPrice||p.UnitPrice||0, stockQuantity: (p.stockQuantity ?? p.StockQuantity) }); } }); } else if(e.key==='Escape'){ destroySuggest(); }
+    $input.on('input', function(){ clearTimeout(typingTimer); destroySuggest(); const q=this.value.trim(); if(!q) return; const seq=++state._searchSeq; typingTimer=setTimeout(()=>{ searchProductsAsync(q).then(list=>{ if(seq!==state._searchSeq) return; if(list.length>0){ $input.after(buildSuggest(list,q)); state.suggestIndex=-1; } }); }, 200); });
+    $input.on('keydown', function(e){ const $items = $('.pos-suggest-item'); if(e.key==='ArrowDown'){ if($items.length){ e.preventDefault(); state.suggestIndex = (state.suggestIndex+1) % $items.length; setActiveSuggestion(); } } else if(e.key==='ArrowUp'){ if($items.length){ e.preventDefault(); state.suggestIndex = (state.suggestIndex<=0? $items.length-1 : state.suggestIndex-1); setActiveSuggestion(); } } else if(e.key==='Enter'){ e.preventDefault(); clearTimeout(typingTimer); if($items.length && state.suggestIndex>=0){ $items.eq(state.suggestIndex).trigger('click'); return; } destroySuggest(); const q=this.value.trim(); if(!q) return; const seq=++state._searchSeq; searchProductsAsync(q).then(list=>{ if(seq!==state._searchSeq) return; if(list.length>0){ const p=list[0]; addOrInc({ id:p.id||p.ID, text:p.name||p.Name, unitPrice:Number(p.unitPrice||p.UnitPrice||0), stockQuantity: (p.stockQuantity ?? p.StockQuantity), hasDiscount: p.hasDiscount || p.HasDiscount || false, discountPercentage: p.discountPercentage || p.DiscountPercentage || 0 }); } }); } else if(e.key==='Escape'){ destroySuggest(); }
     });
     $input.on('blur', ()=> setTimeout(destroySuggest, 180));
   }
@@ -151,14 +158,14 @@
     const itemsHtml = snap.items.map(i=> `<tr><td>${i.name}</td><td class='text-center'>${i.qty}</td><td class='text-end'>${fmt(i.price)}</td><td class='text-end'>${fmt(i.price*i.qty)}</td></tr>`).join('');
     return `<div class='text-start'>
       <h5 class='mb-2'>Receipt</h5>
-      <div class='small mb-2'>No: ${snap.no} | Date: ${(new Date()).toLocaleString()}</div>
+      <div class='small mb-2'>No: ${snap.no} | Date: ${Common.Format.Datetime(new Date())}</div>
       <table class='table table-sm'>
         <thead><tr><th>Product</th><th class='text-center'>Qty</th><th class='text-end'>Price</th><th class='text-end'>Total</th></tr></thead>
         <tbody>${itemsHtml}</tbody>
       </table>
       <div class='border-top pt-2'>
         <div class='d-flex justify-content-between'><span>Subtotal</span><span>${fmt(snap.subtotal)}</span></div>
-        <div class='d-flex justify-content-between'><span>Tax (10%)</span><span>${fmt(snap.tax)}</span></div>
+        <div class='d-flex justify-content-between'><span>Tax (11%)</span><span>${fmt(snap.tax)}</span></div>
         <div class='d-flex justify-content-between fw-bold'><span>Grand Total</span><span>${fmt(snap.total)}</span></div>
         <div class='d-flex justify-content-between'><span>Paid</span><span>${fmt(snap.paid)}</span></div>
         <div class='d-flex justify-content-between'><span>Change</span><span>${fmt(snap.changeAmt)}</span></div>
@@ -198,7 +205,7 @@
   </div>
   <hr class="divider">
   <div class="info"><strong>No:</strong> ${snap.no}</div>
-  <div class="info"><strong>Date:</strong> ${(new Date()).toLocaleString('id-ID')}</div>
+  <div class="info"><strong>Date:</strong> ${Common.Format.Datetime(new Date())}</div>
   <div class="info"><strong>Customer:</strong> ${snap.customer}</div>
   <div class="info"><strong>Payment:</strong> ${snap.payType}</div>
   <hr class="divider">
@@ -209,7 +216,7 @@
   <hr class="divider">
   <div class="summary">
     <div class="line"><span>Subtotal</span><span>${fmt(snap.subtotal)}</span></div>
-    <div class="line"><span>Tax (10%)</span><span>${fmt(snap.tax)}</span></div>
+    <div class="line"><span>Tax (11%)</span><span>${fmt(snap.tax)}</span></div>
     <div class="line grand"><span>Grand Total</span><span>${fmt(snap.total)}</span></div>
     <div class="line"><span>Paid</span><span>${fmt(snap.paid)}</span></div>
     <div class="line change"><span>Change</span><span>${fmt(snap.changeAmt)}</span></div>
@@ -276,9 +283,97 @@
     $('#posTender').on('input change', recalc);
     $('#posBtnPay').on('click', submit);
     $('#posBtnCancel').on('click', ()=> { state.items=[]; render(); $('#posSearch').val('').focus(); });
+    $('#posBtnHistory').on('click', openHistory);
     // autofocus search on payment type change
     $('input[name="posPayType"]').on('change', ()=> setTimeout(()=> $('#posSearch').focus(), 30));
     $('#posSearch').focus();
+  }
+
+  // ==================== HISTORY ====================
+  const statusMap = { 1:'Draft', 2:'Paid', 3:'Debt' };
+  const statusBadgeMap = { 1:'bg-secondary', 2:'bg-success', 3:'bg-warning text-dark' };
+
+  function openHistory(){
+    const modal = new bootstrap.Modal(document.getElementById('posHistoryModal'));
+    modal.show();
+    const $table = $('#tablePosHistory');
+    if($.fn.DataTable.isDataTable('#tablePosHistory')){ $table.DataTable().clear().destroy(); }
+    $table.find('tbody').html('<tr><td colspan="8" class="text-center"><div class="spinner-border spinner-border-sm"></div></td></tr>');
+    $.get('/Pos/GetHistory', function(data){
+      const list = Array.isArray(data) ? data : (data && data.result ? data.result : []);
+      const dt = $table.DataTable({
+        deferRender:true, processing:false, serverSide:false, destroy:true, searching:true,
+        order:[[0,'desc']],
+        data: list,
+        columns:[
+          { data:'no' },
+          { data:'date', render: d => Common.Format.Datetime(d) },
+          { data:'amount', className:'text-end', render: d => fmt(d) },
+          { data:'paidAmount', className:'text-end', render: d => fmt(d) },
+          { data:'customerName' },
+          { data:'statusID', render: d => { const txt = statusMap[d]||d; const cls = statusBadgeMap[d]||'bg-secondary'; return `<span class="badge ${cls}">${txt}</span>`; } },
+          { data:'createdBy' },
+          { data:null, orderable:false, className:'text-center', render:()=> `<button class="btn btn-sm btn-outline-primary pos-hist-view" title="View"><i class="fa fa-eye"></i></button>` }
+        ]
+      });
+      $table.off('click','.pos-hist-view').on('click','.pos-hist-view', function(){
+        const row = dt.row($(this).closest('tr')).data();
+        if(row) viewHistoryDetail(row.id);
+      });
+    }).fail(()=> toastr.error('Failed load history'));
+  }
+
+  function viewHistoryDetail(id){
+    $.get('/Pos/GetHistoryDetail', { id: id }, function(res){
+      if(!res || res.success===false){ toastr.error(res&&res.result||'Not found'); return; }
+      const items = res.items || [];
+      const subtotal = items.reduce((s,i)=> s + (i.unitPrice * i.quantity), 0);
+      const tax = subtotal * state.taxRate;
+      const total = subtotal + tax;
+      const itemsHtml = items.map(i=> `<tr><td>${i.productName}</td><td class="text-center">${i.quantity}</td><td class="text-end">${fmt(i.unitPrice)}</td><td class="text-end">${fmt(i.subTotal)}</td></tr>`).join('');
+      const statusTxt = statusMap[res.statusID] || res.statusID;
+      const statusCls = statusBadgeMap[res.statusID] || 'bg-secondary';
+      const html = `<div class="text-start">
+        <div class="row mb-3">
+          <div class="col-6"><div class="small text-muted">No</div><div class="fw-semibold">${res.no}</div></div>
+          <div class="col-6"><div class="small text-muted">Date</div><div class="fw-semibold">${Common.Format.Datetime(res.date)}</div></div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-6"><div class="small text-muted">Customer</div><div class="fw-semibold">${res.customerName}</div></div>
+          <div class="col-6"><div class="small text-muted">Status</div><div><span class="badge ${statusCls}">${statusTxt}</span></div></div>
+        </div>
+        <table class="table table-sm">
+          <thead><tr><th>Product</th><th class="text-center">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr></thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <div class="border-top pt-2">
+          <div class="d-flex justify-content-between"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+          <div class="d-flex justify-content-between"><span>Tax (11%)</span><span>${fmt(tax)}</span></div>
+          <div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>${fmt(total)}</span></div>
+          <div class="d-flex justify-content-between mt-1"><span>Paid</span><span>${fmt(res.paidAmount)}</span></div>
+        </div>
+      </div>`;
+      // Build snap for printing
+      const snap = {
+        items: items.map(i=>({ name:i.productName, qty:i.quantity, price:i.unitPrice })),
+        subtotal, tax, total,
+        customer: res.customerName,
+        payType: res.paidAmount >= total ? 'Full' : (res.paidAmount > 0 ? 'DP' : 'Piutang'),
+        no: res.no,
+        paid: res.paidAmount,
+        changeAmt: 0
+      };
+      Swal.fire({
+        title: 'Transaction Detail',
+        html: html,
+        width: 560,
+        showConfirmButton: true,
+        confirmButtonText: '<i class="fa fa-print"></i> Print',
+        showCancelButton: true,
+        cancelButtonText: 'Close',
+        customClass: { confirmButton:'btn btn-primary', cancelButton:'btn btn-secondary' }
+      }).then(r=>{ if(r.isConfirmed){ printReceipt(snap); } });
+    }).fail(()=> toastr.error('Failed load detail'));
   }
 
   const style = `.pos-suggest{position:absolute; z-index:1050; background:#fff; border:1px solid #dee2e6; border-radius:12px; width:100%; max-height:300px; overflow:auto;} .pos-suggest-item{padding:8px 12px; cursor:pointer;} .pos-suggest-item.active{background:#e9f2ff;} .pos-suggest-item:hover{background:#f1f5fb;} .pos-suggest-item.disabled{opacity:.55; cursor:not-allowed;} .match{background:#ffe08a}`; if(!document.getElementById('posSuggestStyle')){ const st=document.createElement('style'); st.id='posSuggestStyle'; st.innerHTML=style; document.head.appendChild(st); }

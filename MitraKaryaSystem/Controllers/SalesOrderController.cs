@@ -1,11 +1,13 @@
 ﻿using API.Models;
 using API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using MitraKaryaSystem.Security;
 
 namespace MitraKaryaSystem.Controllers
 {
+    [Authorize]
     [HasPermission("Sales Order")]
     public class SalesOrderController : Controller
     {

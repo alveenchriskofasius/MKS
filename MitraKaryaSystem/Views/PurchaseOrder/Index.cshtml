@@ -31,17 +31,18 @@
                 <div class="card-body" id="purchaseOrderHeaderBody"><!-- form partial will be loaded by JS --></div>
             </div>
 
-            <!-- Product selection -->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-5">
-                            <label class="form-label small fw-semibold">Supplier</label>
-                            <select id="filterSupplier" class="form-control"></select>
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label small fw-semibold">Add Product</label>
-                            <select class="form-control select2" id="selectProduct" autofocus></select>
+            <!-- Product selection (outside card to avoid overflow clipping) -->
+            <div class="row g-3 align-items-end mb-3">
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold">Supplier</label>
+                    <select id="filterSupplier" class="form-control"></select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold"><i class="fa fa-cart-plus me-1 text-primary"></i> Add Product</label>
+                    <div class="mks-search-wrap">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="fa fa-barcode text-muted"></i></span>
+                            <input type="text" class="form-control" id="selectProduct" placeholder="Type product name or scan barcode..." autocomplete="off" autofocus />
                         </div>
                     </div>
                 </div>
@@ -71,13 +72,14 @@
         </div>
         <div class="card-footer d-flex gap-2 flex-wrap">
             <button type="submit" class="btn btn-primary" id="buttonSave"><i class="fa fa-save"></i> Save</button>
-            @if (User.IsInRole("Admin"))
+            <button type="button" class="btn btn-outline-secondary" id="buttonPrint"><i class="fa fa-print"></i> Print</button>
+            @if (User.HasClaim("Permission", "Purchase Order"))
             {
-                <button type="button" class="btn btn-outline-info" id="buttonSubmitPO"><i class="fa fa-paper-plane"></i> Submit</button>
-                <button type="button" class="btn btn-outline-success" id="buttonApprovePO"><i class="fa fa-check"></i> Approve</button>
-                <button type="button" class="btn btn-outline-danger" id="buttonRejectPO"><i class="fa fa-xmark"></i> Reject</button>
+                <button type="button" class="btn btn-outline-info d-none" id="buttonSubmitPO"><i class="fa fa-paper-plane"></i> Submit</button>
+                <button type="button" class="btn btn-outline-success d-none" id="buttonApprovePO"><i class="fa fa-check"></i> Approve</button>
+                <button type="button" class="btn btn-outline-danger d-none" id="buttonRejectPO"><i class="fa fa-xmark"></i> Reject</button>
             }
-            <button type="button" class="btn btn-outline-primary" id="buttonCreateStockIn"><i class="fa fa-boxes-stacked"></i> Create Stock In</button>
+            <button type="button" class="btn btn-outline-primary d-none" id="buttonCreateStockIn"><i class="fa fa-boxes-stacked"></i> Create Stock In</button>
             <a class="btn btn-secondary ms-auto" asp-action="Index" asp-controller="Home" id="buttonCancel"><i class="fa fa-arrow-left"></i> Back</a>
         </div>
     </div>
@@ -136,7 +138,7 @@
                 const poId = parseInt($('#purchaseOrderID').val()||'0',10);
                 if(!poId) { $('#tablePaymentOutRelated tbody').html('<tr><td colspan="6" class="text-center text-muted">No PO selected</td></tr>'); return; }
                 $.get('/PaymentOut/RelatedByPO',{ purchaseOrderId: poId }, function(list){
-                    let rows = (list||[]).map(p => `<tr><td>${p.no||''}</td><td>${(p.date||'').toString().substring(0,10)}</td><td class="text-end">${(Number(p.amount||0)).toFixed(2)}</td><td>${p.method||''}</td><td>${p.type||''}</td><td>${p.statusID==2?'<span class="badge bg-success">Submitted</span>':'<span class="badge bg-secondary">Draft</span>'}</td></tr>`).join('');
+                    let rows = (list||[]).map(p => `<tr><td>${p.no||''}</td><td>${Common.Format.Date(p.date)}</td><td class="text-end">${(Number(p.amount||0)).toFixed(2)}</td><td>${p.method||''}</td><td>${p.type||''}</td><td>${p.statusID==2?'<span class="badge bg-success">Submitted</span>':'<span class="badge bg-secondary">Draft</span>'}</td></tr>`).join('');
                     $('#tablePaymentOutRelated tbody').html(rows || '<tr><td colspan="6" class="text-center text-muted">No payments</td></tr>');
                 }).fail(()=> $('#tablePaymentOutRelated tbody').html('<tr><td colspan="6" class="text-center text-muted">Failed load</td></tr>'));
             }

@@ -142,8 +142,9 @@
                     const data = list && list.result ? list.result : list || [];
                     let rows = data.map(p => {
                         const canEdit = (p.statusID || p.StatusID) != 2;
-                        const editBtn = canEdit ? `<button class='btn btn-sm btn-primary edit' data-id='${p.id||p.ID}'>Edit</button>` : '';
-                        return `<tr><td>${p.no||''}</td><td>${(p.date||'').toString().substr(0,10)}</td><td>${p.supplierName||''}</td><td class='text-end'>${(Number(p.amount||0)).toFixed(2)}</td><td>${p.method||''}</td><td>${p.type||''}</td><td>${(p.statusID==2?'<span class="badge bg-success">Submitted</span>':'<span class="badge bg-secondary">Draft</span>')}</td><td>${editBtn}</td></tr>`;
+                        const editBtn = canEdit ? `<button class='btn btn-sm btn-outline-primary edit' data-id='${p.id||p.ID}' title='Edit'><i class='fa fa-pencil'></i></button>` : '';
+                        const printBtn = `<button class='btn btn-sm btn-outline-secondary po-print-row' data-no='${p.no||""}' data-date='${p.date||""}' data-supplier='${(p.supplierName||"").replace(/'/g,"&#39;")}' data-amount='${p.amount||0}' data-method='${p.method||""}' data-type='${p.type||""}'><i class='fa fa-print'></i></button>`;
+                        return `<tr><td>${p.no||''}</td><td>${Common.Format.Date(p.date)}</td><td>${p.supplierName||''}</td><td class='text-end'>${(Number(p.amount||0)).toFixed(2)}</td><td>${p.method||''}</td><td>${p.type||''}</td><td>${(p.statusID==2?'<span class="badge bg-success">Submitted</span>':'<span class="badge bg-secondary">Draft</span>')}</td><td>${editBtn} ${printBtn}</td></tr>`;
                     }).join('');
                     $('#tablePaymentOut tbody').html(rows||'<tr><td colspan="8" class="text-center text-muted">No data</td></tr>');
                 }).fail(()=>$('#tablePaymentOut tbody').html('<tr><td colspan="8" class="text-center text-muted">Failed load</td></tr>'));
@@ -161,6 +162,11 @@
 
             // refresh after save
             $(document).on('paymentout:saved', function(){ loadList(); });
+
+            // print per-row
+            $(document).on('click', '.po-print-row', function(){
+                MksPrint.paymentOut({ no: $(this).data('no'), date: $(this).data('date'), supplierName: $(this).data('supplier'), amount: $(this).data('amount'), method: $(this).data('method'), type: $(this).data('type') });
+            });
 
             // optional: delegate edit click if present
             $('#tablePaymentOut').on('click', '.edit', function(){

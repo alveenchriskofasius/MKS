@@ -1,43 +1,59 @@
 ﻿@model CustomerModel
 <form id="customerForm">
     <input asp-for="@Model.ID" type="text" hidden />
-    <div class="form-group">
-        <label asp-for="@Model.Name" for="Name" class="form-label">Name</label>
-        <input asp-for="@Model.Name" type="text" id="Name" required class="form-control" />
-        <div class="invalid-feedback">Please enter a name.</div>
-    </div>
-    <div class="form-group" id="contactPersonFormGroup">
-        <label asp-for="@Model.ContactPerson" for="contactPerson" class="form-label">Contact Person</label>
-        <input asp-for="@Model.ContactPerson" type="text" id="contactPerson" class="form-control" />
-        <div class="invalid-feedback">Please enter a contact person.</div>
-    </div>
-    <div class="form-group">
-        <label asp-for="@Model.ContactNumber" for="contactNumber" class="form-label">Contact Number</label>
-        <input asp-for="@Model.ContactNumber" type="text" id="contactNumber" required class="form-control" />
-        <div class="invalid-feedback">Please enter a contact number.</div>
-    </div>
-    <div class="form-group">
-        <label asp-for="@Model.Address" for="address" class="form-label">Address</label>
-        <textarea asp-for="@Model.Address" type="text" id="address" required class="form-control"></textarea>
-        <div class="invalid-feedback">Please enter an address.</div>
-    </div>
-    <div class="form-group">
-        <label asp-for="@Model.Note" for="note" class="form-label">Note</label>
-        <textarea asp-for="@Model.Note" type="text" id="note" required class="form-control"></textarea>
-        <div class="invalid-feedback">Please enter a note.</div>
-    </div>
-    <div class="row">
-        <div class="col-sm-12">
-            <div class="d-flex align-items-center">
-                <label for="isSupplier" class="form-label col-sm-1 col-lg-2 col-md-2">Type</label>
-                <div class="form-check form-switch col-sm-11 col-lg-10 col-md-10">
-                    <input class="form-check-input" type="checkbox" asp-for="@Model.IsSupplier" checked="@(Model !=null && Model.IsSupplier ? true:false)" id="isSupplier">
-                    <label class="form-check-label" for="isSupplier">Is Supplier</label>
-                </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="@Model.Name" class="form-label fw-semibold small">Name <span class="text-danger">*</span></label>
+            <input asp-for="@Model.Name" type="text" id="Name" required class="form-control" placeholder="Customer or company name" />
+            <div class="invalid-feedback">Please enter a name.</div>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="@Model.ContactNumber" class="form-label fw-semibold small">Contact Number <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa fa-phone"></i></span>
+                <input asp-for="@Model.ContactNumber" type="text" id="contactNumber" required class="form-control" placeholder="Phone number" />
             </div>
+            <div class="invalid-feedback">Please enter a contact number.</div>
+        </div>
+        <div class="col-md-6" id="contactPersonFormGroup">
+            <label asp-for="@Model.ContactPerson" class="form-label fw-semibold small">Contact Person</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa fa-user"></i></span>
+                <input asp-for="@Model.ContactPerson" type="text" id="contactPerson" class="form-control" placeholder="Person in charge" />
+            </div>
+            <div class="invalid-feedback">Please enter a contact person.</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-semibold small">Type</label>
+            <input type="hidden" name="IsSupplier" id="isSupplier" value="@(Model != null && Model.IsSupplier ? "true" : "false")" />
+            <div class="cust-type-toggle d-flex rounded-pill border overflow-hidden" style="width:fit-content">
+                <button type="button" class="cust-type-btn @(Model == null || !Model.IsSupplier ? "active" : "")" data-type="customer">
+                    <i class="fa fa-user me-1"></i>Customer
+                </button>
+                <button type="button" class="cust-type-btn @(Model != null && Model.IsSupplier ? "active" : "")" data-type="supplier">
+                    <i class="fa fa-truck me-1"></i>Supplier
+                </button>
+            </div>
+            <style>
+                .cust-type-toggle { gap: 0; }
+                .cust-type-btn {
+                    border: none; background: transparent; padding: .4rem 1rem; font-size: .82rem;
+                    font-weight: 500; color: var(--mks-gray-600); cursor: pointer; transition: all .2s;
+                    white-space: nowrap;
+                }
+                .cust-type-btn:hover { background: var(--mks-gray-100); color: var(--mks-gray-800); }
+                .cust-type-btn.active[data-type="customer"] { background: var(--mks-success, #16a34a); color: #fff; }
+                .cust-type-btn.active[data-type="supplier"] { background: var(--mks-primary); color: #fff; }
+            </style>
+        </div>
+        <div class="col-12">
+            <label asp-for="@Model.Address" class="form-label fw-semibold small">Address <span class="text-danger">*</span></label>
+            <textarea asp-for="@Model.Address" id="address" required class="form-control" rows="2" placeholder="Full address"></textarea>
+            <div class="invalid-feedback">Please enter an address.</div>
+        </div>
+        <div class="col-12">
+            <label asp-for="@Model.Note" class="form-label fw-semibold small">Note</label>
+            <textarea asp-for="@Model.Note" id="note" class="form-control" rows="2" placeholder="Additional notes (optional)"></textarea>
         </div>
     </div>
-
-
-
 </form>

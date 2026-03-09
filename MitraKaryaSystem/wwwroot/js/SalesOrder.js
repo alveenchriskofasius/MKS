@@ -1,5 +1,4 @@
 ﻿$(document).ready(function () {
-    $('.js-example-basic-responsive').select2({ width: 'resolve' });
     formSalesOrder.fillForm(0, true);
     controlSalesOrder.init();
     buttonSalesOrder.init();
@@ -58,12 +57,12 @@ function applyLockState() {
     const $form = $('#salesOrderHeaderBody');
     if (isLocked) {
         uiHelpers.disableElements($form, true);
-        $('#selectProduct').prop('disabled', true).trigger('change.select2');
+        $('#soProductSearch').prop('disabled', true);
         // keep Create Invoice visible even when locked
         $('#buttonSave,#btnCreateDO').addClass('d-none');
     } else {
         uiHelpers.disableElements($form, false);
-        $('#selectProduct').prop('disabled', false);
+        $('#soProductSearch').prop('disabled', false);
         $('#buttonSave').removeClass('d-none');
     }
 }
@@ -136,6 +135,7 @@ const buttonSalesOrder = {
         });
         $('#buttonSearch').click(function () { tableManager.fillGridSearch(); });
         $('#buttonNew').click(function () { formSalesOrder.reset(); });
+        $('#buttonPrint').click(function () { const id = parseInt($('#salesOrderID').val() || '0', 10); if (!id) { toastr.info('Save Sales Order first'); return; } MksPrint.salesOrder(); });
 
         $(document).on('click', '#btnCreateDO', function () {
             const soId = parseInt($('#salesOrderID').val() || '0', 10); if (!soId) { toastr.info('Save SO first'); return; }
@@ -346,11 +346,11 @@ const tableManager = {
             { data: 'stockQuantity', visible: false, defaultContent: 0 },
             { data: 'product' },
             { data: 'supplier' },
-            canEditItems ? { data: 'quantity', render: (d,t) => t==='display'?`<input type="number" class="form-control quantity" value="${d}" min="1" />`:d } : { data: 'quantity', render: $.fn.dataTable.render.number(',', '.', 0) },
+            canEditItems ? { data: 'quantity', render: (d,t) => t==='display'?`<input type="number" class="form-control form-control-sm quantity" value="${d}" min="1" />`:d } : { data: 'quantity', render: $.fn.dataTable.render.number(',', '.', 0) },
             { data: 'unit' },
             { data: 'unitPrice', render: $.fn.dataTable.render.number(',', '.', 2) },
             { data: 'subTotal', render: $.fn.dataTable.render.number(',', '.', 2) },
-            { data: null, render: () => canEditItems ? `<a class="btn btn-danger delete"><i class="fa fa-trash"></i></a>` : '', orderable: false }
+            { data: null, render: () => canEditItems ? `<button class="btn btn-sm btn-outline-danger delete"><i class="fa fa-trash"></i></button>` : '', orderable: false }
         ];
         const dt = $table.DataTable({ deferRender:true, processing:true, serverSide:false, destroy:true, filter:true, searching:false, responsive:true, columns, decimal:',', thousands:'.', data: dataList });
 
@@ -388,13 +388,12 @@ const tableManager = {
         Common.Api.get('/SalesOrder/FillGrid')
             .then(data => {
                 const columns = [
-                    { data:'no' }, { data:'date' }, { data:'amount' },
+                    { data:'no' }, { data:'date', render: d => Common.Format.Date(d) }, { data:'amount' },
                     { data:null, render: (_d,_t,row) => { const s = row && (row.statusID || row.StatusID || row.status || row.Status); return tradeStatus[s] || (s || ''); } },
                     { data:'customerName' }, { data:'createdBy' }, { data:'updatedBy' },
-                    { data:null, render: (_d,_t,row) => `<div class="btn-group" role="group">
-                        <a class="btn btn-warning edit" href="#"><i class="fa fa-pencil"></i> Edit</a>
-                        <a class="btn btn-danger delete"><i class="fa fa-trash"></i> Delete</a>
-                        <a class="btn btn-success print-bill" href="/SalesOrder/Bill/${row.id || row.ID}" target="_blank"><i class="fa fa-print"></i> Print</a>
+                    { data:null, render: (_d,_t,row) => `<div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-primary edit"><i class="fa fa-pencil"></i></button>
+                        <button class="btn btn-outline-danger delete"><i class="fa fa-trash"></i></button>
                     </div>`, orderable:false }
                 ];
                 const dt = $table.DataTable({ deferRender:true, processing:true, serverSide:false, destroy:true, filter:true, searching:false, responsive:true, data, columns });
@@ -414,10 +413,15 @@ const tableManager = {
 
 // ==================== CONTROL SALES ORDER ====================
 const controlSalesOrder = {
-    init: function () { this.productSelect(); this.initSelectProduct(); },
-    selectProductOptions: function () { return { placeholder:'Type product name below', minimumInputLength:3, ajax:{ url:'/Product/GetProductComboList', dataType:'json', delay:250, data: params => ({ name: params.term }), processResults: data => { const list = normalizeListResult(data); return { results: $.map(list, item => ({ id:item.id || item.ID, text:(item.name || item.Name) + ' - ' + (item.supplierName || item.SupplierName), supplierID:item.supplierID || item.SupplierID, name:item.name || item.Name, supplierName:item.supplierName || item.SupplierName, unitPrice:item.unitPrice || item.UnitPrice, unit:item.unit || item.Unit, stockQuantity:item.stockQuantity || item.StockQuantity })) }; }, cache:true }, templateResult: d => d.text, templateSelection: d => d.text }; },
-    productSelect: function () { const id = '#selectProduct'; if ($.fn.select2) $(id).select2(this.selectProductOptions()); },
-    initSelectProduct: function () { $('#selectProduct').on('select2:select', e => { const data = e.params.data; controlSalesOrder.checkProduct(data); $('#selectProduct').val(null).trigger('change'); $('#selectProduct').select2('close'); }); },
+    _search: null,
+    init: function () { this.initProductSearch(); },
+    initProductSearch: function () {
+        if (this._search) this._search.destroy();
+        this._search = MksProductSearch.attach('#soProductSearch', {
+            showPrice: true, showStock: true, blockZeroStock: true,
+            onSelect: (prod) => this.checkProduct(prod)
+        });
+    },
     addRow: function (productID, supplierID, stockQuantity, productName, supplier, quantity, unit, unitPrice) { const table = $('#tableProduct').DataTable(); table.row.add({ productID, supplierID, stockQuantity: stockQuantity ?? 0, product: productName, supplier, quantity, unit, unitPrice, subTotal: quantity * unitPrice }).draw(); },
     checkProduct: function (selectedProduct) { if (selectedProduct.stockQuantity === 0) { toastr.info('Stock is empty'); return; } const table = $('#tableProduct').DataTable(); let exists = false; const rows = table.rows().nodes(); $(rows).each(function(){ const rowData = table.row(this).data(); if (rowData.productID == selectedProduct.id) { exists = true; let newQuantity = parseInt(rowData.quantity) + 1; if (newQuantity > selectedProduct.stockQuantity) { return toastr.info('Quantity reach stock quantity'); } rowData.quantity = newQuantity; rowData.subTotal = newQuantity * rowData.unitPrice; table.row(this).data(rowData).invalidate(); } }); if (!exists) { controlSalesOrder.addRow(selectedProduct.id, selectedProduct.supplierID, selectedProduct.stockQuantity, selectedProduct.name, selectedProduct.supplierName, 1, selectedProduct.unit, selectedProduct.unitPrice); } table.draw(false); controlSalesOrder.calculateGrandTotal(); },
     calculateGrandTotal: function () { let totalSum = 0; const table = $('#tableProduct').DataTable(); const rows = table.rows().nodes(); $(rows).each(function(){ const rowData = table.row(this).data(); const subTotal = (parseFloat(rowData.unitPrice) || 0) * (parseInt(rowData.quantity) || 0); totalSum += subTotal; }); $('#total').text(uiHelpers.formatNumber(totalSum, 2)); }
@@ -435,11 +439,11 @@ const formSalesOrder = {
                     else if (result && typeof result === 'object') { const possibleHtml = result.result || result.data || null; if (typeof possibleHtml === 'string') $('#salesOrderHeaderBody').html(possibleHtml); else $('#salesOrderHeaderBody').html('<pre class="text-danger">Unexpected response format. Check server logs.</pre>'); }
                     // ensure table exists
                     if (!$('#tableProduct').length) {
-                        $('#salesOrderHeaderBody').append(`<div class='table-responsive'><table class='table table-bordered table-hover' width='100%' id='tableProduct'><thead><tr><th hidden>ProductID</th><th hidden>SupplierID</th><th hidden>Stock Quantity</th><th>Name</th><th>Supplier</th><th>Quantity</th><th>Unit</th><th>Unit Price</th><th>Subtotal</th><th>Action</th></tr></thead><tbody></tbody><tfoot><tr><th colspan='8'>Total</th><th id='total'>0</th><th></th></tr></tfoot></table></div>`);
+                        $('#salesOrderHeaderBody').after(`<div class='table-responsive'><table class='table table-sm table-hover align-middle mb-0' width='100%' id='tableProduct'><thead><tr><th hidden>ProductID</th><th hidden>SupplierID</th><th hidden>Stock Quantity</th><th>Name</th><th>Supplier</th><th class="text-center" style="width:90px">Quantity</th><th style="width:80px">Unit</th><th class="text-end" style="width:120px">Unit Price</th><th class="text-end" style="width:130px">Subtotal</th><th class="text-center" style="width:60px"></th></tr></thead><tbody></tbody><tfoot><tr><th colspan='8' class='text-end text-muted small fw-semibold'>TOTAL</th><th id='total' class='text-end fs-5 fw-bold text-primary'>0</th><th></th></tr></tfoot></table></div>`);
                     }
                     const statusVal = parseInt($('#salesOrderStatusID').val() || '1', 10); updateStatusBadge(statusVal);
                     setTimeout(() => { try { tableManager.fillGridProduct(id, true); } catch (e) { console.error('fillGridProduct failed', e); } }, 0);
-                    try { controlSalesOrder.productSelect(); } catch (e) { console.warn('select2 init failed', e); }
+                    try { controlSalesOrder.initProductSearch(); } catch (e) { console.warn('product search init failed', e); }
                     // Do not calculate here because data may not be loaded yet; calculation will run after grid is filled
                     setTimeout(() => { try { showOrHideCreateDOButton(); showCreateInvoiceButton(); loadDeliveryOrderInfo(); togglePaymentButton(statusVal); } catch (e) { console.error('post-fill handlers failed', e); } }, 200);
                 } catch (ex) { console.error('formSalesOrder.fillForm success handler error', ex); toastr.error(ex.message || 'Error processing response'); }

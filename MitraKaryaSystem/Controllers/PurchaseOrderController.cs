@@ -34,15 +34,12 @@ namespace MitraKaryaSystem.Controllers
         public async Task<JsonResult> ListBySupplier(int supplierId) => Json(await _service.GetListBySupplier(supplierId));
 
         [HttpPost]
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<JsonResult> Submit(int id) => Json(await _service.ChangeStatus(id, 2, null));
 
         [HttpPost]
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<JsonResult> Approve(int id) => Json(await _service.ChangeStatus(id, 3, null));
 
         [HttpPost]
-        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
         public async Task<JsonResult> Reject(int id, string? reason) => Json(await _service.ChangeStatus(id, 4, reason));
         public async Task<JsonResult> Get(int id)
         {

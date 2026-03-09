@@ -2,47 +2,148 @@
     ViewData["Title"] = "Dashboard";
 }
 <div class="fade-slide-up">
-    <div class="d-flex align-items-center mb-3">
-        <h5 class="fw-bold mb-0"><i class="fa fa-chart-line me-2 text-primary"></i>Dashboard</h5>
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h5 class="fw-bold mb-1"><i class="fa fa-chart-line me-2 text-primary"></i>Dashboard</h5>
+            <small class="text-muted" id="dashboardDate"></small>
+        </div>
     </div>
-    <div class="row g-3">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header d-flex align-items-center gap-2">
-                    <i class="fa fa-coins text-warning"></i>
-                    <h5 class="mb-0">Sales Today</h5>
+
+    <!-- KPI Summary Cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-sm-6 col-xl-3">
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon bg-primary-subtle text-primary">
+                    <i class="fa-solid fa-coins"></i>
                 </div>
-                <div class="card-body">
-                    <div id="salesTodayContainer"><div class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div></div>
+                <div class="dash-kpi-body">
+                    <div class="dash-kpi-value" id="kpiSalesTotal">
+                        <span class="placeholder-glow"><span class="placeholder col-8"></span></span>
+                    </div>
+                    <div class="dash-kpi-label">Sales Today</div>
                 </div>
             </div>
         </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon bg-warning-subtle text-warning">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div class="dash-kpi-body">
+                    <div class="dash-kpi-value" id="kpiPendingPO">
+                        <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
+                    </div>
+                    <div class="dash-kpi-label">Pending PO Approvals</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon bg-info-subtle text-info">
+                    <i class="fa-solid fa-truck-fast"></i>
+                </div>
+                <div class="dash-kpi-body">
+                    <div class="dash-kpi-value" id="kpiPendingDO">
+                        <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
+                    </div>
+                    <div class="dash-kpi-label">Pending Deliveries</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-icon bg-danger-subtle text-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="dash-kpi-body">
+                    <div class="dash-kpi-value" id="kpiStockAlerts">
+                        <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
+                    </div>
+                    <div class="dash-kpi-label">Low Stock Items</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Section -->
+    <div class="row g-3">
+        <!-- Sales Today Detail -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-file-invoice-dollar text-primary"></i>
+                        <h5 class="mb-0">Today's Sales Orders</h5>
+                    </div>
+                    <a asp-controller="SalesOrder" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                        View All <i class="fa fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div id="salesTodayContainer">
+                        <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Alerts -->
         <div class="col-lg-4">
-            <div class="card mb-3">
-                <div class="card-header d-flex align-items-center gap-2">
-                    <i class="fa fa-triangle-exclamation text-danger"></i>
-                    <h5 class="mb-0">Stock Alerts</h5>
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+                        <h5 class="mb-0">Stock Alerts</h5>
+                    </div>
+                    <a asp-controller="Stock" asp-action="Low" class="btn btn-sm btn-outline-danger">
+                        View All <i class="fa fa-arrow-right ms-1"></i>
+                    </a>
                 </div>
-                <div class="card-body">
-                    <div id="stockAlertsContainer"><div class="text-center text-muted py-3"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div></div>
-                </div>
-            </div>
-            <div class="card mb-3">
-                <div class="card-header d-flex align-items-center gap-2">
-                    <i class="fa fa-clock text-warning"></i>
-                    <h5 class="mb-0">Pending PO Approvals</h5>
-                </div>
-                <div class="card-body">
-                    <div id="pendingPOContainer"><div class="text-center text-muted py-3"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div></div>
+                <div class="card-body p-0">
+                    <div id="stockAlertsContainer">
+                        <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                    </div>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-header d-flex align-items-center gap-2">
-                    <i class="fa fa-truck text-info"></i>
-                    <h5 class="mb-0">Pending Deliveries</h5>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Pending PO & Pending DO -->
+    <div class="row g-3 mt-0">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-clock text-warning"></i>
+                        <h5 class="mb-0">Pending PO Approvals</h5>
+                    </div>
+                    <a asp-controller="PurchaseOrder" asp-action="Index" class="btn btn-sm btn-outline-warning">
+                        View All <i class="fa fa-arrow-right ms-1"></i>
+                    </a>
                 </div>
-                <div class="card-body">
-                    <div id="pendingDOContainer"><div class="text-center text-muted py-3"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div></div>
+                <div class="card-body p-0">
+                    <div id="pendingPOContainer">
+                        <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-truck text-info"></i>
+                        <h5 class="mb-0">Pending Deliveries</h5>
+                    </div>
+                    <a asp-controller="DeliveryOrder" asp-action="Index" class="btn btn-sm btn-outline-info">
+                        View All <i class="fa fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div id="pendingDOContainer">
+                        <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                    </div>
                 </div>
             </div>
         </div>

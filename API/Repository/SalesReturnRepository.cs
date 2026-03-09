@@ -1,14 +1,21 @@
 using API.Context.Table;
 using API.Models;
 using API.Repository.Interfaces;
+using API.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Repository;
 
 public class SalesReturnRepository : ISalesReturnRepository
 {
-    private readonly MKSTableContext _context; private readonly IHttpContextAccessor _http;
-    public SalesReturnRepository(MKSTableContext ctx, IHttpContextAccessor http) { _context = ctx; _http = http; }
+    private readonly MKSTableContext _context; private readonly IHttpContextAccessor _http; private readonly IStockLedgerService _stockLedger;
+    public SalesReturnRepository(MKSTableContext ctx, IHttpContextAccessor http, IStockLedgerService stockLedger = null) { _context = ctx; _http = http; _stockLedger = stockLedger; }
+
+    private async Task WriteLedgerSafe(int productId, int qtyChange, string refNo)
+    {
+        if (_stockLedger == null || qtyChange == 0) return;
+        try { await _stockLedger.WriteAsync(productId, qtyChange, "SalesReturn", null, refNo); } catch { }
+    }
 
     private enum SalesOrderStatus { Draft = 1, Paid = 2, Debt = 3, PartialRefund = 4, Refund = 5, Exchange = 6, PartialExchange = 7 }
 
@@ -43,6 +50,16 @@ public class SalesReturnRepository : ISalesReturnRepository
             }
             if (model.ReturnType == "Exchange") { foreach (var r in model.ReplacementDetails) { if (r.Quantity <= 0) return new { success = false, result = "Replacement qty must > 0" }; if (model.IsLinked && r.ExchangeSourceItemID == null) return new { success = false, result = "ExchangeSourceItemID required for replacement" }; SalesReturnItem entity; var unitPrice = r.UnitPrice; if (r.ID == 0) { entity = new SalesReturnItem { TradeID = tradeID, ProductID = r.ProductID, Quantity = r.Quantity, IsReplacement = true, ExchangeSourceItemID = r.ExchangeSourceItemID, ReturnType = model.ReturnType, UnitPrice = unitPrice, RefundAmount = r.RefundAmount, SourceSalesOrderItemID = r.SourceSalesOrderItemID }; await _context.SalesReturnItems.AddAsync(entity); var prod = await _context.Products.FindAsync(r.ProductID); if (prod != null) { prod.StockQuantity -= r.Quantity; _context.Products.Update(prod); } } else { entity = await _context.SalesReturnItems.FindAsync(r.ID); if (entity == null) return new { success = false, result = "Replacement detail not found" }; var prod = await _context.Products.FindAsync(r.ProductID); if (prod != null) { int diff = r.Quantity - entity.Quantity; prod.StockQuantity -= diff; _context.Products.Update(prod); } entity.ProductID = r.ProductID; entity.Quantity = r.Quantity; entity.UnitPrice = unitPrice; entity.ExchangeSourceItemID = r.ExchangeSourceItemID; entity.RefundAmount = r.RefundAmount; entity.ReturnType = model.ReturnType; entity.SourceSalesOrderItemID = r.SourceSalesOrderItemID; _context.SalesReturnItems.Update(entity); } } }
             await _context.SaveChangesAsync();
+            // Write stock ledger entries for all stock changes in this save
+            foreach (var d in model.Details)
+            {
+                if (d.ID == 0 && (model.ReturnType == "Refund" || (model.ReturnType == "Exchange" && model.ReturnOriginalToStock)))
+                    await WriteLedgerSafe(d.ProductID, d.Quantity, trade.No);
+                else if (d.ID > 0 && (model.ReturnType == "Refund" || (model.ReturnType == "Exchange" && model.ReturnOriginalToStock)))
+                { int diff = d.Quantity - (existing.FirstOrDefault(e => e.ID == d.ID)?.Quantity ?? d.Quantity); if (diff != 0) await WriteLedgerSafe(d.ProductID, diff, trade.No); }
+            }
+            if (model.ReturnType == "Exchange") { foreach (var r in model.ReplacementDetails) { if (r.ID == 0) await WriteLedgerSafe(r.ProductID, -r.Quantity, trade.No); else { int diff = r.Quantity - (existing.FirstOrDefault(e => e.ID == r.ID)?.Quantity ?? r.Quantity); if (diff != 0) await WriteLedgerSafe(r.ProductID, -diff, trade.No); } } }
+            foreach (var rem in toRemove) { int ledgerQty = rem.IsReplacement ? rem.Quantity : -rem.Quantity; await WriteLedgerSafe(rem.ProductID, ledgerQty, trade.No); }
             if (model.IsLinked && model.LinkedSalesOrderID.HasValue)
             {
                 var soItems = await _context.SalesOrderItems.Where(x => x.TradeID == model.LinkedSalesOrderID).ToListAsync(); if (model.ReturnType == "Refund") { foreach (var d in model.Details.Where(x => x.SourceSalesOrderItemID.HasValue)) { var soItem = soItems.FirstOrDefault(x => x.ID == d.SourceSalesOrderItemID.Value); if (soItem != null) { soItem.QtyRefunded = (soItem.QtyRefunded ?? 0) + d.Quantity; _context.SalesOrderItems.Update(soItem); } } } else if (model.ReturnType == "Exchange") { foreach (var d in model.Details.Where(x => x.SourceSalesOrderItemID.HasValue)) { var soItem = soItems.FirstOrDefault(x => x.ID == d.SourceSalesOrderItemID.Value); if (soItem != null) { soItem.QtyExchanged = (soItem.QtyExchanged ?? 0) + d.Quantity; _context.SalesOrderItems.Update(soItem); } } }
@@ -70,6 +87,6 @@ public class SalesReturnRepository : ISalesReturnRepository
         catch (Exception ex) { return new { success = false, result = ex.Message }; }
     }
 
-    public async Task<object> Delete(int id) { try { var trade = await _context.Trades.FindAsync(id); if (trade == null) return new { success = false, result = "Not found" }; var details = await _context.SalesReturnItems.Where(i => i.TradeID == id).ToListAsync(); foreach (var d in details) { var prod = await _context.Products.FindAsync(d.ProductID); if (prod != null) { if (!d.IsReplacement) prod.StockQuantity -= d.Quantity; else prod.StockQuantity += d.Quantity; _context.Products.Update(prod); } } _context.SalesReturnItems.RemoveRange(details); _context.Trades.Remove(trade); await _context.SaveChangesAsync(); return new { success = true }; } catch (Exception ex) { return new { success = false, result = ex.Message }; } }
-    public async Task<object> DeleteItem(int id) { try { var item = await _context.SalesReturnItems.FindAsync(id); if (item == null) return new { success = false, result = "Item not found" }; var prod = await _context.Products.FindAsync(item.ProductID); if (prod != null) { if (!item.IsReplacement) prod.StockQuantity -= item.Quantity; else prod.StockQuantity += item.Quantity; _context.Products.Update(prod); } _context.SalesReturnItems.Remove(item); await _context.SaveChangesAsync(); return new { success = true }; } catch (Exception ex) { return new { success = false, result = ex.Message }; } }
+    public async Task<object> Delete(int id) { try { var trade = await _context.Trades.FindAsync(id); if (trade == null) return new { success = false, result = "Not found" }; var details = await _context.SalesReturnItems.Where(i => i.TradeID == id).ToListAsync(); foreach (var d in details) { var prod = await _context.Products.FindAsync(d.ProductID); if (prod != null) { if (!d.IsReplacement) { prod.StockQuantity -= d.Quantity; await WriteLedgerSafe(prod.ID, -d.Quantity, trade.No); } else { prod.StockQuantity += d.Quantity; await WriteLedgerSafe(prod.ID, d.Quantity, trade.No); } _context.Products.Update(prod); } } _context.SalesReturnItems.RemoveRange(details); _context.Trades.Remove(trade); await _context.SaveChangesAsync(); return new { success = true }; } catch (Exception ex) { return new { success = false, result = ex.Message }; } }
+    public async Task<object> DeleteItem(int id) { try { var item = await _context.SalesReturnItems.FindAsync(id); if (item == null) return new { success = false, result = "Item not found" }; var prod = await _context.Products.FindAsync(item.ProductID); var trade = item.TradeID > 0 ? await _context.Trades.FindAsync(item.TradeID) : null; if (prod != null) { if (!item.IsReplacement) { prod.StockQuantity -= item.Quantity; await WriteLedgerSafe(prod.ID, -item.Quantity, trade?.No); } else { prod.StockQuantity += item.Quantity; await WriteLedgerSafe(prod.ID, item.Quantity, trade?.No); } _context.Products.Update(prod); } _context.SalesReturnItems.Remove(item); await _context.SaveChangesAsync(); return new { success = true }; } catch (Exception ex) { return new { success = false, result = ex.Message }; } }
 }

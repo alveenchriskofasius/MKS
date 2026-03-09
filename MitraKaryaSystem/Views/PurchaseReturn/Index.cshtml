@@ -9,30 +9,82 @@
       <div class="d-flex gap-2">
         <button class="btn btn-sm btn-outline-light" id="prNew"><i class="fa fa-plus"></i> New</button>
         <button class="btn btn-sm btn-outline-light" id="prSearch"><i class="fa fa-search"></i> Search</button>
+        <button class="btn btn-sm btn-outline-light" id="prPrint"><i class="fa fa-print"></i> Print</button>
         <button class="btn btn-sm btn-warning" id="prSave"><span class="spinner-border spinner-border-sm d-none"></span> <i class="fa fa-save"></i> Save</button>
       </div>
     </div>
     <div class="card-body">
-  <div id="prHeader"></div>
-  <div class="card shadow-sm mt-3">
-    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
-      <div><i class="fa fa-boxes-stacked me-1"></i> Items</div>
-      <div class="input-group input-group-sm" style="width:340px">
-        <span class="input-group-text"><i class="fa fa-barcode"></i></span>
-        <input id="prProduct" class="form-control" placeholder="Type product name" />
-        <button class="btn btn-outline-primary" id="prAdd"><i class="fa fa-plus"></i></button>
+      <!-- Status & workflow -->
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="workflow-bar" id="prWorkflowBar">
+          <div class="wf-step active" data-step="1"><span class="wf-dot"></span> Draft</div>
+          <i class="fa fa-chevron-right wf-arrow"></i>
+          <div class="wf-step" data-step="2"><span class="wf-dot"></span> Submitted</div>
+          <i class="fa fa-chevron-right wf-arrow"></i>
+          <div class="wf-step" data-step="3"><span class="wf-dot"></span> Approved</div>
+        </div>
+        <span class="badge-status badge-draft" id="prStatusBadge">Draft</span>
+      </div>
+      <input type="hidden" id="prStatusID" value="1" />
+
+      <div id="prHeader"></div>
+
+      <!-- Product search (POS-style) -->
+      <div class="card shadow-sm mt-3">
+        <div class="card-header bg-light py-2">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="fw-semibold"><i class="fa fa-boxes-stacked me-1 text-primary"></i> Return Items</div>
+          </div>
+          <div class="mt-2 mks-search-wrap" style="max-width:500px">
+            <div class="input-group">
+              <span class="input-group-text bg-white"><i class="fa fa-barcode text-muted"></i></span>
+              <input id="prProduct" class="form-control" placeholder="Type product name or scan barcode..." autocomplete="off" />
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <table class="table table-sm table-hover align-middle mb-0" id="tablePurchaseReturnItems" style="width:100%">
+            <thead>
+              <tr>
+                <th style="display:none">ProductID</th>
+                <th>Product</th>
+                <th class="text-end" style="width:120px">Qty</th>
+                <th class="text-end" style="width:130px">Unit Price</th>
+                <th class="text-end" style="width:140px">Subtotal</th>
+                <th style="width:50px"></th>
+              </tr>
+            </thead>
+          </table>
+          <div class="d-flex justify-content-end align-items-center mt-3 pe-1 gap-2">
+            <span class="text-muted small fw-semibold">TOTAL</span>
+            <span id="prTotal" class="fs-5 fw-bold text-primary">0.00</span>
+                   </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-info d-none" id="prSubmit"><i class="fa fa-paper-plane"></i> Submit</button>
+                <button type="button" class="btn btn-outline-success d-none" id="prApprove"><i class="fa fa-check"></i> Approve</button>
+                <button type="button" class="btn btn-outline-danger d-none" id="prReject"><i class="fa fa-xmark"></i> Reject</button>
+              </div>
+            </div>
+          </div>
+          <!-- Search Modal -->
+<div class="modal fade" id="prSearchModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header mks-modal-header">
+        <h5 class="modal-title"><i class="fa fa-search me-2"></i>Search Purchase Return</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <table class="table table-sm table-hover" id="tablePurchaseReturnSearch" style="width:100%">
+          <thead>
+            <tr><th>No</th><th>Date</th><th>Supplier</th><th>Status</th><th class="text-end">Amount</th><th style="width:140px"></th></tr>
+          </thead>
+        </table>
       </div>
     </div>
-    <div class="card-body p-2">
-      <table class="table table-sm table-bordered align-middle" id="tablePurchaseReturnItems" style="width:100%">
-        <thead class="table-primary">
-          <tr><th style="display:none">ProductID</th><th>Product</th><th class="text-end" style="width:120px">Qty</th><th class="text-end" style="width:120px">Unit Price</th><th class="text-end" style="width:140px">Subtotal</th><th style="width:40px"></th></tr>
-        </thead>
-      </table>
-      <div class="text-end mt-2 pe-1"><span class="fw-semibold">Total: </span><span id="prTotal" class="badge text-bg-primary">0.00</span></div>
-    </div>
   </div>
-  </div></div>
 </div>
-<div class="modal fade" id="prSearchModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header mks-modal-header"><h5 class="modal-title"><i class="fa fa-search me-2"></i>Search Purchase Return</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-2"><table class="table table-sm" id="tablePurchaseReturnSearch" style="width:100%"><thead class="table-light"><tr><th>No</th><th>Date</th><th>Supplier</th><th>Amount</th><th></th></tr></thead></table></div></div></div></div>
-@section Scripts { <script src="/js/PurchaseReturn.js"></script> }
+@section Scripts { <script src="~/js/PurchaseReturn.js" asp-append-version="true"></script> }

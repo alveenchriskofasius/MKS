@@ -2,6 +2,7 @@
 using API.Context.Table;
 using API.Models;
 using API.Repository.Interfaces;
+using API.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Repository
@@ -9,6 +10,7 @@ namespace API.Repository
     public class SalesOrderRepository : BaseRepository, ISalesOrderRepository
     {
         private readonly MKSSPContextProcedures _procedure;
+        private readonly IStockLedgerService _stockLedger;
         private enum TradeStatus
         {
             Draft = 1,
@@ -22,10 +24,17 @@ namespace API.Repository
         }
         private static readonly HashSet<short> LockedStatuses = new HashSet<short> { (short)TradeStatus.Paid, (short)TradeStatus.PartialRefund, (short)TradeStatus.Refund, (short)TradeStatus.Exchange, (short)TradeStatus.PartialExchange, (short)TradeStatus.Completed };
 
-        public SalesOrderRepository(MKSTableContext context, MKSSPContextProcedures procedures, IHttpContextAccessor httpContextAccessor)
+        public SalesOrderRepository(MKSTableContext context, MKSSPContextProcedures procedures, IHttpContextAccessor httpContextAccessor, IStockLedgerService stockLedger = null)
             : base(context, httpContextAccessor)
         {
             _procedure = procedures;
+            _stockLedger = stockLedger;
+        }
+
+        private async Task WriteLedgerSafe(int productId, int qtyChange, Trade trade)
+        {
+            if (_stockLedger == null || qtyChange == 0) return;
+            try { await _stockLedger.WriteAsync(productId, qtyChange, "SalesOrder", trade?.ID, trade?.No); } catch { }
         }
 
         // Helper: apply payment-related state changes to a trade
@@ -89,6 +98,7 @@ namespace API.Repository
                     {
                         product.StockQuantity += item.Quantity;
                         _context.Products.Update(product);
+                        await WriteLedgerSafe(product.ID, item.Quantity, trade);
                     }
                 }
                 _context.SalesOrderItems.RemoveRange(items);
@@ -118,6 +128,8 @@ namespace API.Repository
                     {
                         product.StockQuantity += item.Quantity;
                         _context.Products.Update(product);
+                        var trade = await _context.Trades.FindAsync(item.TradeID);
+                        await WriteLedgerSafe(product.ID, item.Quantity, trade);
                     }
                 }
                 _context.SalesOrderItems.Remove(item);
@@ -246,7 +258,7 @@ namespace API.Repository
                     {
                         id = t.ID,
                         no = t.No,
-                        date = t.Date, // return DateTime, format on client
+                        date = t.Date.ToString("yyyy-MM-dd"),
                         amount = t.Amount,
                         customerName = cust != null ? cust.Name : "-",
                         createdBy = t.CreatedBy,
@@ -423,6 +435,10 @@ namespace API.Repository
                     };
                     await _context.SalesOrderItems.AddAsync(newProduct);
                     product.StockQuantity -= salesOrderDetailModel.Quantity;
+                    _context.Products.Update(product);
+                    await SaveChangesAsync();
+                    var tradeForLedger = await _context.Trades.FindAsync(tradeID);
+                    await WriteLedgerSafe(product.ID, -salesOrderDetailModel.Quantity, tradeForLedger);
                 }
                 else
                 {
@@ -440,9 +456,14 @@ namespace API.Repository
                     product.StockQuantity -= quantityDifference;
                     existingProduct.Quantity = salesOrderDetailModel.Quantity; // set to requested (not additive)
                     _context.SalesOrderItems.Update(existingProduct);
+                    _context.Products.Update(product);
+                    await SaveChangesAsync();
+                    if (quantityDifference != 0)
+                    {
+                        var tradeForLedger = await _context.Trades.FindAsync(tradeID);
+                        await WriteLedgerSafe(product.ID, -quantityDifference, tradeForLedger);
+                    }
                 }
-                _context.Products.Update(product);
-                await SaveChangesAsync();
                 return new { success = true };
             }
             catch (Exception e)

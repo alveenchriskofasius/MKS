@@ -42,7 +42,33 @@ namespace API.Repository
             try
             {
                 var list = await GetProductListWithFreshStockAsync();
-                return list;
+                // Overlay barcode and discount from Products table
+                var ids = list.Select(x => x.ID).Distinct().ToList();
+                var extraMap = await _context.Products.AsNoTracking()
+                    .Where(p => ids.Contains(p.ID))
+                    .Select(p => new { p.ID, p.Barcode, p.HasDiscount, p.DiscountPercentage })
+                    .ToDictionaryAsync(x => x.ID);
+                return list.Select(p =>
+                {
+                    var extra = extraMap.TryGetValue(p.ID, out var e) ? e : null;
+                    return new
+                    {
+                        id = p.ID,
+                        name = p.Name,
+                        categoryID = p.CategoryID,
+                        categoryName = p.CategoryName,
+                        unitID = p.UnitID,
+                        unitName = p.UnitName,
+                        description = p.Description,
+                        unitPrice = p.UnitPrice,
+                        stockQuantity = p.StockQuantity,
+                        supplierID = p.SupplierID,
+                        supplierName = p.SupplierName,
+                        barcode = extra?.Barcode,
+                        hasDiscount = extra?.HasDiscount ?? false,
+                        discountPercentage = extra?.DiscountPercentage ?? 0m
+                    };
+                }).ToList();
             }
             catch (Exception e)
             {
@@ -50,7 +76,33 @@ namespace API.Repository
             }
         }
 
-        public async Task<object> GetProductComboList(string name) => await _procedures.uspGetProductComboListAsync(name);
+        public async Task<object> GetProductComboList(string name)
+        {
+            var spList = await _procedures.uspGetProductComboListAsync(name);
+            // Overlay discount info from Products table
+            var ids = spList.Select(x => x.ID).Distinct().ToList();
+            var discountMap = await _context.Products.AsNoTracking()
+                .Where(p => ids.Contains(p.ID))
+                .Select(p => new { p.ID, p.HasDiscount, p.DiscountPercentage })
+                .ToDictionaryAsync(x => x.ID);
+            return spList.Select(p =>
+            {
+                var disc = discountMap.TryGetValue(p.ID, out var d) ? d : null;
+                return new
+                {
+                    p.ID,
+                    p.Name,
+                    p.UnitPrice,
+                    p.SupplierID,
+                    p.SupplierName,
+                    p.Barcode,
+                    p.Unit,
+                    p.StockQuantity,
+                    hasDiscount = disc?.HasDiscount ?? false,
+                    discountPercentage = disc?.DiscountPercentage ?? 0m
+                };
+            }).ToList();
+        }
 
         public async Task<object> GetLowStockProductList(int threshold = 5)
         {
@@ -164,7 +216,9 @@ namespace API.Repository
                 StockQuantity = product.StockQuantity,
                 SupplierID = product.SupplierID,
                 Barcode = product.Barcode,
-                LowStockThreshold = product.LowStockThreshold
+                LowStockThreshold = product.LowStockThreshold,
+                HasDiscount = product.HasDiscount,
+                DiscountPercentage = product.DiscountPercentage
             };
         }
 
@@ -182,7 +236,9 @@ namespace API.Repository
                 SupplierID = model.SupplierID,
                 CreatedBy = createdBy,
                 CreatedAt = createdAt,
-                Barcode = model.Barcode
+                Barcode = model.Barcode,
+                HasDiscount = model.HasDiscount,
+                DiscountPercentage = model.DiscountPercentage
             };
         }
 
@@ -197,6 +253,8 @@ namespace API.Repository
             entity.LowStockThreshold = model.LowStockThreshold;
             entity.SupplierID = model.SupplierID;
             entity.Barcode = model.Barcode;
+            entity.HasDiscount = model.HasDiscount;
+            entity.DiscountPercentage = model.DiscountPercentage;
         }
     }
 }

@@ -1,29 +1,83 @@
 ﻿@{
-    ViewData["Title"] = "Role Setting";
+    ViewData["Title"] = "Roles & Permissions";
 }
+<style>
+    /* ── Role list ── */
+    .role-list { list-style: none; padding: 0; margin: 0; }
+    .role-list-item {
+        padding: .65rem 1rem; border-radius: 8px; cursor: pointer;
+        display: flex; align-items: center; justify-content: space-between;
+        transition: all .2s; margin-bottom: 4px; border: 1px solid transparent;
+    }
+    .role-list-item:hover { background: var(--mks-gray-100); }
+    .role-list-item.active { background: var(--mks-primary-light); border-color: var(--mks-primary); }
+    .role-list-item .role-name { font-weight: 600; font-size: .88rem; color: var(--mks-gray-800); }
+    .role-list-item.active .role-name { color: var(--mks-primary); }
+    .role-list-item .role-desc { font-size: .72rem; color: var(--mks-gray-600); margin-top: 1px; }
 
-<div class="row">
-    <!-- Left side: Table for Roles -->
-    <partial name="_TableRole" />
-</div>
-<!-- Modal -->
-<div class="modal fade" id="roleModal" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="roleModalLabel" aria-hidden="true">
-    <div class="modal-dialog  modal-lg">
-        <div class="modal-content">
-            <div class="modal-header mks-modal-header">
-                <h5 class="modal-title" id="roleModalLabel"><i class="fa fa-shield-halved me-2"></i>Role Information</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="bodyModal">
-                <partial name="_roleModal" />
+    /* ── Permission groups ── */
+    .perm-group { border: 1px solid var(--mks-gray-200); border-radius: var(--mks-radius); overflow: hidden; }
+    .perm-group-header {
+        padding: .55rem 1rem; background: var(--mks-gray-50); border-bottom: 1px solid var(--mks-gray-200);
+        display: flex; align-items: center; gap: .5rem;
+        font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .5px; color: var(--mks-gray-700);
+    }
+    .perm-group-header i { width: 20px; text-align: center; }
+    .perm-group-header .toggle-all {
+        margin-left: auto; font-size: .7rem; cursor: pointer; color: var(--mks-primary);
+        text-transform: none; letter-spacing: 0; font-weight: 500;
+    }
+    .perm-group-header .toggle-all:hover { text-decoration: underline; }
+    .perm-item {
+        padding: .5rem 1rem; display: flex; align-items: center; justify-content: space-between;
+        border-bottom: 1px solid var(--mks-gray-100); transition: background .15s;
+    }
+    .perm-item:last-child { border-bottom: none; }
+    .perm-item:hover { background: var(--mks-gray-50); }
+    .perm-item-label { display: flex; align-items: center; gap: .5rem; font-size: .84rem; color: var(--mks-gray-700); }
+    .perm-item-label i { width: 18px; text-align: center; color: var(--mks-gray-600); font-size: .8rem; }
 
+    /* ── Toggle switch ── */
+    .perm-item .form-switch .form-check-input { width: 2.5em; height: 1.3em; cursor: pointer; }
+    .perm-item .form-switch .form-check-input:checked { background-color: var(--mks-primary); border-color: var(--mks-primary); }
+
+    /* ── Section label ── */
+    .section-label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--mks-gray-600); }
+</style>
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-shield-halved fa-lg"></i>
+                <h5 class="mb-0">Roles &amp; Permissions</h5>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" id="buttonSave" class="btn btn-primary">
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
-                    Save
-                </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-light" id="buttonAddRole"><i class="fa fa-plus"></i> New Role</button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <!-- Left: Role list -->
+                <div class="col-md-4 col-lg-3 border-end" style="min-height:480px">
+                    <div class="p-3">
+                        <div class="input-group input-group-sm mb-3">
+                            <span class="input-group-text bg-white"><i class="fa fa-search text-muted"></i></span>
+                            <input type="text" class="form-control" id="roleSearch" placeholder="Search roles…">
+                        </div>
+                        <ul class="role-list" id="roleList">
+                            <li class="text-center text-muted py-4"><small>Loading…</small></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Right: Form panel -->
+                <div class="col-md-8 col-lg-9">
+                    <div id="roleFormPanel" class="p-3">
+                        <div class="empty-state" id="roleEmptyState">
+                            <i class="fa fa-shield-halved"></i>
+                            <p>Select a role to edit or create a new one</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

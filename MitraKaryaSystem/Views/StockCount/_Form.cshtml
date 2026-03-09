@@ -2,21 +2,24 @@
 <div class="card shadow-sm">
     <div class="card-body row g-3 align-items-end">
         <input type="hidden" id="stockCountID" value="@Model.ID" />
+        <input type="hidden" id="stockCountAutoAdjust" value="@(Model.AutoAdjust ? "true" : "false")" />
         <div class="col-auto">
             <label class="form-label small text-muted mb-0">No</label>
             <input class="form-control form-control-sm" id="stockCountNo" value="@Model.No" readonly />
         </div>
         <div class="col-auto">
             <label class="form-label small text-muted mb-0">Date</label>
-            <input type="date" class="form-control form-control-sm" id="stockCountDate" value="@Model.Date.ToString("yyyy-MM-dd")" />
+            <input type="date" class="form-control form-control-sm" id="stockCountDate" value="@Model.Date.ToString("yyyy-MM-dd")" @(Model.AutoAdjust ? "disabled" : "") />
         </div>
         <div class="col-3">
             <label class="form-label small text-muted mb-0">Note</label>
-            <input class="form-control form-control-sm" id="stockCountNote" value="@Model.Note" />
+            <input class="form-control form-control-sm" id="stockCountNote" value="@Model.Note" @(Model.AutoAdjust ? "disabled" : "") />
         </div>
-        <div class="col-auto form-check mt-4 pt-2">
-            <input type="checkbox" class="form-check-input" id="stockCountAutoAdjust" @(Model.AutoAdjust?"checked":"") />
-            <label class="form-check-label" for="stockCountAutoAdjust">Auto Adjust</label>
-        </div>
+        @if (Model.AutoAdjust)
+        {
+            <div class="col-auto mt-4 pt-2">
+                <span class="badge bg-success"><i class="fa fa-check me-1"></i>Stock Adjusted</span>
+            </div>
+        }
     </div>
 </div>

@@ -6,7 +6,7 @@ using MitraKaryaSystem.Security;
 namespace MitraKaryaSystem.Controllers
 {
     [Microsoft.AspNetCore.Authorization.Authorize]
-    [HasPermission("StockCount")]
+    [HasPermission("Stock Count")]
     public class StockCountController : Controller
     {
         private readonly IStockCountService _service;

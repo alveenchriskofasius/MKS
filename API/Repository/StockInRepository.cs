@@ -380,6 +380,12 @@ namespace API.Repository
                 if (po == null) return new { success = false, result = "Purchase Order not found." };
                 if ((po.StatusID ?? 1) != 3) return new { success = false, result = "Purchase Order must be Approved." };
 
+                // Check if there is already an unverified Stock In for this PO
+                var existingUnverified = await _context.Trades
+                    .AnyAsync(t => t.PurchaseOrderID == poId && t.TradeTypeID == 3 && (t.StatusID ?? 1) < 3);
+                if (existingUnverified)
+                    return new { success = false, result = "There is already an unverified Stock In for this Purchase Order. Please verify or delete it first." };
+
                 var poItems = await _context.PurchaseOrderItems.Where(pi => pi.TradeID == poId).ToListAsync();
                 if (!poItems.Any()) return new { success = false, result = "Purchase Order has no items." };
 

@@ -331,6 +331,7 @@ public partial class MKSTableContext : DbContext
             entity.Property(e => e.Description)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.DiscountPercentage).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.LowStockThreshold).HasDefaultValue(0);
             entity.Property(e => e.Name)
                 .IsRequired()

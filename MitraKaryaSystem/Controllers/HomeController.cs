@@ -31,6 +31,17 @@ namespace MitraKaryaSystem.Controllers
 
         public IActionResult Index() => View();
 
+        /// <summary>
+        /// Diagnostic endpoint – returns current authenticated user's claims.
+        /// Navigate to /Home/WhoAmI to inspect the active cookie.
+        /// </summary>
+        [HttpGet]
+        public JsonResult WhoAmI()
+        {
+            var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+            return Json(new { user = User.Identity?.Name, isAuthenticated = User.Identity?.IsAuthenticated, claims });
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

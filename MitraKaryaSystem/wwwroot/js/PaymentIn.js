@@ -26,7 +26,7 @@ const PaymentIn = (function () {
     loader
       .then((list) => {
         const rows = (list || []).map((p) => {
-          const date = (p.date || '').toString().substring(0,10);
+          const date = Common.Format.Date(p.date);
           const status = (p.statusID || p.statusId) ===2 ? 'Submitted' : 'Draft';
           const amt = p.amount ||0;
           const amtText = (typeof amt === 'number' ? amt : Number(amt ||0)).toFixed(2);
@@ -174,6 +174,8 @@ const PaymentIn = (function () {
       .then((res) => {
         if (res && res.success) {
           toastr.success('Payment saved');
+          // Offer print receipt
+          MksPrint.paymentIn({ no: res.no || '', date: payload.date, customerName: $('#piCustomerName').text(), salesOrderNo: '', method: payload.method, amount: payload.amount });
           bindHistory(payload.salesOrderID || null, payload.salesInvoiceID || null, payload.customerID || null);
           $(document).trigger('so:payment:updated', res);
         } else {

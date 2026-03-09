@@ -15,7 +15,7 @@ namespace API.Services
 
         // Use TradeTypeID = 9 for POS (custom) if available; else fallback to 2 but separate numbering prefix POS
         private const short PosTradeTypeId = 2; // re-use base trade type semantics for stock & payment fields
-        private const decimal TaxRate = 0.10m; // 10% tax — must match frontend Pos.js state.taxRate
+        private const decimal TaxRate = 0.11m; // 11% tax — must match frontend Pos.js state.taxRate
         public async Task<object> Save(PosSaleRequest req)
         {
             if (req.Items == null || req.Items.Count == 0) return new { success = false, result = "Items empty" };
@@ -40,7 +40,7 @@ namespace API.Services
                     .GroupBy(i => i.ProductID)
                     .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
 
-                // Validate stock and compute subtotal by product.UnitPrice
+                // Validate stock and compute subtotal by product.UnitPrice (with discount)
                 decimal subtotal = 0m;
                 foreach (var p in products)
                 {
@@ -49,7 +49,10 @@ namespace API.Services
                     {
                         return new { success = false, result = $"Insufficient stock for {p.Name}" };
                     }
-                    subtotal += (p.UnitPrice) * needQty;
+                    var price = p.UnitPrice;
+                    if (p.HasDiscount && p.DiscountPercentage > 0)
+                        price = price - (price * p.DiscountPercentage / 100m);
+                    subtotal += price * needQty;
                 }
 
                 var tax = subtotal * TaxRate;
@@ -160,6 +163,78 @@ namespace API.Services
                 // restore previous timeout
                 _ctx.Database.SetCommandTimeout(prevTimeout);
             }
+        }
+
+        public async Task<object> GetHistory()
+        {
+            var list = await (
+                from t in _ctx.Trades.AsNoTracking()
+                where t.TradeTypeID == PosTradeTypeId && t.Note == "POS"
+                join c in _ctx.Customers.AsNoTracking() on t.CustomerID equals c.ID into cg
+                from cust in cg.DefaultIfEmpty()
+                join l in _ctx.Lookups.Where(x => x.Entity == "SalesOrderStatus").AsNoTracking() on t.StatusID equals (short?)l.Key into lg
+                from ls in lg.DefaultIfEmpty()
+                orderby t.ID descending
+                select new
+                {
+                    id = t.ID,
+                    no = t.No,
+                    date = t.Date,
+                    amount = t.Amount,
+                    paidAmount = t.PaidAmount ?? 0m,
+                    customerName = cust != null ? cust.Name : "Umum",
+                    statusID = t.StatusID,
+                    status = ls != null ? ls.Name : null,
+                    createdBy = t.CreatedBy,
+                    createdAt = t.CreatedAt
+                }
+            ).ToListAsync();
+            return list;
+        }
+
+        public async Task<object> GetHistoryDetail(int id)
+        {
+            var trade = await _ctx.Trades.AsNoTracking().FirstOrDefaultAsync(t => t.ID == id);
+            if (trade == null) return new { success = false, result = "Not found" };
+
+            var customer = trade.CustomerID.HasValue
+                ? await _ctx.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.ID == trade.CustomerID.Value)
+                : null;
+
+            var items = await (
+                from si in _ctx.SalesOrderItems.AsNoTracking()
+                where si.TradeID == id
+                join p in _ctx.Products.AsNoTracking() on si.ProductID equals p.ID into pg
+                from prod in pg.DefaultIfEmpty()
+                select new
+                {
+                    productName = prod != null ? prod.Name : "-",
+                    quantity = si.Quantity,
+                    unitPrice = prod != null ? prod.UnitPrice : 0m,
+                    hasDiscount = prod != null && prod.HasDiscount,
+                    discountPercentage = prod != null ? prod.DiscountPercentage : 0m
+                }
+            ).ToListAsync();
+
+            var detailItems = items.Select(i =>
+            {
+                var price = i.unitPrice;
+                if (i.hasDiscount && i.discountPercentage > 0)
+                    price = price - (price * i.discountPercentage / 100m);
+                return new { i.productName, i.quantity, unitPrice = price, subTotal = price * i.quantity };
+            }).ToList();
+
+            return new
+            {
+                success = true,
+                no = trade.No,
+                date = trade.Date,
+                customerName = customer?.Name ?? "Umum",
+                amount = trade.Amount,
+                paidAmount = trade.PaidAmount ?? 0m,
+                statusID = trade.StatusID,
+                items = detailItems
+            };
         }
     }
 }

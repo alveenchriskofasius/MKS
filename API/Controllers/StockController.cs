@@ -39,7 +39,7 @@ public class StockController : ControllerBase
             .Select(x => new
             {
                 id = x.ID,
-                date = x.Date,
+                date = x.Date.ToString("dd-MM-yyyy HH:mm:ss"),
                 refType = x.RefType,
                 refId = x.RefId,
                 refNo = x.RefNo,

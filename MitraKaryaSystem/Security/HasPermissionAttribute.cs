@@ -17,9 +17,10 @@ namespace MitraKaryaSystem.Security
         {
             var user = context.HttpContext.User;
 
-            // If not authenticated, let the normal auth middleware handle redirect to login
+            // If not authenticated, redirect to login
             if (user?.Identity?.IsAuthenticated != true)
             {
+                context.Result = new RedirectToActionResult("Login", "Auth", null);
                 return Task.CompletedTask;
             }
 

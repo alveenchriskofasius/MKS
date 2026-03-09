@@ -11,81 +11,132 @@
         </div>
         <div class="card-body">
             <div class="d-flex gap-2 mb-3">
-                <input id="threshold" type="number" class="form-control form-control-sm" style="max-width: 200px" placeholder="Threshold (opsional)" />
+                <input id="threshold" type="number" class="form-control form-control-sm" style="max-width: 200px" placeholder="Threshold (optional)" />
                 <button id="btnRefresh" class="btn btn-primary btn-sm"><i class="fa fa-sync me-1"></i> Refresh</button>
             </div>
             <table id="tblLow" class="table table-hover table-sm align-middle" style="width:100%">
-                <thead class="table-light">
+                <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Product</th>
-                        <th class="text-end">Qty</th>
+                        <th class="text-end">Stock</th>
                         <th class="text-end">Threshold</th>
-                        <th style="width:80px"></th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-
-            <hr />
-
-            <h5 class="fw-semibold"><i class="fa fa-id-card me-1 text-muted"></i> Kartu Stok</h5>
-            <div class="d-flex gap-2 mb-3">
-                <input id="productId" type="number" class="form-control form-control-sm" style="max-width: 200px" placeholder="Product ID" />
-                <button id="btnCard" class="btn btn-secondary btn-sm"><i class="fa fa-download me-1"></i> Load</button>
-            </div>
-            <table id="tblCard" class="table table-hover table-sm align-middle" style="width:100%">
-                <thead class="table-light">
-                    <tr>
-                        <th>Date</th>
-                        <th>Ref</th>
-                        <th class="text-end">Qty Change</th>
-                        <th class="text-end">Qty After</th>
-                        <th>By</th>
+                        <th class="text-center" style="width:100px">Status</th>
+                        <th style="width:100px"></th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
+
+    <!-- Stock Card Section -->
+    <div class="card page-header-card mt-3" id="stockCardSection" style="display:none;">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-id-card text-primary"></i>
+                <h5 class="mb-0">Stock Card — <span id="stockCardProductName" class="text-primary"></span></h5>
+            </div>
+            <button id="btnCloseCard" class="btn btn-sm btn-outline-secondary"><i class="fa fa-times me-1"></i> Close</button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="tblCard" class="table table-hover table-sm align-middle mb-0" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Date</th>
+                            <th>Reference</th>
+                            <th>Ref No</th>
+                            <th class="text-end">Qty Change</th>
+                            <th class="text-end">Qty After</th>
+                            <th>Note</th>
+                            <th>By</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <script>
+        $(document).ready(function () { loadLow(); });
+
         function loadLow() {
             const t = $('#threshold').val();
             const url = t ? `/Stock/LowList?threshold=${encodeURIComponent(t)}` : '/Stock/LowList';
-            return Common.Api.fetchJson(url).then(rows => {
+            Common.Api.fetchJson(url).then(rows => {
                 const $tbody = $('#tblLow tbody');
                 $tbody.empty();
-                (rows || []).forEach(r => {
-                    const btn = `<button class="btn btn-sm btn-outline-secondary" onclick="loadCard(${r.id})">Kartu</button>`;
-                    $tbody.append(`<tr><td>${r.id}</td><td>${r.name}</td><td>${r.qty}</td><td>${r.lowStockThreshold ?? ''}</td><td>${btn}</td></tr>`);
+                if (!rows || !rows.length) {
+                    $tbody.append('<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa fa-check-circle me-1"></i> All stock levels are healthy</td></tr>');
+                    return;
+                }
+                rows.forEach(r => {
+                    const qty = r.qty ?? 0;
+                    const thr = r.lowStockThreshold ?? '-';
+                    let badge;
+                    if (qty === 0) badge = '<span class="badge-status badge-rejected">Out of Stock</span>';
+                    else badge = '<span class="badge-status badge-warning">Low Stock</span>';
+                    $tbody.append(`<tr>
+                        <td><span class="fw-semibold">${r.name}</span></td>
+                        <td class="text-end fw-semibold ${qty === 0 ? 'text-danger' : 'text-warning'}">${qty}</td>
+                        <td class="text-end">${thr}</td>
+                        <td class="text-center">${badge}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary" onclick="loadCard(${r.id}, '${(r.name || '').replace(/'/g, "\\'")}')">
+                                <i class="fa fa-id-card me-1"></i> Stock Card
+                            </button>
+                        </td>
+                    </tr>`);
                 });
+            }).catch(() => {
+                $('#tblLow tbody').html('<tr><td colspan="5" class="text-center text-danger py-3">Failed to load data</td></tr>');
             });
         }
 
-        function loadCard(productId) {
-            $('#productId').val(productId);
+        function loadCard(productId, productName) {
+            $('#stockCardProductName').text(productName || ('Product #' + productId));
+            $('#stockCardSection').slideDown(200);
+            const $tbody = $('#tblCard tbody');
+            $tbody.html('<tr><td colspan="7" class="text-center text-muted py-3"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</td></tr>');
+
+            // Scroll to card section
+            $('html, body').animate({ scrollTop: $('#stockCardSection').offset().top - 80 }, 300);
+
             const url = `/Stock/Card?productId=${encodeURIComponent(productId)}`;
-            return Common.Api.fetchJson(url).then(rows => {
-                const $tbody = $('#tblCard tbody');
+            Common.Api.fetchJson(url).then(rows => {
                 $tbody.empty();
-                (rows || []).forEach(r => {
-                    const ref = `${r.refType}${r.refNo ? ' - ' + r.refNo : ''}`;
-                    const dt = r.date ? new Date(r.date).toLocaleString() : '';
-                    $tbody.append(`<tr><td>${dt}</td><td>${ref}</td><td>${r.qtyChange}</td><td>${r.qtyAfter}</td><td>${r.createdBy ?? ''}</td></tr>`);
+                if (!rows || !rows.length) {
+                    $tbody.append('<tr><td colspan="7" class="text-center text-muted py-4"><i class="fa fa-inbox me-1"></i> No stock movement records found</td></tr>');
+                    return;
+                }
+                rows.forEach(r => {
+                    const dt = r.date || '-';
+                    const refType = r.refType || '-';
+                    const refNo = r.refNo || '-';
+                    const qtyChange = r.qtyChange || 0;
+                    const qtyClass = qtyChange > 0 ? 'text-success' : (qtyChange < 0 ? 'text-danger' : '');
+                    const qtyPrefix = qtyChange > 0 ? '+' : '';
+                    $tbody.append(`<tr>
+                        <td class="ps-3">${dt}</td>
+                        <td><span class="badge-status badge-submitted">${refType}</span></td>
+                        <td>${refNo}</td>
+                        <td class="text-end fw-semibold ${qtyClass}">${qtyPrefix}${qtyChange}</td>
+                        <td class="text-end fw-semibold">${r.qtyAfter ?? '-'}</td>
+                        <td class="text-muted small">${r.note || '-'}</td>
+                        <td class="small">${r.createdBy || '-'}</td>
+                    </tr>`);
                 });
+            }).catch(() => {
+                $tbody.html('<tr><td colspan="7" class="text-center text-danger py-3">Failed to load stock card</td></tr>');
             });
         }
 
         $('#btnRefresh').on('click', loadLow);
-        $('#btnCard').on('click', function(){
-            const id = $('#productId').val();
-            if (!id) return;
-            loadCard(id);
+        $('#btnCloseCard').on('click', function () {
+            $('#stockCardSection').slideUp(200);
         });
-
-        $(document).ready(loadLow);
     </script>
 }

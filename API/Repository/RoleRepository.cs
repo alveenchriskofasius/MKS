@@ -2,6 +2,7 @@
 using API.Context.Table;
 using API.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using MitraKaryaSystem.Models;
 
 namespace API.Repository
@@ -10,7 +11,8 @@ namespace API.Repository
     {
         private readonly MKSTableContext _context;
         private readonly MKSSPContextProcedures _procedure;
-        public RoleRepository(MKSTableContext context, MKSSPContextProcedures procedure) { _context = context; _procedure = procedure; }
+        private readonly IMemoryCache _cache;
+        public RoleRepository(MKSTableContext context, MKSSPContextProcedures procedure, IMemoryCache cache) { _context = context; _procedure = procedure; _cache = cache; }
 
         public async Task<object> DeleteRole(int id)
         {
@@ -73,6 +75,9 @@ namespace API.Repository
                         await SaveRolePermission(x, newRole.ID);
                     }
                 }
+
+                // Bump permission version so middleware refreshes user claims
+                _cache.Set("PermVer", Guid.NewGuid().ToString("N"));
             }
             catch (Exception e)
             {

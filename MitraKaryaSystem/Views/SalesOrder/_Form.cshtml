@@ -5,48 +5,25 @@
     <input type="hidden" id="salesOrderStatusID" value="@Model.SalesOrder.StatusID" />
     <input type="hidden" id="salesOrderIsLocked" value="@Model.SalesOrder.IsLocked" />
     <input type="hidden" id="salesOrderPaidAmount" value="@Model.SalesOrder.PaidAmount" />
-    <div class="row">
-        <div class="col-6">
-            <div class="row mb-3">
-                <label for="salesOrderNumber" class="form-label col-sm-2">No</label>
-                <div class="col-md-6 col-lg-6">
-                    <input type="text" asp-for=SalesOrder.No autofocus class="form-control" readonly id="salesOrderNumber" placeholder="Auto">
-                </div>
-            </div>
-            <div class="row mb-3">
-                <label for="salesOrderDate" class="form-label col-sm-2">Date</label>
-                <div class="col-sm-6">
-                    <input type="date" asp-for=SalesOrder.Date class="form-control" id="salesOrderDate">
-                </div>
-            </div>
-            <div class="row mb-3" id="deliveryOrderSection" style="display:none;">
-                <label class="form-label col-sm-2">DO</label>
-                <div class="col-sm-10 d-flex gap-2 align-items-center">
-                    <span id="deliveryOrderNo" class="fw-bold text-primary"></span>
-                    <span id="deliveryOrderStatusBadge" class="badge bg-secondary">-</span>
-                    <button type="button" id="btnViewDO" class="btn btn-sm btn-outline-primary d-none">View</button>
-                </div>
-            </div>
+    <div class="row g-3 align-items-end">
+        <div class="col-auto">
+            <label for="salesOrderNumber" class="form-label small mb-0 fw-semibold">No</label>
+            <input type="text" asp-for=SalesOrder.No autofocus class="form-control form-control-sm" readonly id="salesOrderNumber" placeholder="Auto" style="width:160px">
         </div>
-        <div class="col-6">
-            <div class="row mb-3">
-                <label for="selectCustomer" class="form-label col-sm-2">Customer</label>
-                <div class="col-sm-10">
-                    @Html.DropDownListFor(m => m.SalesOrder.CustomerID, Model.Customers, "Select a customer", new { @class = "form-control js-example-basic-responsive", id = "selectCustomer" })
-                </div>
-            </div>
-            <div class="row mb-3">
-                <label for="salesOrderNote" class="form-label col-sm-2">Note</label>
-                <div class="col-sm-10">
-                    <textarea class="form-control" id="salesOrderNote" asp-for="SalesOrder.Note"></textarea>
-                </div>
-            </div>
-            <div class="row mb-2">
-                <div class="col-sm-12 text-end">
-                    <button type="button" id="btnCreateInvoice" class="btn btn-sm btn-outline-primary me-2"><i class="fa fa-file-invoice"></i> Create Invoice</button>
-                    <button type="button" id="btnCreateDO" class="btn btn-sm btn-outline-success d-none"><i class="fa fa-truck"></i> Create Delivery Order</button>
-                </div>
-            </div>
+        <div class="col-auto">
+            <label for="salesOrderDate" class="form-label small mb-0 fw-semibold">Date</label>
+            <input type="date" asp-for=SalesOrder.Date class="form-control form-control-sm" id="salesOrderDate">
+        </div>
+        <div class="col-md-3">
+            <label for="selectCustomer" class="form-label small mb-0 fw-semibold">Customer</label>
+            @Html.DropDownListFor(m => m.SalesOrder.CustomerID, Model.Customers, "Select a customer", new { @class = "form-select form-select-sm", id = "selectCustomer" })
+        </div>
+        <div class="col-md-3">
+            <label for="salesOrderNote" class="form-label small mb-0 fw-semibold">Note</label>
+            <input type="text" class="form-control form-control-sm" id="salesOrderNote" asp-for="SalesOrder.Note" placeholder="Optional note..." />
+        </div>
+        <div class="col-auto ms-auto">
+            <button type="button" id="btnCreateInvoice" class="btn btn-sm btn-outline-primary"><i class="fa fa-file-invoice"></i> Create Invoice</button>
         </div>
     </div>
 </form>

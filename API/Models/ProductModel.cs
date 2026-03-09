@@ -12,5 +12,7 @@
         public int? LowStockThreshold { get; set; }
         public short SupplierID { get; set; }
         public string? Barcode { get; set; }
+        public bool HasDiscount { get; set; }
+        public decimal DiscountPercentage { get; set; }
     }
 }

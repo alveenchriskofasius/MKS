@@ -21,5 +21,8 @@ namespace API.Context.SP
         [StringLength(50)]
         public string Unit { get; set; }
         public int StockQuantity { get; set; }
+        public bool HasDiscount { get; set; }
+        [Column("DiscountPercentage", TypeName = "decimal(5,2)")]
+        public decimal DiscountPercentage { get; set; }
     }
 }

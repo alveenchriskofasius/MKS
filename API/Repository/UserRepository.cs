@@ -2,6 +2,7 @@
 using API.Context.Table;
 using API.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using MitraKaryaSystem.Models;
 namespace API.Repository
 {
@@ -9,10 +10,12 @@ namespace API.Repository
     {
         private readonly MKSTableContext _context;
         private readonly MKSSPContextProcedures _sp;
-        public UserRepository(MKSTableContext context, MKSSPContextProcedures procedures)
+        private readonly IMemoryCache _cache;
+        public UserRepository(MKSTableContext context, MKSSPContextProcedures procedures, IMemoryCache cache)
         {
             _context = context;
             _sp = procedures;
+            _cache = cache;
         }
 
         public async Task<object> GetUserList() => await _context.Users.Select(x => new
@@ -109,14 +112,19 @@ namespace API.Repository
         {
             try
             {
-                var existing = _context.UserRoles.Where(ur => ur.UserID == userId);
-                _context.UserRoles.RemoveRange(existing);
+                // UserRole is a HasNoKey entity — EF change tracker cannot Add/Remove it.
+                // Use raw SQL instead.
+                await _context.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM UserRole WHERE UserID = {0}", userId);
 
                 foreach (var roleId in roleIds)
                 {
-                    _context.UserRoles.Add(new UserRole { UserID = userId, RoleID = roleId });
+                    await _context.Database.ExecuteSqlRawAsync(
+                        "INSERT INTO UserRole (UserID, RoleID) VALUES ({0}, {1})", userId, roleId);
                 }
-                await _context.SaveChangesAsync();
+
+                // Bump permission version so the middleware refreshes claims
+                _cache.Set("PermVer", Guid.NewGuid().ToString("N"));
             }
             catch (Exception e)
             {

@@ -17,7 +17,7 @@ public class SalesInvoiceListItem
 {
     public int ID { get; set; }
     public string No { get; set; }
-    public DateTime Date { get; set; }
+    public string Date { get; set; }
     public int? CustomerID { get; set; }
     public string CustomerName { get; set; }
     public decimal Amount { get; set; }
