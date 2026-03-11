@@ -34,12 +34,7 @@
                 </li>
             </ul>
             <!-- Right navbar links -->
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <partial name="_LoginPartial" />
-
-                </li>
-            </ul>
+            <partial name="_LoginPartial" />
         </nav>
         <!-- /.navbar -->
         <!-- Main Sidebar Container -->
@@ -76,10 +71,56 @@
     @await Html.PartialAsync("_PaymentOutModal")
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script src="https://cdn.datatables.net/v/bs5/dt-1.13.7/r-2.5.0/sl-1.7.0/datatables.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    @{
+        var userPermissions = User?.Claims?.Where(c => string.Equals(c.Type, "Permission", StringComparison.OrdinalIgnoreCase)).Select(c => c.Value).ToList() ?? new List<string>();
+    }
+    <script>window.__userPermissions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(userPermissions));</script>
     <script src="~/js/Common.js" asp-append-version="true"></script>
+    <script>
+        // Load notification badge + dropdown
+        (async function () {
+            try {
+                const r = await Common.Api.get('/Home/AlertCount');
+                if (r && r.count > 0) {
+                    const badge = document.getElementById('alertBadge');
+                    if (badge) { badge.textContent = r.count > 99 ? '99+' : r.count; badge.style.display = ''; }
+                }
+            } catch (_) { }
+            // Lazy-load dropdown content on first open
+            const bell = document.getElementById('navAlertBell');
+            let loaded = false;
+            if (bell) bell.addEventListener('show.bs.dropdown', async function () {
+                if (loaded) return;
+                loaded = true;
+                try {
+                    const data = await Common.Api.get('/Notification/GetAlerts');
+                    const alerts = Array.isArray(data) ? data : [];
+                    const body = document.getElementById('alertDropdownBody');
+                    if (!alerts.length) { body.innerHTML = '<div class="text-center text-muted py-4"><i class="fa fa-check-circle text-success me-1"></i> No alerts</div>'; return; }
+                    const iconMap = { LowStock: 'fa-box-open', OverdueDebt: 'fa-clock', PendingApproval: 'fa-hourglass-half', ExpiringConsignment: 'fa-handshake' };
+                    const colorMap = { danger: 'text-danger', warning: 'text-warning', info: 'text-info' };
+                    body.innerHTML = alerts.slice(0, 20).map(a => {
+                        const icon = iconMap[a.type] || 'fa-bell';
+                        const color = colorMap[a.severity] || 'text-secondary';
+                        return `<a href="${a.link || '/Notification'}" class="dropdown-item px-3 py-2 border-bottom d-flex align-items-start gap-2">
+                            <i class="fa ${icon} ${color} mt-1"></i>
+                            <div class="flex-grow-1" style="white-space:normal;">
+                                <div class="fw-semibold small">${a.title}</div>
+                                <div class="text-muted" style="font-size:.75rem;">${a.message}</div>
+                            </div>
+                        </a>`;
+                    }).join('');
+                    if (alerts.length > 20) body.innerHTML += `<div class="text-center py-2"><a href="/Notification" class="small">View all ${alerts.length} alerts</a></div>`;
+                } catch (e) {
+                    document.getElementById('alertDropdownBody').innerHTML = '<div class="text-center text-muted py-3 small">Failed to load</div>';
+                    loaded = false;
+                }
+            });
+        })();
+    </script>
     <script src="~/dist/js/adminlte.js"></script>
     <script src="~/js/shared/DataTable.js" asp-append-version="true"></script>
     <script src="~/js/shared/Print.js" asp-append-version="true"></script>

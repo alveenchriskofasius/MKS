@@ -2,6 +2,7 @@
 <form id="purchaseOrderForm">
     <input type="text" id="purchaseOrderID" hidden asp-for="ID" />
     <input type="hidden" id="purchaseOrderStatusID" value="@Model.StatusID" />
+    <input type="hidden" id="purchaseOrderSupplierID" asp-for="SupplierID" />
     <div class="row mb-3">
         <label for="purchaseOrderNumber" class="form-label col-sm-2">No</label>
         <div class="col-md-6 col-lg-6">

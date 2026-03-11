@@ -2,6 +2,8 @@
   const state = { items: [], taxRate: 0.11, suggestIndex: -1, _searchSeq: 0 };
   const fmt = n => 'Rp ' + (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:0, maximumFractionDigits:0});
 
+  function getPayType(){ return $('input[name="posPayType"]:checked').val() || 'Full'; }
+
   function recalc(){
     let subtotal = state.items.reduce((s,i)=> s + i.price*i.qty, 0);
     const tax = subtotal * state.taxRate;
@@ -9,11 +11,39 @@
     $('#posSubtotal').text(fmt(subtotal));
     $('#posTax').text(fmt(tax));
     $('#posTotal').text(fmt(total));
+    const payType = getPayType();
     const tender = parseFloat($('#posTender').val()||0);
-    const change = Math.max(0, tender - total);
-    $('#posChange').text(fmt(change));
+    let change = 0;
+    if(payType === 'Full'){
+      change = Math.max(0, tender - total);
+      $('#posChange').text(fmt(change));
+      $('#posChangeWrap').removeClass('d-none');
+      $('#posDebtWrap').addClass('d-none');
+    } else if(payType === 'DP'){
+      const remaining = Math.max(0, total - tender);
+      $('#posChangeWrap').addClass('d-none');
+      $('#posDebt').text(fmt(remaining));
+      $('#posDebtWrap').removeClass('d-none');
+    } else {
+      $('#posChangeWrap').addClass('d-none');
+      $('#posDebt').text(fmt(total));
+      $('#posDebtWrap').removeClass('d-none');
+    }
     $('#posBtnPay').prop('disabled', state.items.length===0);
+    $('#posBtnQris').prop('disabled', state.items.length===0);
     return { subtotal, tax, total, change };
+  }
+
+  function updatePaymentUI(){
+    const payType = getPayType();
+    if(payType === 'Piutang'){
+      $('#posTenderWrap').addClass('d-none');
+      $('#posTender').val('');
+    } else {
+      $('#posTenderWrap').removeClass('d-none');
+      $('#posTenderLabel').text(payType === 'DP' ? 'Down Payment Amount' : 'Cash Received');
+    }
+    recalc();
   }
 
   function render(){
@@ -169,6 +199,7 @@
         <div class='d-flex justify-content-between fw-bold'><span>Grand Total</span><span>${fmt(snap.total)}</span></div>
         <div class='d-flex justify-content-between'><span>Paid</span><span>${fmt(snap.paid)}</span></div>
         <div class='d-flex justify-content-between'><span>Change</span><span>${fmt(snap.changeAmt)}</span></div>
+        ${snap.paid < snap.total ? `<div class='d-flex justify-content-between text-danger fw-semibold'><span>Remaining Debt</span><span>${fmt(snap.total - snap.paid)}</span></div>` : ''}
       </div>
     </div>`;
   }
@@ -220,6 +251,7 @@
     <div class="line grand"><span>Grand Total</span><span>${fmt(snap.total)}</span></div>
     <div class="line"><span>Paid</span><span>${fmt(snap.paid)}</span></div>
     <div class="line change"><span>Change</span><span>${fmt(snap.changeAmt)}</span></div>
+    ${snap.paid < snap.total ? `<div class="line" style="color:#c00;font-weight:600"><span>Remaining Debt</span><span>${fmt(snap.total - snap.paid)}</span></div>` : ''}
   </div>
   <hr class="divider">
   <div class="footer">Mitra Karya System<br/>Thank you!</div>
@@ -242,6 +274,15 @@
     const customerId = parseInt($('#posCustomer').val()||0) || null;
     const payType = $('input[name="posPayType"]:checked').val();
     const tender = parseFloat($('#posTender').val()||0);
+    const { total } = recalc();
+    if(payType === 'Full' && tender < total){ toastr.warning('Cash received must be ≥ total for Full payment.'); return; }
+    if(payType === 'DP'){
+      if(tender <= 0){ toastr.warning('Down payment amount must be greater than 0.'); return; }
+      if(tender >= total){ toastr.warning('Down payment must be less than total. Use Full payment instead.'); return; }
+    }
+    if((payType === 'DP' || payType === 'Piutang') && (!customerId || customerId === 0)){
+      toastr.warning('Please select a customer for ' + (payType === 'DP' ? 'Down Payment' : 'Debt') + ' payment.'); return;
+    }
     const items = state.items.map(i=>({ productID:i.id, quantity:i.qty, unitPrice:i.price }));
     const req = { CustomerID: customerId, Date: new Date().toISOString(), Items: items, PaymentType: payType, TenderAmount: tender };
     $('#posBtnPay').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving');
@@ -255,6 +296,9 @@
           if(r.change){ toastr.info('Change: ' + fmt(r.change)); }
           // reset cart immediately
           state.items = [];
+          $('#posPayFull').prop('checked', true);
+          $('#posTender').val('');
+          updatePaymentUI();
           render();
           if(window.Swal){
             Swal.fire({ html: previewHtml, width: 500, showConfirmButton: true, confirmButtonText: '<i class="fa fa-print"></i> Print', showCancelButton: true, cancelButtonText: 'Close', customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-secondary' } })
@@ -282,10 +326,20 @@
     wireSearch(); wireTable();
     $('#posTender').on('input change', recalc);
     $('#posBtnPay').on('click', submit);
-    $('#posBtnCancel').on('click', ()=> { state.items=[]; render(); $('#posSearch').val('').focus(); });
+    $('#posBtnCancel').on('click', ()=> { state.items=[]; $('#posPayFull').prop('checked', true); $('#posTender').val(''); updatePaymentUI(); render(); $('#posSearch').val('').focus(); });
     $('#posBtnHistory').on('click', openHistory);
     // autofocus search on payment type change
-    $('input[name="posPayType"]').on('change', ()=> setTimeout(()=> $('#posSearch').focus(), 30));
+    $('input[name="posPayType"]').on('change', ()=> { updatePaymentUI(); setTimeout(()=> $('#posSearch').focus(), 30); });
+    // refresh history table after installment payment
+    $(document).on('so:payment:updated', ()=> {
+      const $table = $('#tablePosHistory');
+      if($.fn.DataTable.isDataTable('#tablePosHistory')){
+        $table.DataTable().clear().destroy();
+        openHistory();
+      }
+    });
+    $('#posBtnQris').on('click', startQris);
+    $('#qrisBtnCancel').on('click', function(){ clearInterval(qrisPolling); if(qrisModal) qrisModal.hide(); });
     $('#posSearch').focus();
   }
 
@@ -298,7 +352,7 @@
     modal.show();
     const $table = $('#tablePosHistory');
     if($.fn.DataTable.isDataTable('#tablePosHistory')){ $table.DataTable().clear().destroy(); }
-    $table.find('tbody').html('<tr><td colspan="8" class="text-center"><div class="spinner-border spinner-border-sm"></div></td></tr>');
+    $table.find('tbody').html('<tr><td colspan="9" class="text-center"><div class="spinner-border spinner-border-sm"></div></td></tr>');
     $.get('/Pos/GetHistory', function(data){
       const list = Array.isArray(data) ? data : (data && data.result ? data.result : []);
       const dt = $table.DataTable({
@@ -310,6 +364,7 @@
           { data:'date', render: d => Common.Format.Datetime(d) },
           { data:'amount', className:'text-end', render: d => fmt(d) },
           { data:'paidAmount', className:'text-end', render: d => fmt(d) },
+          { data:'paymentType', render: d => { const cls = d==='Full'?'bg-success':d==='DP'?'bg-info':'bg-warning text-dark'; return `<span class="badge ${cls}">${d}</span>`; } },
           { data:'customerName' },
           { data:'statusID', render: d => { const txt = statusMap[d]||d; const cls = statusBadgeMap[d]||'bg-secondary'; return `<span class="badge ${cls}">${txt}</span>`; } },
           { data:'createdBy' },
@@ -333,14 +388,18 @@
       const itemsHtml = items.map(i=> `<tr><td>${i.productName}</td><td class="text-center">${i.quantity}</td><td class="text-end">${fmt(i.unitPrice)}</td><td class="text-end">${fmt(i.subTotal)}</td></tr>`).join('');
       const statusTxt = statusMap[res.statusID] || res.statusID;
       const statusCls = statusBadgeMap[res.statusID] || 'bg-secondary';
+      const payTypeTxt = res.paymentType || 'Full';
+      const payTypeCls = payTypeTxt==='Full'?'bg-success':payTypeTxt==='DP'?'bg-info':'bg-warning text-dark';
+      const outstanding = total - res.paidAmount;
       const html = `<div class="text-start">
         <div class="row mb-3">
           <div class="col-6"><div class="small text-muted">No</div><div class="fw-semibold">${res.no}</div></div>
           <div class="col-6"><div class="small text-muted">Date</div><div class="fw-semibold">${Common.Format.Datetime(res.date)}</div></div>
         </div>
         <div class="row mb-3">
-          <div class="col-6"><div class="small text-muted">Customer</div><div class="fw-semibold">${res.customerName}</div></div>
-          <div class="col-6"><div class="small text-muted">Status</div><div><span class="badge ${statusCls}">${statusTxt}</span></div></div>
+          <div class="col-4"><div class="small text-muted">Customer</div><div class="fw-semibold">${res.customerName}</div></div>
+          <div class="col-4"><div class="small text-muted">Payment</div><div><span class="badge ${payTypeCls}">${payTypeTxt}</span></div></div>
+          <div class="col-4"><div class="small text-muted">Status</div><div><span class="badge ${statusCls}">${statusTxt}</span></div></div>
         </div>
         <table class="table table-sm">
           <thead><tr><th>Product</th><th class="text-center">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr></thead>
@@ -351,6 +410,7 @@
           <div class="d-flex justify-content-between"><span>Tax (11%)</span><span>${fmt(tax)}</span></div>
           <div class="d-flex justify-content-between fw-bold fs-5"><span>Total</span><span>${fmt(total)}</span></div>
           <div class="d-flex justify-content-between mt-1"><span>Paid</span><span>${fmt(res.paidAmount)}</span></div>
+          ${outstanding > 0 ? `<div class="d-flex justify-content-between text-danger fw-semibold"><span>Remaining Debt</span><span>${fmt(outstanding)}</span></div>` : ''}
         </div>
       </div>`;
       // Build snap for printing
@@ -358,7 +418,7 @@
         items: items.map(i=>({ name:i.productName, qty:i.quantity, price:i.unitPrice })),
         subtotal, tax, total,
         customer: res.customerName,
-        payType: res.paidAmount >= total ? 'Full' : (res.paidAmount > 0 ? 'DP' : 'Piutang'),
+        payType: res.paymentType || 'Full',
         no: res.no,
         paid: res.paidAmount,
         changeAmt: 0
@@ -369,14 +429,116 @@
         width: 560,
         showConfirmButton: true,
         confirmButtonText: '<i class="fa fa-print"></i> Print',
+        showDenyButton: outstanding > 0,
+        denyButtonText: '<i class="fa fa-hand-holding-dollar"></i> Pay Installment',
         showCancelButton: true,
         cancelButtonText: 'Close',
-        customClass: { confirmButton:'btn btn-primary', cancelButton:'btn btn-secondary' }
-      }).then(r=>{ if(r.isConfirmed){ printReceipt(snap); } });
+        customClass: { confirmButton:'btn btn-primary', denyButton:'btn btn-success ms-2', cancelButton:'btn btn-secondary ms-2' }
+      }).then(r=>{
+        if(r.isConfirmed){ printReceipt(snap); }
+        else if(r.isDenied){
+          PaymentIn.openFromSO({
+            id: id,
+            amount: total,
+            paidAmount: res.paidAmount,
+            customerName: res.customerName,
+            customerID: res.customerID
+          });
+        }
+      });
     }).fail(()=> toastr.error('Failed load detail'));
   }
 
-  const style = `.pos-suggest{position:absolute; z-index:1050; background:#fff; border:1px solid #dee2e6; border-radius:12px; width:100%; max-height:300px; overflow:auto;} .pos-suggest-item{padding:8px 12px; cursor:pointer;} .pos-suggest-item.active{background:#e9f2ff;} .pos-suggest-item:hover{background:#f1f5fb;} .pos-suggest-item.disabled{opacity:.55; cursor:not-allowed;} .match{background:#ffe08a}`; if(!document.getElementById('posSuggestStyle')){ const st=document.createElement('style'); st.id='posSuggestStyle'; st.innerHTML=style; document.head.appendChild(st); }
+  // ==================== QRIS ====================
+  let qrisPolling = null;
+  let qrisModal = null;
+
+  function startQris(){
+    if(state.items.length===0){ toastr.info('Cart empty'); return; }
+    const customerId = parseInt($('#posCustomer').val()||0) || null;
+    const items = state.items.map(i=>({ productID:i.id, quantity:i.qty, unitPrice:i.price }));
+    const { total } = recalc();
+    // Save order first as Piutang (debt) so we get a trade ID
+    const req = { CustomerID: customerId, Date: new Date().toISOString(), Items: items, PaymentType: 'Piutang', TenderAmount: 0 };
+    $('#posBtnQris').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+    $.ajax({ url:'/Pos/Save', method:'POST', contentType:'application/json', data: JSON.stringify(req), timeout: 30000 })
+      .done(function(r){
+        if(r && r.success){
+          showQrisModal(r.id, total, r.no);
+        } else {
+          toastr.error((r && r.result) || 'Failed to save order');
+        }
+      })
+      .fail(function(){ toastr.error('Failed to save order'); })
+      .always(function(){ $('#posBtnQris').prop('disabled', state.items.length===0).html('<i class="fa fa-qrcode"></i>'); });
+  }
+
+  function showQrisModal(tradeId, amount, tradeNo){
+    // Reset modal state
+    $('#qrisLoading').show();
+    $('#qrisContent, #qrisDone, #qrisError').hide();
+    qrisModal = new bootstrap.Modal(document.getElementById('qrisModal'));
+    qrisModal.show();
+
+    // Generate QRIS
+    $.post('/Qris/Generate', { tradeId: tradeId })
+      .done(function(r){
+        if(r && r.success){
+          $('#qrisLoading').hide();
+          $('#qrisImage').attr('src', r.qrCodeUrl);
+          $('#qrisAmount').text(fmt(r.amount));
+          $('#qrisContent').show();
+          // Start polling
+          pollQrisStatus(r.orderId, tradeId, tradeNo);
+        } else {
+          $('#qrisLoading').hide();
+          $('#qrisError').text(r && r.result || 'Failed to generate QR code').show();
+        }
+      })
+      .fail(function(){
+        $('#qrisLoading').hide();
+        $('#qrisError').text('Failed to generate QR code').show();
+      });
+  }
+
+  function pollQrisStatus(orderId, tradeId, tradeNo){
+    clearInterval(qrisPolling);
+    let attempts = 0;
+    const maxAttempts = 120; // ~5 minutes at 3s interval
+    qrisPolling = setInterval(function(){
+      attempts++;
+      if(attempts > maxAttempts){
+        clearInterval(qrisPolling);
+        $('#qrisStatus').html('<span class="badge text-bg-danger"><i class="fa fa-times me-1"></i>QR Expired</span>');
+        return;
+      }
+      $.get('/Qris/Status', { orderId: orderId })
+        .done(function(r){
+          if(r && r.success){
+            if(r.status === 'settlement' || r.status === 'capture'){
+              clearInterval(qrisPolling);
+              $('#qrisContent').hide();
+              $('#qrisDone').show();
+              toastr.success('Payment received via QRIS!');
+              // Clear cart
+              state.items = [];
+              $('#posPayFull').prop('checked', true);
+              $('#posTender').val('');
+              updatePaymentUI();
+              render();
+              // Auto close after 2s
+              setTimeout(function(){
+                if(qrisModal) qrisModal.hide();
+              }, 2000);
+            } else if(r.status === 'expire' || r.status === 'cancel' || r.status === 'deny'){
+              clearInterval(qrisPolling);
+              $('#qrisStatus').html('<span class="badge text-bg-danger"><i class="fa fa-times me-1"></i>' + (r.status === 'expire' ? 'QR Expired' : 'Payment ' + r.status) + '</span>');
+            }
+          }
+        });
+    }, 3000);
+  }
+
 
   $(document).ready(init);
 })();

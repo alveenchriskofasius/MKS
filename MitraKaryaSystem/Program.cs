@@ -73,11 +73,40 @@ builder.Services.AddScoped<ISalesInvoiceRepository, SalesInvoiceRepository>();
 builder.Services.AddScoped<ISalesInvoiceService, SalesInvoiceService>();
 builder.Services.AddScoped<IPaymentOutRepository, PaymentOutRepository>();
 builder.Services.AddScoped<IPaymentOutService, PaymentOutService>();
+// Purchase Invoice
+builder.Services.AddScoped<IPurchaseInvoiceRepository, PurchaseInvoiceRepository>();
+builder.Services.AddScoped<IPurchaseInvoiceService, PurchaseInvoiceService>();
+// Customer Deposit
+builder.Services.AddScoped<ICustomerDepositRepository, CustomerDepositRepository>();
+builder.Services.AddScoped<ICustomerDepositService, CustomerDepositService>();
+// Debt
+builder.Services.AddScoped<IDebtRepository, DebtRepository>();
+builder.Services.AddScoped<IDebtService, DebtService>();
+// Expense
+builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
+builder.Services.AddScoped<IExpenseService, ExpenseService>();
+// Consignment
+builder.Services.AddScoped<IConsignmentRepository, ConsignmentRepository>();
+builder.Services.AddScoped<IConsignmentService, ConsignmentService>();
 // POS
 builder.Services.AddScoped<IPosService, PosService>();
+// Profit & Loss
+builder.Services.AddScoped<IProfitLossService, ProfitLossService>();
+// Price History
+builder.Services.AddScoped<IPriceHistoryService, PriceHistoryService>();
+// Notification / Alert Center
+builder.Services.AddScoped<INotificationService, NotificationService>();
+// Customer Statement
+builder.Services.AddScoped<ICustomerStatementService, CustomerStatementService>();
+// Promo
+builder.Services.AddScoped<IPromoService, PromoService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<API.Services.IAuditService, API.Services.AuditService>();
 builder.Services.AddScoped<API.Services.IStockLedgerService, API.Services.StockLedgerService>();
+// Midtrans QRIS
+builder.Services.Configure<API.Services.MidtransSettings>(builder.Configuration.GetSection("Midtrans"));
+builder.Services.AddHttpClient("Midtrans");
+builder.Services.AddScoped<API.Services.Interfaces.IMidtransService, API.Services.MidtransService>();
 builder.Services.AddScoped<MKSSPContextProcedures>();
 builder.Services.AddDbContextPool<MKSTableContext>(options =>
 {

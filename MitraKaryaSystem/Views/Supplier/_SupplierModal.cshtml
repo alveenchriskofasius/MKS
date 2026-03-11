@@ -1,0 +1,27 @@
+@model SupplierModel
+<form id="supplierForm">
+    <input asp-for="@Model.ID" type="text" hidden />
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="@Model.SupplierName" class="form-label fw-semibold small">Supplier Name <span class="text-danger">*</span></label>
+            <input asp-for="@Model.SupplierName" type="text" required class="form-control" placeholder="Supplier or company name" />
+            <div class="invalid-feedback">Please enter a name.</div>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="@Model.ContactNumber" class="form-label fw-semibold small">Contact Number <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa fa-phone"></i></span>
+                <input asp-for="@Model.ContactNumber" type="text" required class="form-control" placeholder="Phone number" />
+            </div>
+            <div class="invalid-feedback">Please enter a contact number.</div>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="@Model.ContactPerson" class="form-label fw-semibold small">Contact Person <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa fa-user"></i></span>
+                <input asp-for="@Model.ContactPerson" type="text" required class="form-control" placeholder="Person in charge" />
+            </div>
+            <div class="invalid-feedback">Please enter a contact person.</div>
+        </div>
+    </div>
+</form>

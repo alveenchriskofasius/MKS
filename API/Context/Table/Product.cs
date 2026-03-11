@@ -39,5 +39,7 @@ public partial class Product
 
     public decimal DiscountPercentage { get; set; }
 
+    public virtual ICollection<ConsignmentItem> ConsignmentItems { get; set; } = new List<ConsignmentItem>();
+
     public virtual ICollection<StockCountItem> StockCountItems { get; set; } = new List<StockCountItem>();
 }

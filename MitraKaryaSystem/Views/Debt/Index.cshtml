@@ -1,0 +1,104 @@
+@{
+    ViewData["Title"] = "Debt Management";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-scale-balanced fa-lg"></i>
+                <h5 class="mb-0">Debt Management</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm border-start border-success border-3">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:#d1e7dd">
+                                    <i class="fa fa-arrow-down text-success fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small">Total Receivables (Piutang)</div>
+                                    <div class="fw-bold fs-5 text-success" id="totalReceivables">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm border-start border-danger border-3">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:#f8d7da">
+                                    <i class="fa fa-arrow-up text-danger fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small">Total Payables (Hutang)</div>
+                                    <div class="fw-bold fs-5 text-danger" id="totalPayables">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#tabReceivables"><i class="fa fa-arrow-down me-1 text-success"></i>Receivables (Piutang)</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#tabPayables"><i class="fa fa-arrow-up me-1 text-danger"></i>Payables (Hutang)</a>
+                </li>
+            </ul>
+            <div class="tab-content pt-3">
+                <!-- Receivables Tab -->
+                <div class="tab-pane fade show active" id="tabReceivables">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle" id="tableReceivables" style="width:100%">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>No</th>
+                                    <th>Date</th>
+                                    <th>Customer</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-end">Paid</th>
+                                    <th class="text-end">Outstanding</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Payables Tab -->
+                <div class="tab-pane fade" id="tabPayables">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle" id="tablePayables" style="width:100%">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>No</th>
+                                    <th>Date</th>
+                                    <th>Supplier</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-end">Paid</th>
+                                    <th class="text-end">Outstanding</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@await Html.PartialAsync("_PaymentInModal")
+@section Scripts {
+    <script src="~/js/PaymentIn.js" asp-append-version="true"></script>
+    <script src="~/js/Debt.js" asp-append-version="true"></script>
+    <script src="~/js/Common.js" asp-append-version="true"></script>
+}

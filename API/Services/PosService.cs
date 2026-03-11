@@ -19,6 +19,11 @@ namespace API.Services
         public async Task<object> Save(PosSaleRequest req)
         {
             if (req.Items == null || req.Items.Count == 0) return new { success = false, result = "Items empty" };
+            if (string.Equals(req.PaymentType, "DP", StringComparison.OrdinalIgnoreCase) && req.TenderAmount <= 0)
+                return new { success = false, result = "Down payment amount must be greater than 0" };
+            if ((string.Equals(req.PaymentType, "Piutang", StringComparison.OrdinalIgnoreCase) || string.Equals(req.PaymentType, "DP", StringComparison.OrdinalIgnoreCase))
+                && (!req.CustomerID.HasValue || req.CustomerID.Value == 0))
+                return new { success = false, result = "Customer is required for credit/DP payment" };
 
             // Increase command timeout for POS batch operation to avoid transient timeouts
             var prevTimeout = _ctx.Database.GetCommandTimeout();
@@ -77,7 +82,9 @@ namespace API.Services
                     UpdatedBy = user,
                     UpdatedAt = DateTime.Now,
                     StatusID = 1,
-                    Note = "POS"
+                    Note = string.Equals(req.PaymentType, "Full", StringComparison.OrdinalIgnoreCase)
+                        ? "POS"
+                        : $"POS - {req.PaymentType}"
                 };
                 _ctx.Trades.Add(trade);
                 await _ctx.SaveChangesAsync(); // need Trade.ID
@@ -143,6 +150,7 @@ namespace API.Services
                 }
                 else
                 {
+                    trade.PaidAmount = 0;
                     trade.StatusID = 3; // Debt
                 }
 
@@ -169,7 +177,7 @@ namespace API.Services
         {
             var list = await (
                 from t in _ctx.Trades.AsNoTracking()
-                where t.TradeTypeID == PosTradeTypeId && t.Note == "POS"
+                where t.TradeTypeID == PosTradeTypeId && t.Note != null && t.Note.StartsWith("POS")
                 join c in _ctx.Customers.AsNoTracking() on t.CustomerID equals c.ID into cg
                 from cust in cg.DefaultIfEmpty()
                 join l in _ctx.Lookups.Where(x => x.Entity == "SalesOrderStatus").AsNoTracking() on t.StatusID equals (short?)l.Key into lg
@@ -183,6 +191,7 @@ namespace API.Services
                     amount = t.Amount,
                     paidAmount = t.PaidAmount ?? 0m,
                     customerName = cust != null ? cust.Name : "Umum",
+                    paymentType = t.Note == "POS - DP" ? "DP" : t.Note == "POS - Piutang" ? "Piutang" : "Full",
                     statusID = t.StatusID,
                     status = ls != null ? ls.Name : null,
                     createdBy = t.CreatedBy,
@@ -229,9 +238,11 @@ namespace API.Services
                 success = true,
                 no = trade.No,
                 date = trade.Date,
+                customerID = trade.CustomerID,
                 customerName = customer?.Name ?? "Umum",
                 amount = trade.Amount,
                 paidAmount = trade.PaidAmount ?? 0m,
+                paymentType = trade.Note == "POS - DP" ? "DP" : trade.Note == "POS - Piutang" ? "Piutang" : "Full",
                 statusID = trade.StatusID,
                 items = detailItems
             };

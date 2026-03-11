@@ -1,0 +1,92 @@
+@{
+    ViewData["Title"] = "Stock Card";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-id-card fa-lg"></i>
+                <h5 class="mb-0">Stock Card</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Product <span class="asterisk">*</span></label>
+                    <select class="form-select" id="selProduct">
+                        <option value="">-- Select Product --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">From</label>
+                    <input type="date" class="form-control" id="dateFrom" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">To</label>
+                    <input type="date" class="form-control" id="dateTo" />
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" id="btnLoad"><i class="fa fa-search me-1"></i> Load</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4" id="summaryRow" style="display:none;">
+                <div class="col-md-3">
+                    <div class="card border-start border-4 border-primary shadow-sm">
+                        <div class="card-body py-2 text-center">
+                            <div class="small text-muted">Current Stock</div>
+                            <div class="fs-4 fw-bold text-primary" id="sumStock">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-start border-4 border-success shadow-sm">
+                        <div class="card-body py-2 text-center">
+                            <div class="small text-muted">Total In</div>
+                            <div class="fs-4 fw-bold text-success" id="sumIn">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-start border-4 border-danger shadow-sm">
+                        <div class="card-body py-2 text-center">
+                            <div class="small text-muted">Total Out</div>
+                            <div class="fs-4 fw-bold text-danger" id="sumOut">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-start border-4 border-warning shadow-sm">
+                        <div class="card-body py-2 text-center">
+                            <div class="small text-muted">Low Stock Threshold</div>
+                            <div class="fs-4 fw-bold text-warning" id="sumThreshold">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ledger Table -->
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0" id="tblCard" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Reference</th>
+                            <th>Ref No</th>
+                            <th class="text-end">In</th>
+                            <th class="text-end">Out</th>
+                            <th class="text-end">Balance</th>
+                            <th>Note</th>
+                            <th>By</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/StockCard.js" asp-append-version="true"></script>
+}

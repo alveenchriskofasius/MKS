@@ -17,6 +17,10 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<Category> Categories { get; set; }
 
+    public virtual DbSet<Consignment> Consignments { get; set; }
+
+    public virtual DbSet<ConsignmentItem> ConsignmentItems { get; set; }
+
     public virtual DbSet<Customer> Customers { get; set; }
 
     public virtual DbSet<CustomerDeposit> CustomerDeposits { get; set; }
@@ -26,6 +30,8 @@ public partial class MKSTableContext : DbContext
     public virtual DbSet<DeliveryOrder> DeliveryOrders { get; set; }
 
     public virtual DbSet<DeliveryOrderItem> DeliveryOrderItems { get; set; }
+
+    public virtual DbSet<Expense> Expenses { get; set; }
 
     public virtual DbSet<Lookup> Lookups { get; set; }
 
@@ -37,7 +43,11 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<Permission> Permissions { get; set; }
 
+    public virtual DbSet<PriceHistory> PriceHistories { get; set; }
+
     public virtual DbSet<Product> Products { get; set; }
+
+    public virtual DbSet<Promo> Promos { get; set; }
 
     public virtual DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; }
 
@@ -101,6 +111,54 @@ public partial class MKSTableContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<Consignment>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Consignm__3214EC2776D49444");
+
+            entity.ToTable("Consignment");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.Date)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.No)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Note).HasMaxLength(500);
+            entity.Property(e => e.SalesPersonName).HasMaxLength(200);
+            entity.Property(e => e.SoldAmount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.StatusID).HasDefaultValue((short)1);
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<ConsignmentItem>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Consignm__3214EC273A8A3C46");
+
+            entity.ToTable("ConsignmentItem");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.SellingPrice).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.Consignment).WithMany(p => p.ConsignmentItems)
+                .HasForeignKey(d => d.ConsignmentID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Consignme__Consi__6319B466");
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ConsignmentItems)
+                .HasForeignKey(d => d.ProductID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Consignme__Produ__640DD89F");
         });
 
         modelBuilder.Entity<Customer>(entity =>
@@ -218,6 +276,31 @@ public partial class MKSTableContext : DbContext
                 .HasConstraintName("FK_DeliveryOrderItem_DeliveryOrder");
         });
 
+        modelBuilder.Entity<Expense>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Expense__3214EC27C86A4ECD");
+
+            entity.ToTable("Expense");
+
+            entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Category)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.Date)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.No)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+        });
+
         modelBuilder.Entity<Lookup>(entity =>
         {
             entity.ToTable("Lookup");
@@ -314,6 +397,26 @@ public partial class MKSTableContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<PriceHistory>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__PriceHis__3214EC278AEB45C7");
+
+            entity.ToTable("PriceHistory");
+
+            entity.HasIndex(e => e.ChangedAt, "IX_PriceHistory_ChangedAt").IsDescending();
+
+            entity.HasIndex(e => e.ProductID, "IX_PriceHistory_ProductID");
+
+            entity.Property(e => e.ChangedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.ChangedBy).HasMaxLength(100);
+            entity.Property(e => e.NewPrice).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Note).HasMaxLength(500);
+            entity.Property(e => e.OldPrice).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Source).HasMaxLength(50);
+        });
+
         modelBuilder.Entity<Product>(entity =>
         {
             entity.ToTable("Product");
@@ -342,6 +445,31 @@ public partial class MKSTableContext : DbContext
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<Promo>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Promo__3214EC2791450AAD");
+
+            entity.ToTable("Promo");
+
+            entity.Property(e => e.ApplyTo)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("All");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DiscountPct).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.EndDate).HasColumnType("datetime");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(e => e.StartDate).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
         });
 
         modelBuilder.Entity<PurchaseOrderItem>(entity =>

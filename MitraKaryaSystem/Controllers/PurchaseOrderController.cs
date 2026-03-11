@@ -11,10 +11,12 @@ namespace MitraKaryaSystem.Controllers
     {
         private readonly IPurchaseOrderService _service;
         private readonly ISupplierService _supplierService;
-        public PurchaseOrderController(IPurchaseOrderService service, ISupplierService supplierService)
+        private readonly IStockInService _stockInService;
+        public PurchaseOrderController(IPurchaseOrderService service, ISupplierService supplierService, IStockInService stockInService)
         {
             _service = service;
             _supplierService = supplierService;
+            _stockInService = stockInService;
         }
         public IActionResult Index() => View(); // renamed from Index1 so /PurchaseOrder maps correctly
         public async Task<IActionResult> FillForm(int id)
@@ -58,5 +60,8 @@ namespace MitraKaryaSystem.Controllers
 
             return Json(new { id = po.ID, supplierID = po.SupplierID, supplierName = supplierName, amount = po.Amount, date = po.Date.ToString("yyyy-MM-dd") });
         }
+
+        [HttpPost]
+        public async Task<JsonResult> CreateStockIn(int poId) => Json(await _stockInService.CreateFromPurchaseOrder(poId));
     }
 }

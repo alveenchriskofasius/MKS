@@ -37,8 +37,21 @@ namespace MitraKaryaSystem.Security
 
             if (!hasPermission)
             {
-                // redirect to AccessDenied page
-                context.Result = new RedirectToActionResult("AccessDenied", "Auth", null);
+                // For AJAX/API requests, return JSON 403 instead of HTML redirect
+                var request = context.HttpContext.Request;
+                bool isAjax = request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                    || (request.Headers["Accept"].ToString().Contains("application/json"));
+                if (isAjax)
+                {
+                    context.Result = new JsonResult(new { success = false, error = "You don't have permission to perform this action." })
+                    {
+                        StatusCode = 403
+                    };
+                }
+                else
+                {
+                    context.Result = new RedirectToActionResult("AccessDenied", "Auth", null);
+                }
             }
 
             return Task.CompletedTask;

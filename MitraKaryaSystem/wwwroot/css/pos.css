@@ -9,8 +9,11 @@
 .pos-search-wrap .icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:1.1rem;}
 .pos-hint{font-size:.72rem;color:#94a3b8;margin-top:.25rem;}
 /* Suggestion dropdown */
-.pos-suggest{border-radius:12px;border:1px solid var(--mks-gray-200, #dee2e6);}
-.pos-suggest-item{font-size:.9rem;}
+.pos-suggest{position:absolute;z-index:1050;background:#fff;width:100%;max-height:300px;overflow:auto;border-radius:12px;border:1px solid var(--mks-gray-200, #dee2e6);}
+.pos-suggest-item{padding:8px 12px;cursor:pointer;font-size:.9rem;}
+.pos-suggest-item.active{background:#e9f2ff;}
+.pos-suggest-item:hover{background:#f1f5fb;}
+.pos-suggest-item.disabled{opacity:.55;cursor:not-allowed;}
 .pos-suggest-item .match{background:rgba(37,99,235,.12);padding:0 2px;border-radius:3px;}
 /* Order table */
 #posOrderTable thead th{position:sticky;top:0;z-index:5;font-size:.75rem;text-transform:uppercase;letter-spacing:.4px;color:var(--mks-gray-600, #475569);font-weight:600;}

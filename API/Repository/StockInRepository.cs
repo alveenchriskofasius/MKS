@@ -374,11 +374,12 @@ namespace API.Repository
 
         public async Task<object> CreateFromPurchaseOrder(int poId)
         {
+            using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
                 var po = await _context.Trades.FindAsync(poId);
                 if (po == null) return new { success = false, result = "Purchase Order not found." };
-                if ((po.StatusID ?? 1) != 3) return new { success = false, result = "Purchase Order must be Approved." };
+                if ((po.StatusID ?? 1) != 3) return new { success = false, result = $"Purchase Order must be Approved. Current status: {po.StatusID}" };
 
                 // Check if there is already an unverified Stock In for this PO
                 var existingUnverified = await _context.Trades
@@ -400,6 +401,15 @@ namespace API.Repository
                     .GroupBy(si => si.ProductID)
                     .Select(g => new { ProductID = g.Key, TotalQty = g.Sum(x => x.Quantity) })
                     .ToListAsync();
+
+                // Check if there are any remaining items to receive
+                var hasRemainingItems = poItems.Any(poItem =>
+                {
+                    var received = receivedByProduct.FirstOrDefault(x => x.ProductID == poItem.ProductID)?.TotalQty ?? 0;
+                    return (poItem.Quantity - received) > 0;
+                });
+                if (!hasRemainingItems)
+                    return new { success = false, result = "All items from this Purchase Order have already been received via Stock In." };
 
                 var noResult = await _procedure.uspGenerateNoAsync("SI", DateTime.Now);
                 var generatedNo = noResult.FirstOrDefault()?.NewNumber ?? string.Empty;
@@ -437,11 +447,15 @@ namespace API.Repository
                 {
                     try { await _audit.WriteAsync("StockIn", "CreateFromPO", trade.ID.ToString(), new { trade.No, poId, poNo = po.No }); } catch { }
                 }
+
+                await tx.CommitAsync();
                 return new { success = true, id = trade.ID, no = trade.No };
             }
             catch (Exception e)
             {
-                return new { success = false, result = e.Message };
+                await tx.RollbackAsync();
+                var msg = e.InnerException != null ? $"{e.Message} | Inner: {e.InnerException.Message}" : e.Message;
+                return new { success = false, result = msg };
             }
         }
 

@@ -1,0 +1,88 @@
+@{
+    ViewData["Title"] = "Price List & History";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-tags fa-lg"></i>
+                <h5 class="mb-0">Price List & History</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabPriceList">Price List</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabHistory">Price History</a></li>
+            </ul>
+            <div class="tab-content">
+                <!-- Price List Tab -->
+                <div class="tab-pane fade show active" id="tabPriceList">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="tablePriceList">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>Supplier</th>
+                                    <th class="text-end">Base Price</th>
+                                    <th class="text-center">Discount</th>
+                                    <th class="text-end">Effective Price</th>
+                                    <th class="text-end">Stock</th>
+                                    <th>Last Changed</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Price History Tab -->
+                <div class="tab-pane fade" id="tabHistory">
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body py-2">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold mb-1">Product</label>
+                                    <select class="form-select form-select-sm" id="histProduct">
+                                        <option value="">All Products</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold mb-1">From</label>
+                                    <input type="date" class="form-control form-control-sm" id="histFrom" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold mb-1">To</label>
+                                    <input type="date" class="form-control form-control-sm" id="histTo" />
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-sm btn-primary w-100" id="btnHistFilter"><i class="fa fa-search me-1"></i>Filter</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="tableHistory">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th class="text-end">Old Price</th>
+                                    <th class="text-end">New Price</th>
+                                    <th class="text-center">Change</th>
+                                    <th>Source</th>
+                                    <th>Changed By</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/PriceHistory.js" asp-append-version="true"></script>
+}

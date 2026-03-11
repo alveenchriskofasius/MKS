@@ -1,0 +1,167 @@
+@{
+    ViewData["Title"] = "Consignment";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-handshake fa-lg"></i>
+                <h5 class="mb-0">Consignment — Barang Titipan</h5>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-light" id="btnNewConsignment">
+                    <i class="fa-solid fa-plus"></i> New Consignment
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <!-- Left: Consignment List -->
+                <div class="col-md-4 col-lg-3 border-end" style="min-height:600px">
+                    <div class="p-3">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text bg-white"><i class="fa fa-search text-muted"></i></span>
+                            <input type="text" class="form-control" id="conSearch" placeholder="Search…">
+                        </div>
+                        <!-- Status filter pills -->
+                        <div class="d-flex gap-1 mb-3">
+                            <button class="btn btn-sm btn-primary con-status-filter active" data-status="all">All</button>
+                            <button class="btn btn-sm btn-outline-success con-status-filter" data-status="1">Active</button>
+                            <button class="btn btn-sm btn-outline-secondary con-status-filter" data-status="2">Settled</button>
+                        </div>
+                        <ul class="cust-list" id="conList">
+                            <li class="text-center text-muted py-4"><small>Loading…</small></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Right: Detail Panel -->
+                <div class="col-md-8 col-lg-9">
+                    <div id="conDetailPanel" class="p-3">
+                        <div class="empty-state">
+                            <i class="fa fa-handshake"></i>
+                            <p>Select a consignment or create a new one</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New/Edit Consignment Modal -->
+<div class="modal fade" id="conModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff">
+                <h5 class="modal-title" id="conModalTitle"><i class="fa fa-handshake me-2"></i>New Consignment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="conForm" novalidate>
+                    <input type="hidden" id="conID" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="conDate" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Supplier <span class="text-danger">*</span></label>
+                        <select class="form-select" id="conSupplier" required>
+                            <option value="">-- Select Supplier --</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a supplier.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Sales Person Name</label>
+                        <input type="text" class="form-control" id="conSalesPerson" placeholder="Nama sales yang datang" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Note</label>
+                        <textarea class="form-control" id="conNote" rows="2" placeholder="Catatan…"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveCon">
+                    <span class="spinner-border spinner-border-sm d-none"></span>
+                    <i class="fa fa-save me-1"></i>Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#065f46,#10b981);color:#fff">
+                <h5 class="modal-title"><i class="fa fa-box me-2"></i>Add Consignment Item</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addItemForm" novalidate>
+                    <input type="hidden" id="itemConID" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Product <span class="text-danger">*</span></label>
+                        <select class="form-select" id="itemProduct" required>
+                            <option value="">-- Select Product --</option>
+                        </select>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Qty <span class="text-danger">*</span></label>
+                            <input type="number" min="1" class="form-control" id="itemQty" required value="1" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Buy Price <span class="text-danger">*</span></label>
+                            <input type="number" min="0" class="form-control" id="itemBuyPrice" required placeholder="0" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Sell Price <span class="text-danger">*</span></label>
+                            <input type="number" min="0" class="form-control" id="itemSellPrice" required placeholder="0" />
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="btnAddItem">
+                    <span class="spinner-border spinner-border-sm d-none"></span>
+                    <i class="fa fa-plus me-1"></i>Add
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Record Sale/Return Modal -->
+<div class="modal fade" id="recordModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header" id="recordModalHeader" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff">
+                <h5 class="modal-title" id="recordModalTitle">Record</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="recordItemID" />
+                <input type="hidden" id="recordAction" />
+                <div class="mb-2">
+                    <label class="form-label fw-semibold small">Available: <span id="recordAvailable" class="text-primary">0</span></label>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Quantity <span class="text-danger">*</span></label>
+                    <input type="number" min="1" class="form-control" id="recordQty" value="1" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnRecord">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Consignment.js" asp-append-version="true"></script>
+}

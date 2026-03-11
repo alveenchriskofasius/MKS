@@ -144,6 +144,13 @@ namespace API.Repository
             try
             {
                 model.PurchaseOrderDetails ??= new List<PurchaseOrderDetailModel>();
+
+                // Validate: SupplierID is required for Purchase Order
+                if (model.SupplierID == null || model.SupplierID == 0)
+                {
+                    return (false, "Supplier is required", 0);
+                }
+
                 Trade tradeEntity;
                 bool isNew = model.ID == 0;
 

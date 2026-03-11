@@ -42,14 +42,21 @@
           <label class="btn btn-outline-primary" for="posPayDebt"><i class="fa fa-clock me-1"></i>Debt</label>
         </div>
         <div class="mb-3" id="posTenderWrap">
-          <label class="form-label small fw-semibold">Cash Received</label>
+          <label class="form-label small fw-semibold" id="posTenderLabel">Cash Received</label>
           <input type="number" id="posTender" class="form-control form-control-sm" min="0" step="0.01" />
-          <div class="d-flex justify-content-between mt-1">
+          <div class="d-flex justify-content-between mt-1" id="posChangeWrap">
             <span class="small text-muted">Change:</span>
             <span class="small fw-bold text-success" id="posChange">Rp 0</span>
           </div>
+          <div class="d-flex justify-content-between mt-1 d-none" id="posDebtWrap">
+            <span class="small text-muted">Remaining Debt:</span>
+            <span class="small fw-bold text-danger" id="posDebt">Rp 0</span>
+          </div>
         </div>
-        <button class="btn btn-success w-100 pos-pay-btn" id="posBtnPay" disabled><i class="fa fa-shopping-cart me-1"></i> Pay & Save</button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success flex-grow-1 pos-pay-btn" id="posBtnPay" disabled><i class="fa fa-shopping-cart me-1"></i> Pay & Save</button>
+          <button class="btn btn-info" id="posBtnQris" disabled title="Pay with QRIS"><i class="fa fa-qrcode"></i></button>
+        </div>
       </div>
     </div>
 
@@ -91,6 +98,7 @@
               <th>Date</th>
               <th class="text-end">Amount</th>
               <th class="text-end">Paid</th>
+              <th>Payment</th>
               <th>Customer</th>
               <th>Status</th>
               <th>Cashier</th>
@@ -107,6 +115,38 @@
   </div>
 </div>
 
+<!-- QRIS Modal -->
+<div class="modal fade" id="qrisModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white py-2">
+        <h6 class="modal-title"><i class="fa fa-qrcode me-1"></i> Scan QRIS to Pay</h6>
+      </div>
+      <div class="modal-body text-center">
+        <div id="qrisLoading" class="py-4"><div class="spinner-border text-info"></div><div class="mt-2 text-muted">Generating QR Code...</div></div>
+        <div id="qrisContent" style="display:none;">
+          <img id="qrisImage" src="" alt="QRIS" class="img-fluid mb-3" style="max-width:240px;" />
+          <div class="fw-bold fs-5 mb-1" id="qrisAmount"></div>
+          <div class="small text-muted mb-3">Scan with any e-wallet / mobile banking</div>
+          <div id="qrisStatus" class="mb-2">
+            <span class="badge text-bg-warning"><i class="fa fa-clock me-1"></i>Waiting for payment...</span>
+          </div>
+        </div>
+        <div id="qrisDone" style="display:none;">
+          <i class="fa fa-check-circle text-success fa-3x mb-2"></i>
+          <div class="fw-bold text-success fs-5">Payment Received!</div>
+        </div>
+        <div id="qrisError" style="display:none;" class="text-danger"></div>
+      </div>
+      <div class="modal-footer py-1">
+        <button class="btn btn-secondary btn-sm" id="qrisBtnCancel"><i class="fa fa-times me-1"></i>Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@await Html.PartialAsync("_PaymentInModal")
 @section Scripts{
+  <script src="~/js/PaymentIn.js" asp-append-version="true"></script>
   <script src="~/js/Pos.js" asp-append-version="true"></script>
 }

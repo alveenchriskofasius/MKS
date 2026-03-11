@@ -1,0 +1,64 @@
+@{
+    ViewData["Title"] = "Purchase Invoice";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-file-invoice fa-lg"></i>
+                <h5 class="mb-0">Purchase Invoice</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Supplier</label>
+                    <select id="filterSupplier" class="form-select form-select-sm"><option value="">All</option></select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">From</label>
+                    <input type="date" class="form-control form-control-sm" id="filterFrom" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">To</label>
+                    <input type="date" class="form-control form-control-sm" id="filterTo" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Status</label>
+                    <select class="form-select form-select-sm" id="filterStatus">
+                        <option value="">All</option>
+                        <option value="1">Draft</option>
+                        <option value="2">Issued</option>
+                        <option value="3">Partially Paid</option>
+                        <option value="4">Paid</option>
+                        <option value="9">Canceled</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button class="btn btn-primary btn-sm" id="btnSearch"><i class="fa fa-search"></i> Search</button>
+                    <button class="btn btn-outline-secondary btn-sm" id="btnReset"><i class="fa fa-rotate-right"></i> Reset</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle" id="tablePurchaseInvoice" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>No</th>
+                            <th>Date</th>
+                            <th>Supplier</th>
+                            <th class="text-end">Amount</th>
+                            <th class="text-end">Paid</th>
+                            <th>Status</th>
+                            <th style="width:120px"></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/PurchaseInvoice.js" asp-append-version="true"></script>
+    <script src="~/js/Common.js" asp-append-version="true"></script>
+}

@@ -42,7 +42,16 @@ function UpdatePOButtons(statusID) {
     $('#filterSupplier').prop('disabled', isLocked);
 }
 
-let POButtons = { Init: function () { $('#buttonSave').click(function (e) { e.preventDefault(); let table = $('#tablePurchaseOrderProduct').DataTable(); if (table.rows().count() <= 0) { toastr.info('Insert at least 1 product', 'Cannot save'); return; } PurchaseOrderForm.Save(); }); $('#buttonNew').click(function () { PurchaseOrderForm.Reset(); }); $('#buttonSearch').click(function () { POTable.Search(); }); $('#buttonPrint').click(function () { const id = parseInt($('#purchaseOrderID').val() || '0', 10); if (!id) { toastr.info('Save Purchase Order first'); return; } MksPrint.purchaseOrder(); }); } };
+let POButtons = { Init: function () { $('#buttonSave').click(function (e) { e.preventDefault(); 
+        // Validate supplier is selected
+        const supplierId = $('#filterSupplier').val();
+        if (!supplierId || supplierId === '' || supplierId === '0') {
+            $('#filterSupplier').addClass('is-invalid');
+            toastr.warning('Please select a supplier', 'Supplier required');
+            return;
+        }
+        $('#filterSupplier').removeClass('is-invalid');
+        let table = $('#tablePurchaseOrderProduct').DataTable(); if (table.rows().count() <= 0) { toastr.info('Insert at least 1 product', 'Cannot save'); return; } PurchaseOrderForm.Save(); }); $('#buttonNew').click(function () { PurchaseOrderForm.Reset(); }); $('#buttonSearch').click(function () { POTable.Search(); }); $('#buttonPrint').click(function () { const id = parseInt($('#purchaseOrderID').val() || '0', 10); if (!id) { toastr.info('Save Purchase Order first'); return; } MksPrint.purchaseOrder(); }); } };
 
 // Approval workflow actions (require server permission + Admin role)
 async function POChangeStatus(action, extra) {
@@ -89,14 +98,19 @@ $(document).on('click', '#buttonCreateStockIn', async function (e) {
     const $btn = $(this);
     $btn.prop('disabled', true);
     try {
-        const res = await Common.Api.fetchJson(`/StockIn/CreateFromPO?poId=${id}`, { method: 'POST' });
+        const res = await Common.Api.fetchJson(`/PurchaseOrder/CreateStockIn?poId=${id}`, { method: 'POST' });
         if (res && res.success) {
             toastr.success('Stock In created: ' + (res.no || ''));
             window.location.href = '/StockIn?loadId=' + (res.id || '');
         } else {
-            toastr.error(res && (res.result || res.error) ? (res.result || res.error) : 'Failed');
+            const errMsg = res && (res.result || res.error) ? (res.result || res.error) : 'Failed';
+            console.error('CreateFromPO failed:', res);
+            toastr.error(errMsg);
         }
-    } catch (err) { toastr.error(err && err.message ? err.message : 'Request failed'); }
+    } catch (err) { 
+        console.error('CreateFromPO error:', err);
+        toastr.error(err && err.message ? err.message : 'Request failed'); 
+    }
     finally { $btn.prop('disabled', false); }
 });
 
@@ -270,6 +284,18 @@ let POControl = {
             UpdatePOStatusBadge(statusID);
 
             UpdatePOButtons(statusID);
+
+            // Sync supplier dropdown with loaded PO
+            const loadedSupplierId = $('#purchaseOrderSupplierID').val() || '';
+            if (loadedSupplierId && loadedSupplierId !== '0') {
+                $('#filterSupplier').val(loadedSupplierId).trigger('change.select2');
+                $('#filterSupplier').data('prev', loadedSupplierId);
+            } else if (id === 0) {
+                // New PO: reset to placeholder
+                $('#filterSupplier').val('').trigger('change.select2');
+                $('#filterSupplier').removeClass('is-invalid');
+                $('#filterSupplier').data('prev', '');
+            }
 
             // apply UI locking: hide delete buttons and make qty read-only when status is Paid or PartialPaid accordingly
             setTimeout(function () {

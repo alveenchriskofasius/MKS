@@ -2,14 +2,21 @@
 @using Microsoft.AspNetCore.Http
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
 <ul class="navbar-nav ms-auto d-flex flex-row align-items-center gap-2">
-    @if (User?.Claims?.Any(c => string.Equals(c.Type, "Permission", StringComparison.OrdinalIgnoreCase) && string.Equals(c.Value, "Product", StringComparison.OrdinalIgnoreCase)) == true)
-    {
-        <li class="nav-item">
-            <a asp-controller="Stock" asp-action="Low" class="nav-link px-2" title="Low Stock">
-                <i class="fas fa-exclamation-triangle text-warning"></i>
-            </a>
-        </li>
-    }
+    <li class="nav-item dropdown">
+        <a class="nav-link px-2 position-relative" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Notifications" id="navAlertBell">
+            <i class="fas fa-bell"></i>
+            <span id="alertBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none;font-size:.65rem;"></span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end shadow-lg p-0" style="width:380px;max-height:480px;overflow:hidden;" id="alertDropdown">
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom bg-light">
+                <span class="fw-semibold"><i class="fa fa-bell me-1"></i> Notifications</span>
+                <a href="/Notification" class="small text-decoration-none">View All</a>
+            </div>
+            <div id="alertDropdownBody" style="max-height:400px;overflow-y:auto;">
+                <div class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm"></div></div>
+            </div>
+        </div>
+    </li>
     <li class="nav-item">
         <span class="nav-link px-2 text-muted"><i class="fas fa-user-circle me-1"></i>@User.Identity.Name</span>
     </li>

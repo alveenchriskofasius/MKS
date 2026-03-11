@@ -34,8 +34,8 @@
             <!-- Product selection (outside card to avoid overflow clipping) -->
             <div class="row g-3 align-items-end mb-3">
                 <div class="col-md-5">
-                    <label class="form-label small fw-semibold">Supplier</label>
-                    <select id="filterSupplier" class="form-control"></select>
+                    <label class="form-label small fw-semibold">Supplier <span class="text-danger">*</span></label>
+                    <select id="filterSupplier" class="form-control" required></select>
                 </div>
                 <div class="col-md-5">
                     <label class="form-label small fw-semibold"><i class="fa fa-cart-plus me-1 text-primary"></i> Add Product</label>
@@ -57,7 +57,10 @@
             <div class="card mt-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span class="fw-semibold"><i class="fa fa-money-bill-wave me-1 text-muted"></i> Payments</span>
-                    <button id="btnAddPaymentOut" class="btn btn-outline-primary btn-sm"><i class="fa fa-plus"></i> Add Payment</button>
+                    @if (User.HasClaim("Permission", "Payment Out"))
+                    {
+                        <button id="btnAddPaymentOut" class="btn btn-outline-primary btn-sm"><i class="fa fa-plus"></i> Add Payment</button>
+                    }
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -79,7 +82,10 @@
                 <button type="button" class="btn btn-outline-success d-none" id="buttonApprovePO"><i class="fa fa-check"></i> Approve</button>
                 <button type="button" class="btn btn-outline-danger d-none" id="buttonRejectPO"><i class="fa fa-xmark"></i> Reject</button>
             }
-            <button type="button" class="btn btn-outline-primary d-none" id="buttonCreateStockIn"><i class="fa fa-boxes-stacked"></i> Create Stock In</button>
+            @if (User.HasClaim("Permission", "Stock In"))
+            {
+                <button type="button" class="btn btn-outline-primary d-none" id="buttonCreateStockIn"><i class="fa fa-boxes-stacked"></i> Create Stock In</button>
+            }
             <a class="btn btn-secondary ms-auto" asp-action="Index" asp-controller="Home" id="buttonCancel"><i class="fa fa-arrow-left"></i> Back</a>
         </div>
     </div>
@@ -162,7 +168,7 @@
                         if(list && list.length>0){ supData = list; break; }
                     }catch(e){}
                 }
-                $('#filterSupplier').append($('<option>').val('').text('All suppliers'));
+                $('#filterSupplier').append($('<option>').val('').text('-- Select supplier --'));
                 (supData||[]).forEach(function(s){
                     var id = s.id || s.ID || s.ID;
                     var name = s.supplierName || s.SupplierName || s.name || s.Name || (s.SupplierName && s.SupplierName) || '-';

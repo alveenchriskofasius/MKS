@@ -15,18 +15,21 @@ namespace MitraKaryaSystem.Controllers
         private readonly IProductService _productService;
         private readonly IDeliveryOrderService _deliveryOrderService;
         private readonly IPurchaseOrderService _purchaseOrderService;
+        private readonly INotificationService _notificationService;
 
         public HomeController(ILogger<HomeController> logger,
                               ISalesOrderService salesOrderService,
                               IProductService productService,
                               IDeliveryOrderService deliveryOrderService,
-                              IPurchaseOrderService purchaseOrderService)
+                              IPurchaseOrderService purchaseOrderService,
+                              INotificationService notificationService)
         {
             _logger = logger;
             _salesOrderService = salesOrderService;
             _productService = productService;
             _deliveryOrderService = deliveryOrderService;
             _purchaseOrderService = purchaseOrderService;
+            _notificationService = notificationService;
         }
 
         public IActionResult Index() => View();
@@ -161,6 +164,20 @@ namespace MitraKaryaSystem.Controllers
             {
                 _logger.LogError(ex, "PendingPurchaseOrders failed");
                 return Json(new { success = false, result = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> AlertCount()
+        {
+            try
+            {
+                var count = await _notificationService.GetCount();
+                return Json(new { success = true, count });
+            }
+            catch
+            {
+                return Json(new { success = true, count = 0 });
             }
         }
     }

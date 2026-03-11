@@ -1,4 +1,9 @@
 ﻿var Common = {
+ hasPermission: function (name) {
+  var perms = window.__userPermissions || [];
+  var key = (name || '').replace(/\s/g, '').toLowerCase();
+  return perms.some(function (p) { return (p || '').replace(/\s/g, '').toLowerCase() === key; });
+ },
  getCsrfToken: function () {
  // Try common sources: hidden input, meta tag, then cookie
  const $input = $('input[name="__RequestVerificationToken"], input[name="_RequestVerificationToken"]');
@@ -55,6 +60,13 @@
  const err = new Error(msg);
  err.status = res.status;
  err.data = data;
+ throw err;
+ }
+ // Detect Access Denied HTML redirect (server returns 200 with HTML after 302)
+ if (data == null && typeof text === 'string' && text.includes('Access Denied')) {
+ const err = new Error('You don\'t have permission to perform this action. Please contact your administrator.');
+ err.status = 403;
+ err.accessDenied = true;
  throw err;
  }
  return data != null ? data : text;

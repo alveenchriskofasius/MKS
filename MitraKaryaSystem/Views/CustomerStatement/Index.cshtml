@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "Customer Statement";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-file-lines fa-lg"></i>
+                <h5 class="mb-0">Customer Statement / Ledger</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Filters -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold mb-1">Customer</label>
+                            <select class="form-select form-select-sm" id="csCustomer">
+                                <option value="">— Select Customer —</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold mb-1">From</label>
+                            <input type="date" class="form-control form-control-sm" id="csFrom" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold mb-1">To</label>
+                            <input type="date" class="form-control form-control-sm" id="csTo" />
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-sm btn-primary w-100" id="btnCsGenerate"><i class="fa fa-search me-1"></i>Generate</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards (hidden until data loaded) -->
+            <div class="row g-3 mb-4 d-none" id="csSummaryRow">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Total Invoiced</div>
+                            <div class="fw-bold fs-5 text-primary" id="csTotalInvoiced">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Total Paid</div>
+                            <div class="fw-bold fs-5 text-success" id="csTotalPaid">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Deposit</div>
+                            <div class="fw-bold fs-5 text-info" id="csTotalDeposit">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Outstanding</div>
+                            <div class="fw-bold fs-5 text-danger" id="csOutstanding">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statement Table -->
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0" id="tableStatement">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>No</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th class="text-end">Debit</th>
+                            <th class="text-end">Credit</th>
+                            <th class="text-end">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="7" class="text-center text-muted py-4">Select a customer and click "Generate"</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/CustomerStatement.js" asp-append-version="true"></script>
+}

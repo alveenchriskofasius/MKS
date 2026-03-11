@@ -1,0 +1,127 @@
+@{
+    ViewData["Title"] = "Reports";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-chart-bar fa-lg"></i>
+                <h5 class="mb-0">Reports</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:var(--mks-primary-light,#e8f0fe)">
+                                    <i class="fa fa-arrow-up-right-dots text-primary fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small">Total Sales</div>
+                                    <div class="fw-bold fs-5" id="totalSales">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:#fef3cd">
+                                    <i class="fa fa-cart-shopping text-warning fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small">Total Purchases</div>
+                                    <div class="fw-bold fs-5" id="totalPurchases">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:#d1e7dd">
+                                    <i class="fa fa-hand-holding-dollar text-success fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small">Payment In</div>
+                                    <div class="fw-bold fs-5" id="totalPaymentIn">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:#f8d7da">
+                                    <i class="fa fa-money-bill-wave text-danger fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small">Payment Out</div>
+                                    <div class="fw-bold fs-5" id="totalPaymentOut">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Table -->
+            <div class="card mb-4">
+                <div class="card-header fw-semibold"><i class="fa fa-file-invoice-dollar me-2"></i>Sales Orders</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="tableSalesReport">
+                            <thead class="table-light">
+                                <tr><th>No</th><th>Date</th><th>Customer</th><th class="text-end">Amount</th><th>Status</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Purchase Table -->
+            <div class="card mb-4">
+                <div class="card-header fw-semibold"><i class="fa fa-cart-shopping me-2"></i>Purchase Orders</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="tablePurchaseReport">
+                            <thead class="table-light">
+                                <tr><th>No</th><th>Date</th><th>Supplier</th><th class="text-end">Amount</th><th>Status</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock Table -->
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="fa fa-triangle-exclamation me-2 text-warning"></i>Low Stock Products</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" id="tableLowStock">
+                            <thead class="table-light">
+                                <tr><th>Product</th><th class="text-end">Stock</th><th class="text-end">Min Stock</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/Report.js" asp-append-version="true"></script>
+    <script src="~/js/Common.js" asp-append-version="true"></script>
+}
