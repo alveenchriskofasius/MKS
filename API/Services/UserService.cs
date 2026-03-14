@@ -44,5 +44,10 @@ namespace API.Services
         {
             return await _userRepository.SaveUserRoles(userId, roleIds);
         }
+
+        public async Task<object> GetDriverList()
+        {
+            return await _userRepository.GetDriverList();
+        }
     }
 }

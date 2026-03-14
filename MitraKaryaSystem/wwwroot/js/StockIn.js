@@ -420,16 +420,35 @@ let FormStockIn = {
  }
  }).catch(err => toastr.error(err.message || 'Error load data'));
  },
- LoadApprovedPOs: function(callback) {
-   Common.Api.get('/StockIn/GetApprovedPOs').then(data => {
-     var $sel = $('#stockInPO');
-     var current = $sel.val();
-     $sel.find('option:not(:first)').remove();
-     if (Array.isArray(data)) {
-       data.forEach(function(po) { $sel.append($('<option></option>').val(po.id).text(po.no + ' (' + Common.Format.Date(po.date) + ')')); });
-     }
-     if (current) $sel.val(current);
-     if (typeof callback === 'function') callback();
-   }).catch(() => {});
- }
-};
+   LoadApprovedPOs: function(callback) {
+     Common.Api.get('/StockIn/GetApprovedPOs').then(data => {
+       var $sel = $('#stockInPO');
+       var current = $sel.val();
+       $sel.find('option:not(:first)').remove();
+       if (Array.isArray(data)) {
+         data.forEach(function(po) { $sel.append($('<option></option>').val(po.id).text(po.no + ' (' + Common.Format.Date(po.date) + ')')); });
+       }
+       if (current) $sel.val(current);
+       // Bind PO change handler for auto-load items
+       $sel.off('change.poAutoLoad').on('change.poAutoLoad', function() {
+         var poId = parseInt($(this).val() || '0', 10);
+         if (!poId) return;
+         var existingId = parseInt($('#stockInID').val() || '0', 10);
+         if (existingId > 0) return; // already saved, don't auto-create
+         Swal.fire({ title: 'Loading PO items...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+         Common.Api.post('/StockIn/CreateFromPO', { poId: poId })
+           .then(res => {
+             Swal.close();
+             if (res && res.success) {
+               toastr.success('Stock In created from PO');
+               FormStockIn.FillForm(res.id || res.ID, true);
+             } else {
+               toastr.error((res && res.result) || 'Failed to create from PO');
+             }
+           })
+           .catch(() => { Swal.close(); toastr.error('Error creating Stock In from PO'); });
+       });
+       if (typeof callback === 'function') callback();
+     }).catch(() => {});
+   }
+ };

@@ -12,7 +12,7 @@ namespace MitraKaryaSystem.Controllers
     {
         private readonly ICategoryService _service;
         public CategoryController(ICategoryService service) => _service = service;
-        public IActionResult Index() => View();
+        public IActionResult Index() => RedirectToAction("Index", "MasterSetting");
         public async Task<JsonResult> GetList() => Json(await _service.GetCategoryList());
         [HttpPost]
         public async Task<IActionResult> FillForm(int id) => PartialView("_CategoryModal", await _service.FillFormCategory(id));

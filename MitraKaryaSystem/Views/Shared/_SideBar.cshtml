@@ -202,21 +202,12 @@
                         </a>
                     </li>
                 }
-                @if(CanSee("Category"))
+                @if(CanSee("Category") || CanSee("Unit"))
                 {
                     <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Category" class="nav-link">
-                            <i class="fa-solid fa-tags"></i>
-                            <p>Categories</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Unit"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Unit" class="nav-link">
-                            <i class="fa-solid fa-ruler"></i>
-                            <p>Units</p>
+                        <a asp-action="Index" asp-controller="MasterSetting" class="nav-link">
+                            <i class="fa-solid fa-cogs"></i>
+                            <p>Master Settings</p>
                         </a>
                     </li>
                 }

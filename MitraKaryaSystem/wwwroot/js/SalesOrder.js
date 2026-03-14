@@ -257,7 +257,7 @@ const deliveryOrderModal = {
             .catch(() => toastr.error('Failed load DO'));
     },
     loadDrivers: function (callback) { 
-        Common.Api.get('/User/GetUserList')
+        Common.Api.get('/DeliveryOrder/GetDrivers')
             .then(list => { 
                 let data = list; 
                 if (list && list.result) data = list.result; 

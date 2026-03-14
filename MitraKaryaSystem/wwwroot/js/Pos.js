@@ -322,7 +322,16 @@
   }
 
   function init(){
-    $.get('/Customer/GetList', list=>{ const arr = Array.isArray(list)?list:(list&&list.result)?list.result:[]; const $sel=$('#posCustomer').empty(); $sel.append('<option value="0">Umum</option>'); arr.forEach(c=>$sel.append(`<option value='${c.id||c.ID}'>${c.name||c.Name}</option>`)); });
+    $.get('/Pos/GetCustomerList')
+      .done(list => {
+        const arr = Array.isArray(list) ? list : (list && list.result) ? list.result : [];
+        const $sel = $('#posCustomer').empty();
+        $sel.append('<option value="0">Umum</option>');
+        arr.forEach(c => $sel.append(`<option value='${c.id || c.ID}'>${c.name || c.Name}</option>`));
+      })
+      .fail(xhr => {
+        $('#posCustomer').empty().append('<option value="0">Umum</option>');
+      });
     wireSearch(); wireTable();
     $('#posTender').on('input change', recalc);
     $('#posBtnPay').on('click', submit);

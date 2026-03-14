@@ -132,5 +132,24 @@ namespace API.Repository
             }
             return new { success = true };
         }
+
+        public async Task<object> GetDriverList()
+        {
+            var driverRoleIds = await _context.Roles
+                .Where(r => r.Name.ToLower() == "driver")
+                .Select(r => r.ID)
+                .ToListAsync();
+
+            var driverUserIds = await _context.UserRoles
+                .Where(ur => ur.RoleID != null && driverRoleIds.Contains(ur.RoleID.Value))
+                .Select(ur => ur.UserID)
+                .Distinct()
+                .ToListAsync();
+
+            return await _context.Users
+                .Where(u => u.Active && driverUserIds.Contains(u.ID))
+                .Select(u => new { ID = u.ID, Name = u.Name, UserName = u.UserName })
+                .ToListAsync();
+        }
     }
 }

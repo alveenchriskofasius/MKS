@@ -1,3 +1,7 @@
 ﻿@{
-    Layout = "_Layout";
+    var useTopBar = User?.Claims?.Any(c =>
+        string.Equals(c.Type, System.Security.Claims.ClaimTypes.Role, StringComparison.OrdinalIgnoreCase) &&
+        (string.Equals(c.Value, "Kasir", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(c.Value, "Driver", StringComparison.OrdinalIgnoreCase))) == true;
+    Layout = useTopBar ? "_LayoutTopBar" : "_Layout";
 }

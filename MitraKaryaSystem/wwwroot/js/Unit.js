@@ -1,4 +1,4 @@
-$(document).ready(function () { UnitPage.init(); });
+$(document).ready(function () { if ($('#tableUnit').length) UnitPage.init(); });
 
 const UnitPage = {
     currentId: null,
@@ -10,7 +10,7 @@ const UnitPage = {
     },
 
     initButtons() {
-        $('#buttonAdd').off('click').on('click', () => this.loadForm(0));
+        $('#buttonAddUnit').off('click').on('click', () => this.loadForm(0));
         $('#unitSearch').on('input', () => this.renderTable());
     },
 
@@ -74,11 +74,11 @@ const UnitPage = {
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span class="fw-bold"><i class="fa fa-ruler me-2 text-primary"></i>${id ? 'Edit Unit' : 'New Unit'}</span>
-                        <button class="btn btn-sm btn-outline-secondary" id="btnCancelEdit"><i class="fa fa-times"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" id="btnCancelUnit"><i class="fa fa-times"></i></button>
                     </div>
                     <div class="card-body">${formHtml}</div>
                     <div class="card-footer text-end">
-                        <button class="btn btn-primary" id="buttonSave">
+                        <button class="btn btn-primary" id="buttonSaveUnit">
                             <span class="spinner-border spinner-border-sm d-none"></span>
                             <i class="fa fa-save me-1"></i>Save
                         </button>
@@ -92,18 +92,18 @@ const UnitPage = {
     },
 
     bindFormEvents() {
-        $('#buttonSave').off('click').on('click', function (e) {
+        $('#buttonSaveUnit').off('click').on('click', function (e) {
             e.preventDefault();
             const form = $('#unitForm')[0];
             if (form && !form.checkValidity()) { form.classList.add('was-validated'); return; }
             UnitPage.save();
         });
-        $('#btnCancelEdit').off('click').on('click', () => this.resetPanel());
+        $('#btnCancelUnit').off('click').on('click', () => this.resetPanel());
     },
 
     async save() {
         const formData = $('#unitForm').serializeArray().reduce((acc, cur) => { acc[cur.name] = cur.value; return acc; }, {});
-        const $btn = $('#buttonSave');
+        const $btn = $('#buttonSaveUnit');
         $btn.prop('disabled', true).find('.spinner-border').removeClass('d-none');
 
         try {

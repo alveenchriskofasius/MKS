@@ -6,6 +6,7 @@ const ReportPage = {
         this.loadPurchases();
         this.loadPayments();
         this.loadProducts();
+        $('#btnPrintReport').on('click', function () { MksPrint.report(); });
     },
 
     fmt(n) {

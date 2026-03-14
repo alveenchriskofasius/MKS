@@ -256,10 +256,18 @@ const dashboard = (function () {
 
     function init() {
         setDate();
-        loadSalesToday();
-        loadStockAlerts();
-        loadPendingPO();
-        loadPendingDO();
+        const role = (window.__dashRole || '').toLowerCase();
+        if (role === 'kasir') {
+            loadSalesToday();
+        } else if (role === 'driver') {
+            loadPendingDO();
+        } else {
+            // admin / other – load everything
+            loadSalesToday();
+            loadStockAlerts();
+            loadPendingPO();
+            loadPendingDO();
+        }
     }
 
     return { init };

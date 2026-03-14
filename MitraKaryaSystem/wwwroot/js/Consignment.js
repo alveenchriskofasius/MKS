@@ -48,6 +48,7 @@ const ConPage = {
             this.products = Array.isArray(list) ? list : (list && list.result ? list.result : []);
             const $p = $('#itemProduct').find('option:not(:first)').remove().end();
             this.products.forEach(p => $p.append(`<option value="${p.id || p.ID}" data-price="${p.unitPrice || p.UnitPrice || 0}">${p.name || p.Name}</option>`));
+            $('#noProductHint').toggle(this.products.length === 0);
             // auto-fill sell price on select
             $('#itemProduct').off('change').on('change', function () {
                 const price = $(this).find(':selected').data('price') || 0;
@@ -118,7 +119,7 @@ const ConPage = {
                     <h6 class="mb-0 fw-bold"><i class="fa fa-handshake me-2 text-primary"></i>${c.no}
                         <span class="badge ${ConStatusClass[c.statusID]} ms-2">${ConStatus[c.statusID]}</span>
                     </h6>
-                    <small class="text-muted">${c.date ? new Date(c.date).toLocaleDateString('id-ID', {dateStyle:'long'}) : ''}</small>
+                    <small class="text-muted">${c.date ? Common.Format.Date(c.date) : ''}</small>
                 </div>
                 <div class="d-flex gap-2">
                     ${isActive ? `<button class="btn btn-sm btn-outline-primary" onclick="ConPage.editCon(${c.id})"><i class="fa fa-pen me-1"></i>Edit</button>` : ''}

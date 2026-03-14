@@ -12,7 +12,7 @@ namespace MitraKaryaSystem.Controllers
     {
         private readonly IUnitService _service;
         public UnitController(IUnitService service) => _service = service;
-        public IActionResult Index() => View();
+        public IActionResult Index() => RedirectToAction("Index", "MasterSetting");
         public async Task<JsonResult> GetList() => Json(await _service.GetUnitList());
         [HttpPost]
         public async Task<IActionResult> FillForm(int id) => PartialView("_UnitModal", await _service.FillFormUnit(id));

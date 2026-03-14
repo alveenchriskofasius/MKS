@@ -101,7 +101,7 @@ const ExpensePage = {
                 const color = this.categoryColors[e.category] || '#6b7280';
                 $tbody.append(`<tr>
                     <td><span class="fw-semibold text-primary">${e.no}</span></td>
-                    <td>${e.date}</td>
+                    <td>${Common.Format.Date(e.date)}</td>
                     <td><i class="fa ${icon} me-1" style="color:${color}"></i>${e.category}</td>
                     <td class="text-truncate" style="max-width:200px">${e.description || '-'}</td>
                     <td class="text-end fw-semibold">Rp ${this.fmt(e.amount)}</td>

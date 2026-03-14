@@ -116,4 +116,4 @@ const doPages = (function () {
  return { init };
 })();
 
-$(document).ready(function () { doPages.init(); });
+$(document).ready(function () { if ($('#tableDeliveryOrder').length) doPages.init(); });

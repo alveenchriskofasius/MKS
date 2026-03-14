@@ -1,0 +1,114 @@
+@{
+	ViewData["Title"] = "Master Settings";
+	var rawPerms = User?.Claims?.Where(c => string.Equals(c.Type, "Permission", StringComparison.OrdinalIgnoreCase)).Select(c => c.Value).ToList() ?? new List<string>();
+	var permsNorm = new HashSet<string>(rawPerms.Select(p => (p ?? string.Empty).Replace(" ", "")), StringComparer.OrdinalIgnoreCase);
+	bool CanSee(string perm) => permsNorm.Contains((perm ?? "").Replace(" ", ""));
+
+	var showCategory = CanSee("Category");
+	var showUnit = CanSee("Unit");
+	var categoryActive = showCategory;
+	var unitActive = !showCategory && showUnit;
+}
+<div class="fade-slide-up">
+	<div class="card page-header-card">
+		<div class="card-header card-header-accent">
+			<div class="d-flex align-items-center gap-2">
+				<i class="fa fa-cogs fa-lg"></i>
+				<h5 class="mb-0">Master Settings</h5>
+			</div>
+		</div>
+		<div class="card-body">
+			<ul class="nav nav-tabs mb-3" id="masterSettingTabs" role="tablist">
+				@if (showCategory)
+				{
+					<li class="nav-item" role="presentation">
+						<button class="nav-link @(categoryActive ? "active" : "")" id="tab-category" data-bs-toggle="tab" data-bs-target="#pane-category" type="button" role="tab">
+							<i class="fa fa-tags me-1"></i> Categories
+						</button>
+					</li>
+				}
+				@if (showUnit)
+				{
+					<li class="nav-item" role="presentation">
+						<button class="nav-link @(unitActive ? "active" : "")" id="tab-unit" data-bs-toggle="tab" data-bs-target="#pane-unit" type="button" role="tab">
+							<i class="fa fa-ruler me-1"></i> Units
+						</button>
+					</li>
+				}
+			</ul>
+			<div class="tab-content" id="masterSettingContent">
+				@if (showCategory)
+				{
+					<div class="tab-pane fade @(categoryActive ? "show active" : "")" id="pane-category" role="tabpanel">
+						<div class="d-flex justify-content-between align-items-center mb-3">
+							<div class="input-group input-group-sm" style="max-width:300px">
+								<span class="input-group-text bg-white"><i class="fa fa-search text-muted"></i></span>
+								<input type="text" class="form-control" id="categorySearch" placeholder="Search categories…">
+							</div>
+							<button class="btn btn-sm btn-primary" id="buttonAddCategory"><i class="fa-solid fa-plus me-1"></i> New Category</button>
+						</div>
+						<div class="row">
+							<div class="col-md-6">
+								<div class="table-responsive">
+									<table class="table table-sm table-hover align-middle" id="tableCategory">
+										<thead class="table-light">
+											<tr>
+												<th>Name</th>
+												<th class="text-center" style="width:120px">Action</th>
+											</tr>
+										</thead>
+										<tbody></tbody>
+									</table>
+								</div>
+							</div>
+							<div class="col-md-6" id="categoryFormPanel">
+								<div class="empty-state">
+									<i class="fa fa-tags"></i>
+									<p>Select a category to edit or create a new one</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				}
+				@if (showUnit)
+				{
+					<div class="tab-pane fade @(unitActive ? "show active" : "")" id="pane-unit" role="tabpanel">
+						<div class="d-flex justify-content-between align-items-center mb-3">
+							<div class="input-group input-group-sm" style="max-width:300px">
+								<span class="input-group-text bg-white"><i class="fa fa-search text-muted"></i></span>
+								<input type="text" class="form-control" id="unitSearch" placeholder="Search units…">
+							</div>
+							<button class="btn btn-sm btn-primary" id="buttonAddUnit"><i class="fa-solid fa-plus me-1"></i> New Unit</button>
+						</div>
+						<div class="row">
+							<div class="col-md-6">
+								<div class="table-responsive">
+									<table class="table table-sm table-hover align-middle" id="tableUnit">
+										<thead class="table-light">
+											<tr>
+												<th>Name</th>
+												<th class="text-center" style="width:120px">Action</th>
+											</tr>
+										</thead>
+										<tbody></tbody>
+									</table>
+								</div>
+							</div>
+							<div class="col-md-6" id="unitFormPanel">
+								<div class="empty-state">
+									<i class="fa fa-ruler"></i>
+									<p>Select a unit to edit or create a new one</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+</div>
+@section Scripts {
+	<script src="~/js/Category.js" asp-append-version="true"></script>
+	<script src="~/js/Unit.js" asp-append-version="true"></script>
+	<script src="~/js/Common.js" asp-append-version="true"></script>
+}

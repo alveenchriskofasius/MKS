@@ -10,5 +10,6 @@ namespace API.Services.Interfaces
         public Task<object> DeleteUser(int id);
         public Task<List<RoleModel>> GetUserRoles(int userId);
         public Task<object> SaveUserRoles(int userId, List<int> roleIds);
+        public Task<object> GetDriverList();
     }
 }

@@ -28,6 +28,9 @@ public class DriverController : Controller
         return Json(res);
     }
 
+    [HttpGet]
+    public async Task<JsonResult> Get(int id) => Json(await _svc.Get(id));
+
     [HttpPost]
     public async Task<JsonResult> UpdateStatus(int id, short statusID)
         => Json(await _svc.UpdateStatus(id, statusID));

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using MitraKaryaSystem.Models;
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace MitraKaryaSystem.Controllers
 {
@@ -34,10 +35,6 @@ namespace MitraKaryaSystem.Controllers
 
         public IActionResult Index() => View();
 
-        /// <summary>
-        /// Diagnostic endpoint – returns current authenticated user's claims.
-        /// Navigate to /Home/WhoAmI to inspect the active cookie.
-        /// </summary>
         [HttpGet]
         public JsonResult WhoAmI()
         {
@@ -51,18 +48,30 @@ namespace MitraKaryaSystem.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
+        #region Role Helpers
         private bool IsDriver()
         {
             var user = HttpContext.User;
             if (user == null) return false;
-            // check Permission claim or Role claim
-            if (user.Claims.Any(c => string.Equals(c.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase) && string.Equals(c.Value, "Driver", StringComparison.OrdinalIgnoreCase)))
-                return true;
-            if (user.Claims.Any(c => string.Equals(c.Type, "Permission", StringComparison.OrdinalIgnoreCase) && string.Equals(c.Value, "Driver", StringComparison.OrdinalIgnoreCase)))
-                return true;
-            return false;
+            return user.Claims.Any(c => string.Equals(c.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase) && string.Equals(c.Value, "Driver", StringComparison.OrdinalIgnoreCase))
+                || user.Claims.Any(c => string.Equals(c.Type, "Permission", StringComparison.OrdinalIgnoreCase) && string.Equals(c.Value, "Driver", StringComparison.OrdinalIgnoreCase));
         }
 
+        private bool IsCashier()
+        {
+            var user = HttpContext.User;
+            if (user == null) return false;
+            return user.Claims.Any(c => string.Equals(c.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase) && string.Equals(c.Value, "Kasir", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool IsAdmin() => !IsDriver() && !IsCashier();
+        #endregion
+
+        #region Dashboard Endpoints
+
+        /// <summary>
+        /// Sales today. Admin sees all, Kasir sees only their own. Driver denied.
+        /// </summary>
         [HttpGet]
         public async Task<JsonResult> SalesToday()
         {
@@ -70,27 +79,30 @@ namespace MitraKaryaSystem.Controllers
             try
             {
                 var list = await _salesOrderService.GetSearchList();
-                // compute today's total on server so client only displays prepared value
+                var todayStr = DateTime.Now.ToString("yyyy-MM-dd");
+                var userName = User?.Identity?.Name;
+                var personalFilter = IsCashier();
                 decimal sum = 0m;
-                if (list is System.Collections.IEnumerable rows)
+
+                var jsonEl = JsonSerializer.SerializeToElement(list);
+                var filtered = new List<JsonElement>();
+
+                if (jsonEl.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (var r in rows)
+                    foreach (var item in jsonEl.EnumerateArray())
                     {
-                        if (r == null) continue;
-                        var t = r.GetType();
-                        var dateProp = t.GetProperty("Date") ?? t.GetProperty("date");
-                        var amountProp = t.GetProperty("Amount") ?? t.GetProperty("amount");
-                        if (dateProp == null || amountProp == null) continue;
-                        var dateVal = dateProp.GetValue(r);
-                        if (dateVal == null) continue;
-                        if (!DateTime.TryParse(dateVal.ToString(), out var dt)) continue;
-                        if (dt.Date != DateTime.UtcNow.Date && dt.Date != DateTime.Now.Date) continue;
-                        var amtVal = amountProp.GetValue(r);
-                        if (amtVal == null) continue;
-                        if (decimal.TryParse(amtVal.ToString(), out var amt)) sum += amt;
+                        if (!item.TryGetProperty("date", out var dp) || dp.GetString() != todayStr)
+                            continue;
+                        if (personalFilter && item.TryGetProperty("createdBy", out var cb) &&
+                            !string.Equals(cb.GetString(), userName, StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        if (item.TryGetProperty("amount", out var ap))
+                            sum += ap.GetDecimal();
+                        filtered.Add(item);
                     }
                 }
-                return Json(new { success = true, total = sum, result = list });
+
+                return Json(new { success = true, total = sum, result = filtered });
             }
             catch (Exception ex)
             {
@@ -99,13 +111,13 @@ namespace MitraKaryaSystem.Controllers
             }
         }
 
+        /// <summary>Admin only.</summary>
         [HttpGet]
         public async Task<JsonResult> StockAlerts()
         {
-            if (IsDriver()) return Json(new { success = false, result = "Access denied" });
+            if (!IsAdmin()) return Json(new { success = false, result = "Access denied" });
             try
             {
-                // ask service for only low stock products (threshold5)
                 var list = await _productService.GetLowStockProductList(5);
                 return Json(new { success = true, result = list });
             }
@@ -116,18 +128,21 @@ namespace MitraKaryaSystem.Controllers
             }
         }
 
+        /// <summary>
+        /// Driver sees their assigned DOs. Admin sees all. Kasir denied.
+        /// </summary>
         [HttpGet]
         public async Task<JsonResult> PendingDeliveryOrders()
         {
+            if (IsCashier()) return Json(new { success = false, result = "Access denied" });
             try
             {
                 int? driverId = null;
                 if (IsDriver())
                 {
-                    if (int.TryParse(HttpContext.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id))
+                    if (int.TryParse(User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id))
                         driverId = id;
                 }
-
                 var list = await _deliveryOrderService.List(1, driverId);
                 return Json(new { success = true, result = list });
             }
@@ -138,26 +153,27 @@ namespace MitraKaryaSystem.Controllers
             }
         }
 
+        /// <summary>Admin only.</summary>
         [HttpGet]
         public async Task<JsonResult> PendingPurchaseOrders()
         {
-            if (IsDriver()) return Json(new { success = false, result = "Access denied" });
+            if (!IsAdmin()) return Json(new { success = false, result = "Access denied" });
             try
             {
                 var list = await _purchaseOrderService.GetSearchList();
                 int pending = 0;
-                if (list is System.Collections.IEnumerable rows)
+
+                var jsonEl = JsonSerializer.SerializeToElement(list);
+                if (jsonEl.ValueKind == JsonValueKind.Array)
                 {
-                    foreach (var r in rows)
+                    foreach (var item in jsonEl.EnumerateArray())
                     {
-                        if (r == null) continue;
-                        var statusProp = r.GetType().GetProperty("statusID") ?? r.GetType().GetProperty("StatusID");
-                        if (statusProp == null) continue;
-                        var val = statusProp.GetValue(r);
-                        if (val != null && short.TryParse(val.ToString(), out var sid) && sid == 2)
+                        if (item.TryGetProperty("statusID", out var sidProp) &&
+                            sidProp.TryGetInt16(out var sid) && sid == 2)
                             pending++;
                     }
                 }
+
                 return Json(new { success = true, count = pending, result = list });
             }
             catch (Exception ex)
@@ -180,5 +196,6 @@ namespace MitraKaryaSystem.Controllers
                 return Json(new { success = true, count = 0 });
             }
         }
+        #endregion
     }
 }

@@ -50,7 +50,7 @@ const PurchaseInvoicePage = {
                 $tbody.append(
                     `<tr>
                         <td>${r.no || ''}</td>
-                        <td>${r.date || ''}</td>
+                        <td>${Common.Format.Date(r.date)}</td>
                         <td>${r.supplierName || '-'}</td>
                         <td class="text-end">${Number(r.amount || 0).toLocaleString('id-ID')}</td>
                         <td class="text-end">${Number(r.paidAmount || 0).toLocaleString('id-ID')}</td>

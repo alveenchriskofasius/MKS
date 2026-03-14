@@ -1,9 +1,9 @@
+using API.Services.Interfaces;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using API.Services.Interfaces;
-using Microsoft.Extensions.Options;
 
 namespace API.Services;
 

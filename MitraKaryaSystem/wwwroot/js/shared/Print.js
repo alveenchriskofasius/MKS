@@ -5,15 +5,18 @@
 const MksPrint = (function () {
     const companyName = 'Mitra Karya System';
 
-    function buildStyles() {
+    function buildStyles(theme) {
+        var t = theme || {};
+        var accent = t.accent || '#1e3a5f';
+        var highlight = t.highlight || '#2563eb';
         return `
         <style>
             @page { margin: 15mm 12mm; }
             * { box-sizing: border-box; }
             body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #333; margin: 0; padding: 0; }
-            .print-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e3a5f; padding-bottom: 10px; margin-bottom: 15px; }
-            .print-header .company { font-size: 18px; font-weight: 700; color: #1e3a5f; }
-            .print-header .doc-title { font-size: 16px; font-weight: 700; color: #2563eb; text-align: right; }
+            .print-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid ${accent}; padding-bottom: 10px; margin-bottom: 15px; }
+            .print-header .company { font-size: 18px; font-weight: 700; color: ${accent}; }
+            .print-header .doc-title { font-size: 16px; font-weight: 700; color: ${highlight}; text-align: right; }
             .print-header .doc-no { font-size: 11px; color: #666; }
             .print-info { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 15px; }
             .print-info .info-group { min-width: 180px; }
@@ -28,13 +31,13 @@ const MksPrint = (function () {
             .print-footer { margin-top: 30px; display: flex; justify-content: space-between; }
             .print-footer .sign-box { text-align: center; min-width: 150px; }
             .print-footer .sign-line { border-top: 1px solid #333; margin-top: 50px; padding-top: 4px; font-size: 10px; color: #666; }
-            .print-note { margin-top: 10px; padding: 8px; background: #f8fafc; border-left: 3px solid #2563eb; font-size: 11px; color: #555; }
+            .print-note { margin-top: 10px; padding: 8px; background: #f8fafc; border-left: 3px solid ${highlight}; font-size: 11px; color: #555; }
             .print-date { font-size: 10px; color: #999; text-align: right; margin-top: 8px; }
             .print-summary { margin-top: 10px; text-align: right; }
             .print-summary .summary-row { display: flex; justify-content: flex-end; gap: 20px; margin-bottom: 2px; }
             .print-summary .summary-label { font-size: 11px; color: #666; min-width: 100px; text-align: right; }
             .print-summary .summary-value { font-size: 12px; font-weight: 600; min-width: 120px; text-align: right; }
-            .print-summary .summary-total { font-size: 14px; font-weight: 700; color: #1e3a5f; border-top: 2px solid #1e3a5f; padding-top: 4px; }
+            .print-summary .summary-total { font-size: 14px; font-weight: 700; color: ${accent}; border-top: 2px solid ${accent}; padding-top: 4px; }
             @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         </style>`;
     }
@@ -51,10 +54,10 @@ const MksPrint = (function () {
         return dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     }
 
-    function openPrintWindow(html) {
+    function openPrintWindow(html, theme) {
         const w = window.open('', '_blank', 'width=800,height=600');
         if (!w) { toastr.error('Popup blocked. Please allow popups.'); return; }
-        w.document.write('<!DOCTYPE html><html><head><title>Print</title>' + buildStyles() + '</head><body>' + html + '</body></html>');
+        w.document.write('<!DOCTYPE html><html><head><title>Print</title>' + buildStyles(theme) + '</head><body>' + html + '</body></html>');
         w.document.close();
         w.focus();
         setTimeout(function () { w.print(); }, 400);
@@ -133,7 +136,7 @@ const MksPrint = (function () {
         if (note) html += '<div class="print-note"><strong>Note:</strong> ' + note + '</div>';
         html += buildSignature(['Prepared by', 'Approved by', 'Received by']);
         html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        openPrintWindow(html, { accent: '#e67e22', highlight: '#c2410c' });
     }
 
     function printSalesOrder() {
@@ -200,7 +203,7 @@ const MksPrint = (function () {
         if (note) html += '<div class="print-note"><strong>Note:</strong> ' + note + '</div>';
         html += buildSignature(['Prepared by', 'Verified by']);
         html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        openPrintWindow(html, { accent: '#4f46e5', highlight: '#6366f1' });
     }
 
     function printPurchaseReturn() {
@@ -233,7 +236,7 @@ const MksPrint = (function () {
         );
         html += buildSignature(['Prepared by', 'Supplier']);
         html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        openPrintWindow(html, { accent: '#991b1b', highlight: '#dc2626' });
     }
 
     function printSalesReturn() {
@@ -268,7 +271,7 @@ const MksPrint = (function () {
         html += '<div class="print-summary"><div class="summary-row"><span class="summary-label">Refund Amount:</span><span class="summary-value summary-total">' + refund + '</span></div></div>';
         html += buildSignature(['Prepared by', 'Customer']);
         html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        openPrintWindow(html, { accent: '#c2410c', highlight: '#ea580c' });
     }
 
     function printStockCount() {
@@ -300,7 +303,7 @@ const MksPrint = (function () {
         if (note) html += '<div class="print-note"><strong>Note:</strong> ' + note + '</div>';
         html += buildSignature(['Counted by', 'Verified by']);
         html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        openPrintWindow(html, { accent: '#92400e', highlight: '#d97706' });
     }
 
     function printPosReceipt(saleData) {
@@ -370,7 +373,7 @@ const MksPrint = (function () {
         }
         html += buildSignature(['Prepared by', 'Driver', 'Received by']);
         html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        openPrintWindow(html, { accent: '#0d9488', highlight: '#14b8a6' });
     }
 
     function printPaymentIn(data) {
@@ -385,7 +388,7 @@ const MksPrint = (function () {
         ]);
         html += buildSignature(['Cashier', 'Customer']);
         html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        openPrintWindow(html, { accent: '#15803d', highlight: '#16a34a' });
     }
 
     function printPaymentOut(data) {
@@ -401,7 +404,7 @@ const MksPrint = (function () {
         ]);
         html += buildSignature(['Prepared by', 'Approved by']);
         html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        openPrintWindow(html, { accent: '#991b1b', highlight: '#dc2626' });
     }
 
     function printSalesInvoice(data) {
@@ -428,7 +431,88 @@ const MksPrint = (function () {
         }
         html += buildSignature(['Cashier', 'Customer']);
         html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        openPrintWindow(html, { accent: '#047857', highlight: '#10b981' });
+    }
+
+    function printReport() {
+        var salesRows = [];
+        $('#tableSalesReport tbody tr').each(function () {
+            var cells = $(this).find('td');
+            if (cells.length >= 5) {
+                salesRows.push({ no: cells.eq(0).text(), date: cells.eq(1).text(), customer: cells.eq(2).text(), amount: cells.eq(3).text(), status: cells.eq(4).text() });
+            }
+        });
+        var purchaseRows = [];
+        $('#tablePurchaseReport tbody tr').each(function () {
+            var cells = $(this).find('td');
+            if (cells.length >= 5) {
+                purchaseRows.push({ no: cells.eq(0).text(), date: cells.eq(1).text(), supplier: cells.eq(2).text(), amount: cells.eq(3).text(), status: cells.eq(4).text() });
+            }
+        });
+        var lowStockRows = [];
+        $('#tableLowStock tbody tr').each(function () {
+            var cells = $(this).find('td');
+            if (cells.length >= 3) {
+                lowStockRows.push({ product: cells.eq(0).text(), stock: cells.eq(1).text(), min: cells.eq(2).text() });
+            }
+        });
+
+        var totalSales = $('#totalSales').text() || '-';
+        var totalPurchases = $('#totalPurchases').text() || '-';
+        var totalPaymentIn = $('#totalPaymentIn').text() || '-';
+        var totalPaymentOut = $('#totalPaymentOut').text() || '-';
+
+        var html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">REPORT SUMMARY</div></div></div>';
+
+        html += '<div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;">';
+        html += '<div style="flex:1;min-width:140px;padding:10px 14px;border:1px solid #e2e8f0;border-radius:6px;"><div style="font-size:10px;color:#999;text-transform:uppercase;">Total Sales</div><div style="font-size:16px;font-weight:700;color:#2563eb;">' + totalSales + '</div></div>';
+        html += '<div style="flex:1;min-width:140px;padding:10px 14px;border:1px solid #e2e8f0;border-radius:6px;"><div style="font-size:10px;color:#999;text-transform:uppercase;">Total Purchases</div><div style="font-size:16px;font-weight:700;color:#d97706;">' + totalPurchases + '</div></div>';
+        html += '<div style="flex:1;min-width:140px;padding:10px 14px;border:1px solid #e2e8f0;border-radius:6px;"><div style="font-size:10px;color:#999;text-transform:uppercase;">Payment In</div><div style="font-size:16px;font-weight:700;color:#16a34a;">' + totalPaymentIn + '</div></div>';
+        html += '<div style="flex:1;min-width:140px;padding:10px 14px;border:1px solid #e2e8f0;border-radius:6px;"><div style="font-size:10px;color:#999;text-transform:uppercase;">Payment Out</div><div style="font-size:16px;font-weight:700;color:#dc2626;">' + totalPaymentOut + '</div></div>';
+        html += '</div>';
+
+        if (salesRows.length) {
+            html += '<h3 style="font-size:13px;color:#1e3a5f;margin:16px 0 6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">Sales Orders</h3>';
+            html += buildTable(
+                [
+                    { title: 'No', field: 'no' },
+                    { title: 'Date', field: 'date' },
+                    { title: 'Customer', field: 'customer' },
+                    { title: 'Amount', align: 'text-end', field: 'amount' },
+                    { title: 'Status', field: 'status' }
+                ],
+                salesRows, false
+            );
+        }
+
+        if (purchaseRows.length) {
+            html += '<h3 style="font-size:13px;color:#1e3a5f;margin:16px 0 6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">Purchase Orders</h3>';
+            html += buildTable(
+                [
+                    { title: 'No', field: 'no' },
+                    { title: 'Date', field: 'date' },
+                    { title: 'Supplier', field: 'supplier' },
+                    { title: 'Amount', align: 'text-end', field: 'amount' },
+                    { title: 'Status', field: 'status' }
+                ],
+                purchaseRows, false
+            );
+        }
+
+        if (lowStockRows.length) {
+            html += '<h3 style="font-size:13px;color:#d97706;margin:16px 0 6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">&#9888; Low Stock Products</h3>';
+            html += buildTable(
+                [
+                    { title: 'Product', field: 'product' },
+                    { title: 'Stock', align: 'text-end', field: 'stock' },
+                    { title: 'Min Stock', align: 'text-end', field: 'min' }
+                ],
+                lowStockRows, false
+            );
+        }
+
+        html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
+        openPrintWindow(html, { accent: '#334155', highlight: '#475569' });
     }
 
     // Public API
@@ -444,6 +528,7 @@ const MksPrint = (function () {
         paymentIn: printPaymentIn,
         paymentOut: printPaymentOut,
         posReceipt: printPosReceipt,
+        report: printReport,
         custom: openPrintWindow,
         formatMoney: formatMoney,
         formatDate: formatDate

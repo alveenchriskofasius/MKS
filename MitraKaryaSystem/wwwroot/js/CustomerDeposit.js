@@ -40,9 +40,9 @@ const CustomerDepositPage = {
                         <td><i class="fa fa-truck me-1 text-muted"></i>${r.supplierName || '-'}</td>
                         <td class="text-end fw-bold ${r.amount > 0 ? 'text-success' : ''}">${Number(r.amount || 0).toLocaleString('id-ID', { minimumFractionDigits: 2 })}</td>
                         <td>${r.createdBy || '-'}</td>
-                        <td>${r.createdAt ? new Date(r.createdAt).toLocaleDateString('id-ID') : '-'}</td>
+                        <td>${r.createdAt ? Common.Format.Date(r.createdAt) : '-'}</td>
                         <td>${r.updatedBy || '-'}</td>
-                        <td>${r.updatedAt ? new Date(r.updatedAt).toLocaleDateString('id-ID') : '-'}</td>
+                        <td>${r.updatedAt ? Common.Format.Date(r.updatedAt) : '-'}</td>
                     </tr>`
                 );
             });

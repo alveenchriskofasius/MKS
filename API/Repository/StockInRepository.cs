@@ -461,11 +461,47 @@ namespace API.Repository
 
         public async Task<object> GetApprovedPurchaseOrders()
         {
-            return await _context.Trades
+            // Get all approved POs (TradeTypeID=4, StatusID=3)
+            var approvedPOs = await _context.Trades
                 .Where(t => t.TradeTypeID == 4 && t.StatusID == 3)
-                .Select(t => new { id = t.ID, no = t.No, date = t.Date.ToString("yyyy-MM-dd"), amount = t.Amount })
-                .OrderByDescending(t => t.id)
+                .OrderByDescending(t => t.ID)
                 .ToListAsync();
+
+            var result = new List<object>();
+            foreach (var po in approvedPOs)
+            {
+                // Check if this PO is fully received (all items have verified stock ins)
+                var poItems = await _context.PurchaseOrderItems
+                    .Where(pi => pi.TradeID == po.ID)
+                    .ToListAsync();
+
+                if (!poItems.Any()) continue;
+
+                // Get verified Stock In IDs linked to this PO
+                var verifiedSIIds = await _context.Trades
+                    .Where(t => t.PurchaseOrderID == po.ID && t.TradeTypeID == 3 && t.StatusID >= 3)
+                    .Select(t => t.ID)
+                    .ToListAsync();
+
+                var receivedByProduct = await _context.StockInItems
+                    .Where(si => si.TradeID != null && verifiedSIIds.Contains(si.TradeID.Value))
+                    .GroupBy(si => si.ProductID)
+                    .Select(g => new { ProductID = g.Key, TotalQty = g.Sum(x => x.Quantity) })
+                    .ToListAsync();
+
+                // Check if all items are fully received
+                bool fullyReceived = poItems.All(poItem =>
+                {
+                    var received = receivedByProduct.FirstOrDefault(x => x.ProductID == poItem.ProductID)?.TotalQty ?? 0;
+                    return received >= poItem.Quantity;
+                });
+
+                if (fullyReceived) continue;
+
+                result.Add(new { id = po.ID, no = po.No, date = po.Date.ToString("yyyy-MM-dd"), amount = po.Amount });
+            }
+
+            return result;
         }
 
         public async Task<object> ScanBarcode(string barcode)

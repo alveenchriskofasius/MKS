@@ -1,5 +1,9 @@
 ﻿@{
     ViewData["Title"] = "Dashboard";
+    var roleClaim = User?.Claims?.FirstOrDefault(c => string.Equals(c.Type, System.Security.Claims.ClaimTypes.Role, StringComparison.OrdinalIgnoreCase))?.Value ?? "";
+    var isAdmin = !string.Equals(roleClaim, "Kasir", StringComparison.OrdinalIgnoreCase) && !string.Equals(roleClaim, "Driver", StringComparison.OrdinalIgnoreCase);
+    var isCashier = string.Equals(roleClaim, "Kasir", StringComparison.OrdinalIgnoreCase);
+    var isDriver = string.Equals(roleClaim, "Driver", StringComparison.OrdinalIgnoreCase);
 }
 <div class="fade-slide-up">
     <!-- Page Header -->
@@ -7,149 +11,175 @@
         <div>
             <h5 class="fw-bold mb-1"><i class="fa fa-chart-line me-2 text-primary"></i>Dashboard</h5>
             <small class="text-muted" id="dashboardDate"></small>
+            <div class="mt-1 text-muted">Selamat datang, <strong>@User.Identity?.Name</strong></div>
         </div>
     </div>
 
     <!-- KPI Summary Cards -->
     <div class="row g-3 mb-3">
-        <div class="col-sm-6 col-xl-3">
-            <div class="dash-kpi-card">
-                <div class="dash-kpi-icon bg-primary-subtle text-primary">
-                    <i class="fa-solid fa-coins"></i>
-                </div>
-                <div class="dash-kpi-body">
-                    <div class="dash-kpi-value" id="kpiSalesTotal">
-                        <span class="placeholder-glow"><span class="placeholder col-8"></span></span>
+        @if (isAdmin || isCashier)
+        {
+            <div class="@(isAdmin ? "col-sm-6 col-xl-3" : "col-sm-6")">
+                <div class="dash-kpi-card">
+                    <div class="dash-kpi-icon bg-primary-subtle text-primary">
+                        <i class="fa-solid fa-coins"></i>
                     </div>
-                    <div class="dash-kpi-label">Sales Today</div>
+                    <div class="dash-kpi-body">
+                        <div class="dash-kpi-value" id="kpiSalesTotal">
+                            <span class="placeholder-glow"><span class="placeholder col-8"></span></span>
+                        </div>
+                        <div class="dash-kpi-label">@(isCashier ? "Penjualan Hari Ini" : "Sales Today")</div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="dash-kpi-card">
-                <div class="dash-kpi-icon bg-warning-subtle text-warning">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                </div>
-                <div class="dash-kpi-body">
-                    <div class="dash-kpi-value" id="kpiPendingPO">
-                        <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
+        }
+        @if (isAdmin)
+        {
+            <div class="col-sm-6 col-xl-3">
+                <div class="dash-kpi-card">
+                    <div class="dash-kpi-icon bg-warning-subtle text-warning">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
                     </div>
-                    <div class="dash-kpi-label">Pending PO Approvals</div>
+                    <div class="dash-kpi-body">
+                        <div class="dash-kpi-value" id="kpiPendingPO">
+                            <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
+                        </div>
+                        <div class="dash-kpi-label">Pending PO Approvals</div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="dash-kpi-card">
-                <div class="dash-kpi-icon bg-info-subtle text-info">
-                    <i class="fa-solid fa-truck-fast"></i>
-                </div>
-                <div class="dash-kpi-body">
-                    <div class="dash-kpi-value" id="kpiPendingDO">
-                        <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
+        }
+        @if (isAdmin || isDriver)
+        {
+            <div class="@(isAdmin ? "col-sm-6 col-xl-3" : "col-sm-6")">
+                <div class="dash-kpi-card">
+                    <div class="dash-kpi-icon bg-info-subtle text-info">
+                        <i class="fa-solid fa-truck-fast"></i>
                     </div>
-                    <div class="dash-kpi-label">Pending Deliveries</div>
+                    <div class="dash-kpi-body">
+                        <div class="dash-kpi-value" id="kpiPendingDO">
+                            <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
+                        </div>
+                        <div class="dash-kpi-label">@(isDriver ? "Pengiriman Saya" : "Pending Deliveries")</div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="dash-kpi-card">
-                <div class="dash-kpi-icon bg-danger-subtle text-danger">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div class="dash-kpi-body">
-                    <div class="dash-kpi-value" id="kpiStockAlerts">
-                        <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
+        }
+        @if (isAdmin)
+        {
+            <div class="col-sm-6 col-xl-3">
+                <div class="dash-kpi-card">
+                    <div class="dash-kpi-icon bg-danger-subtle text-danger">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
                     </div>
-                    <div class="dash-kpi-label">Low Stock Items</div>
+                    <div class="dash-kpi-body">
+                        <div class="dash-kpi-value" id="kpiStockAlerts">
+                            <span class="placeholder-glow"><span class="placeholder col-4"></span></span>
+                        </div>
+                        <div class="dash-kpi-label">Low Stock Items</div>
+                    </div>
                 </div>
             </div>
-        </div>
+        }
     </div>
 
-    <!-- Detail Section -->
+    <!-- Detail Sections -->
     <div class="row g-3">
-        <!-- Sales Today Detail -->
-        <div class="col-lg-8">
-            <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-file-invoice-dollar text-primary"></i>
-                        <h5 class="mb-0">Today's Sales Orders</h5>
+        @if (isAdmin || isCashier)
+        {
+            <!-- Sales Today Detail -->
+            <div class="@(isAdmin ? "col-lg-8" : "col-12")">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-file-invoice-dollar text-primary"></i>
+                            <h5 class="mb-0">@(isCashier ? "Penjualan Hari Ini" : "Today's Sales Orders")</h5>
+                        </div>
+                        <a asp-controller="SalesOrder" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                            View All <i class="fa fa-arrow-right ms-1"></i>
+                        </a>
                     </div>
-                    <a asp-controller="SalesOrder" asp-action="Index" class="btn btn-sm btn-outline-primary">
-                        View All <i class="fa fa-arrow-right ms-1"></i>
-                    </a>
-                </div>
-                <div class="card-body p-0">
-                    <div id="salesTodayContainer">
-                        <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stock Alerts -->
-        <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation text-danger"></i>
-                        <h5 class="mb-0">Stock Alerts</h5>
-                    </div>
-                    <a asp-controller="Stock" asp-action="Low" class="btn btn-sm btn-outline-danger">
-                        View All <i class="fa fa-arrow-right ms-1"></i>
-                    </a>
-                </div>
-                <div class="card-body p-0">
-                    <div id="stockAlertsContainer">
-                        <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                    <div class="card-body p-0">
+                        <div id="salesTodayContainer">
+                            <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        }
+        @if (isAdmin)
+        {
+            <!-- Stock Alerts -->
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+                            <h5 class="mb-0">Stock Alerts</h5>
+                        </div>
+                        <a asp-controller="Stock" asp-action="Index" class="btn btn-sm btn-outline-danger">
+                            View All <i class="fa fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="stockAlertsContainer">
+                            <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 
-    <!-- Bottom Row: Pending PO & Pending DO -->
     <div class="row g-3 mt-0">
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-clock text-warning"></i>
-                        <h5 class="mb-0">Pending PO Approvals</h5>
+        @if (isAdmin)
+        {
+            <!-- Pending PO -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-clock text-warning"></i>
+                            <h5 class="mb-0">Pending PO Approvals</h5>
+                        </div>
+                        <a asp-controller="PurchaseOrder" asp-action="Index" class="btn btn-sm btn-outline-warning">
+                            View All <i class="fa fa-arrow-right ms-1"></i>
+                        </a>
                     </div>
-                    <a asp-controller="PurchaseOrder" asp-action="Index" class="btn btn-sm btn-outline-warning">
-                        View All <i class="fa fa-arrow-right ms-1"></i>
-                    </a>
-                </div>
-                <div class="card-body p-0">
-                    <div id="pendingPOContainer">
-                        <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-truck text-info"></i>
-                        <h5 class="mb-0">Pending Deliveries</h5>
-                    </div>
-                    <a asp-controller="DeliveryOrder" asp-action="Index" class="btn btn-sm btn-outline-info">
-                        View All <i class="fa fa-arrow-right ms-1"></i>
-                    </a>
-                </div>
-                <div class="card-body p-0">
-                    <div id="pendingDOContainer">
-                        <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                    <div class="card-body p-0">
+                        <div id="pendingPOContainer">
+                            <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        }
+        @if (isAdmin || isDriver)
+        {
+            <!-- Pending DO -->
+            <div class="@(isAdmin ? "col-lg-6" : "col-12")">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-truck text-info"></i>
+                            <h5 class="mb-0">@(isDriver ? "Pengiriman Saya" : "Pending Deliveries")</h5>
+                        </div>
+                        <a asp-controller="DeliveryOrder" asp-action="Index" class="btn btn-sm btn-outline-info">
+                            View All <i class="fa fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="pendingDOContainer">
+                            <div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin me-1"></i> Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
 @section Scripts {
+    <script>window.__dashRole = '@roleClaim.ToLowerInvariant()';</script>
     <script src="~/js/Dashboard.js" asp-append-version="true"></script>
 }

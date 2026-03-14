@@ -33,7 +33,7 @@ const DebtPage = {
                 $tbody.append(
                     `<tr>
                         <td>${r.no || ''}</td>
-                        <td>${r.date || ''}</td>
+                        <td>${Common.Format.Date(r.date)}</td>
                         <td>${r.customerName || '-'}</td>
                         <td class="text-end">${this.fmt(r.amount)}</td>
                         <td class="text-end">
@@ -73,7 +73,7 @@ const DebtPage = {
                 $tbody.append(
                     `<tr>
                         <td>${r.no || ''}</td>
-                        <td>${r.date || ''}</td>
+                        <td>${Common.Format.Date(r.date)}</td>
                         <td>${r.customerName || '-'}</td>
                         <td class="text-end">${this.fmt(r.amount)}</td>
                         <td class="text-end">
