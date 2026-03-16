@@ -100,6 +100,8 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICustomerStatementService, CustomerStatementService>();
 // Promo
 builder.Services.AddScoped<IPromoService, PromoService>();
+// Customer Aging
+builder.Services.AddScoped<ICustomerAgingService, CustomerAgingService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<API.Services.IAuditService, API.Services.AuditService>();
 builder.Services.AddScoped<API.Services.IStockLedgerService, API.Services.StockLedgerService>();

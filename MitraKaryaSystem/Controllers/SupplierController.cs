@@ -1,3 +1,4 @@
+using API.Models;
 using API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,5 +43,21 @@ namespace MitraKaryaSystem.Controllers
                 return Json(new { success = false, error = e.Message });
             }
         }
+
+        [HttpGet]
+        public async Task<JsonResult> GetSalesPersons(int supplierId)
+            => Json(await _service.GetSalesPersonsBySupplier(supplierId));
+
+        [HttpGet]
+        public async Task<JsonResult> GetAllSalesPersons()
+            => Json(await _service.GetAllSalesPersons());
+
+        [HttpPost]
+        public async Task<JsonResult> SaveSalesPerson(SalesPersonModel model)
+            => Json(await _service.SaveSalesPerson(model, User.Identity?.Name ?? "system"));
+
+        [HttpPost]
+        public async Task<JsonResult> DeleteSalesPerson(int id)
+            => Json(await _service.DeleteSalesPerson(id));
     }
 }

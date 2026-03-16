@@ -98,8 +98,9 @@
       const $row = $(`<div class='pos-suggest-item d-flex justify-content-between align-items-center${isOut ? ' disabled' : ''}' data-idx='${i}' tabindex='0'><div class='text-truncate'>${leftHtml}${discBadge}</div><div class='ms-2 fw-semibold'>${fmt(price)}</div></div>`);
       $row.on('click keydown', e=>{
         if(e.type==='click' || e.key==='Enter'){
-          if(isOut){ toastr.warning('Stok 0 / habis. Tidak bisa ditambahkan ke cart.'); return; }
+          if(isOut){ if (typeof MksSound !== 'undefined') MksSound.error(); toastr.warning('Stok 0 / habis. Tidak bisa ditambahkan ke cart.'); return; }
           addOrInc({ id:p.id||p.ID, text:rawName, unitPrice:price, stockQuantity: stock, hasDiscount: hasDisc, discountPercentage: discPct });
+          if (typeof MksSound !== 'undefined') MksSound.success();
           destroySuggest();
         }
       });
@@ -157,8 +158,16 @@
 
   function wireSearch(){
     let typingTimer = null; const $input = $('#posSearch');
-    $input.on('input', function(){ clearTimeout(typingTimer); destroySuggest(); const q=this.value.trim(); if(!q) return; const seq=++state._searchSeq; typingTimer=setTimeout(()=>{ searchProductsAsync(q).then(list=>{ if(seq!==state._searchSeq) return; if(list.length>0){ $input.after(buildSuggest(list,q)); state.suggestIndex=-1; } }); }, 200); });
-    $input.on('keydown', function(e){ const $items = $('.pos-suggest-item'); if(e.key==='ArrowDown'){ if($items.length){ e.preventDefault(); state.suggestIndex = (state.suggestIndex+1) % $items.length; setActiveSuggestion(); } } else if(e.key==='ArrowUp'){ if($items.length){ e.preventDefault(); state.suggestIndex = (state.suggestIndex<=0? $items.length-1 : state.suggestIndex-1); setActiveSuggestion(); } } else if(e.key==='Enter'){ e.preventDefault(); clearTimeout(typingTimer); if($items.length && state.suggestIndex>=0){ $items.eq(state.suggestIndex).trigger('click'); return; } destroySuggest(); const q=this.value.trim(); if(!q) return; const seq=++state._searchSeq; searchProductsAsync(q).then(list=>{ if(seq!==state._searchSeq) return; if(list.length>0){ const p=list[0]; addOrInc({ id:p.id||p.ID, text:p.name||p.Name, unitPrice:Number(p.unitPrice||p.UnitPrice||0), stockQuantity: (p.stockQuantity ?? p.StockQuantity), hasDiscount: p.hasDiscount || p.HasDiscount || false, discountPercentage: p.discountPercentage || p.DiscountPercentage || 0 }); } }); } else if(e.key==='Escape'){ destroySuggest(); }
+    $input.on('input', function(){
+      clearTimeout(typingTimer); destroySuggest(); const q = this.value.trim();
+      if (!q) return; const seq = ++state._searchSeq; typingTimer = setTimeout(() => { searchProductsAsync(q).then(list => { if (seq !== state._searchSeq) return; if (list.length > 0) { $input.after(buildSuggest(list, q)); state.suggestIndex = -1; } }); }, 200);
+    });
+    $input.on('keydown', function(e){
+      const $items = $('.pos-suggest-item');
+      if(e.key==='ArrowDown'){ e.preventDefault(); if($items.length){ state.suggestIndex = Math.min(state.suggestIndex+1, $items.length-1); setActiveSuggestion(); } }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); if($items.length){ state.suggestIndex = Math.max(state.suggestIndex-1, 0); setActiveSuggestion(); } }
+      else if(e.key==='Enter'){ e.preventDefault(); clearTimeout(typingTimer); if($items.length && state.suggestIndex>=0){ $items.eq(state.suggestIndex).trigger('click'); return; } destroySuggest(); const q=this.value.trim(); if(!q) return; const seq=++state._searchSeq; searchProductsAsync(q).then(list=>{ if(seq!==state._searchSeq) return; if(list.length>0){ const p=list[0]; addOrInc({ id:p.id||p.ID, text:p.name||p.Name, unitPrice:Number(p.unitPrice||p.UnitPrice||0), stockQuantity: (p.stockQuantity ?? p.StockQuantity), hasDiscount: p.hasDiscount || p.HasDiscount || false, discountPercentage: p.discountPercentage || p.DiscountPercentage || 0 }); if (typeof MksSound !== 'undefined') MksSound.success(); } else { if (typeof MksSound !== 'undefined') MksSound.error(); } }); }
+      else if(e.key==='Escape'){ destroySuggest(); }
     });
     $input.on('blur', ()=> setTimeout(destroySuggest, 180));
   }
@@ -370,7 +379,7 @@
         data: list,
         columns:[
           { data:'no' },
-          { data:'date', render: d => Common.Format.Datetime(d) },
+          { data:'date', render: d => Common.Format.Date(d) },
           { data:'amount', className:'text-end', render: d => fmt(d) },
           { data:'paidAmount', className:'text-end', render: d => fmt(d) },
           { data:'paymentType', render: d => { const cls = d==='Full'?'bg-success':d==='DP'?'bg-info':'bg-warning text-dark'; return `<span class="badge ${cls}">${d}</span>`; } },

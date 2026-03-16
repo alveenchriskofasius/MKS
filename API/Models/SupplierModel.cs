@@ -11,5 +11,7 @@ namespace MitraKaryaSystem.Models
         public string ContactPerson { get; set; }
         [Required(ErrorMessage = "Contact Number is required")]
         public string ContactNumber { get; set; }
+        public string Address { get; set; }
+        public string Note { get; set; }
     }
 }

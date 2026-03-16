@@ -1,0 +1,97 @@
+@{
+    ViewData["Title"] = "Customer Aging";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-hourglass-half fa-lg"></i>
+                <h5 class="mb-0">Customer Aging Report</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Filters -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold mb-1">As of Date</label>
+                            <input type="date" class="form-control form-control-sm" id="agingDate" />
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-sm btn-primary w-100" id="btnAgingGenerate"><i class="fa fa-search me-1"></i>Generate</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4 d-none" id="agingSummaryRow">
+                <div class="col">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center py-2">
+                            <div class="text-muted small">Total Outstanding</div>
+                            <div class="fw-bold fs-5 text-danger" id="agTotal">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center py-2">
+                            <div class="text-muted small">Current (0-30)</div>
+                            <div class="fw-bold fs-5 text-success" id="agCurrent">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center py-2">
+                            <div class="text-muted small">31-60 Days</div>
+                            <div class="fw-bold fs-5 text-info" id="ag3160">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center py-2">
+                            <div class="text-muted small">61-90 Days</div>
+                            <div class="fw-bold fs-5 text-warning" id="ag6190">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center py-2">
+                            <div class="text-muted small">Over 90 Days</div>
+                            <div class="fw-bold fs-5 text-danger" id="agOver90">Rp 0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aging Table -->
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0" id="tableAging">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Customer</th>
+                            <th class="text-end">Current (0-30)</th>
+                            <th class="text-end">31-60 Days</th>
+                            <th class="text-end">61-90 Days</th>
+                            <th class="text-end">Over 90 Days</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-center">Invoices</th>
+                            <th>Oldest Invoice</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="8" class="text-center text-muted py-4">Click "Generate" to load aging report</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/CustomerAging.js" asp-append-version="true"></script>
+}

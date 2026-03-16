@@ -1,4 +1,5 @@
-﻿using API.Repository.Interfaces;
+﻿using API.Models;
+using API.Repository.Interfaces;
 using API.Services.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 using MitraKaryaSystem.Models;
@@ -41,5 +42,17 @@ namespace API.Services
             await _repository.SaveSupplier(category);
             _cache.Remove(CacheKey);
         }
+
+        public async Task<object> GetSalesPersonsBySupplier(int supplierId)
+            => await _repository.GetSalesPersonsBySupplier(supplierId);
+
+        public async Task<object> GetAllSalesPersons()
+            => await _repository.GetAllSalesPersons();
+
+        public async Task<object> SaveSalesPerson(SalesPersonModel model, string userName)
+            => await _repository.SaveSalesPerson(model, userName);
+
+        public async Task<object> DeleteSalesPerson(int id)
+            => await _repository.DeleteSalesPerson(id);
     }
 }

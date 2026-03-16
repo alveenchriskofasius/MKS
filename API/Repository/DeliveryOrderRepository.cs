@@ -28,11 +28,41 @@ public class DeliveryOrderRepository : IDeliveryOrderRepository
         return new { success = true, id = doEntity.ID, no = doEntity.No };
     }
 
-    public async Task<DeliveryOrderModel> Get(int id)
+    public async Task<object> Get(int id)
     {
-        var d = await _ctx.DeliveryOrders.FindAsync(id); if (d == null) return new DeliveryOrderModel();
+        var d = await _ctx.DeliveryOrders
+            .Include(x => x.SalesOrder)
+            .Include(x => x.DriverUser)
+            .FirstOrDefaultAsync(x => x.ID == id);
+        if (d == null) return new DeliveryOrderModel();
         var items = await _ctx.DeliveryOrderItems.Where(x => x.DeliveryOrderID == id).ToListAsync();
-        return new DeliveryOrderModel { ID = d.ID, No = d.No, SalesOrderID = d.SalesOrderID, StatusID = d.StatusID, DriverUserID = d.DriverUserID, DeliveryAddress = d.DeliveryAddress, AssignedAt = d.AssignedAt, DeliveredAt = d.DeliveredAt, Items = items.Select(i => new DeliveryOrderItemModel { ID = i.ID, DeliveryOrderID = i.DeliveryOrderID, SalesOrderItemID = i.SalesOrderItemID, ProductID = i.ProductID, Quantity = i.Quantity }).ToList() };
+        var productIds = items.Select(i => i.ProductID).Distinct().ToList();
+        var productNames = await _ctx.Products.AsNoTracking()
+            .Where(p => productIds.Contains(p.ID))
+            .Select(p => new { p.ID, p.Name })
+            .ToDictionaryAsync(p => p.ID, p => p.Name);
+        return new
+        {
+            id = d.ID,
+            no = d.No,
+            salesOrderID = d.SalesOrderID,
+            salesOrderNo = d.SalesOrder?.No,
+            statusID = d.StatusID,
+            driverUserID = d.DriverUserID,
+            driverName = d.DriverUser?.Name,
+            deliveryAddress = d.DeliveryAddress,
+            assignedAt = d.AssignedAt,
+            deliveredAt = d.DeliveredAt,
+            items = items.Select(i => new
+            {
+                id = i.ID,
+                deliveryOrderID = i.DeliveryOrderID,
+                salesOrderItemID = i.SalesOrderItemID,
+                productID = i.ProductID,
+                productName = productNames.TryGetValue(i.ProductID, out var name) ? name : null,
+                quantity = i.Quantity
+            }).ToList()
+        };
     }
 
     public async Task<object> List(short? statusID = null, int? driverUserID = null)

@@ -14,4 +14,6 @@ public interface IConsignmentRepository
     Task<object> RecordReturn(RecordReturnModel model, string userName);
     Task<object> Settle(int id, string userName);
     Task<object> GetItems(int consignmentId);
+    Task AutoDeductConsignmentSales(Dictionary<int, int> productQtyMap, string userName);
+    Task AutoReverseConsignmentSales(Dictionary<int, int> productQtyMap, string userName);
 }

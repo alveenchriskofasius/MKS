@@ -5,6 +5,7 @@ const ConStatusClass = { 1: 'bg-success', 2: 'bg-secondary', 3: 'bg-warning' };
 
 const ConPage = {
     currentId: null,
+    currentSupplierID: null,
     allItems: [],
     statusFilter: 'all',
     products: [],
@@ -24,6 +25,13 @@ const ConPage = {
         $('#btnAddItem').on('click', () => this.saveItem());
         $('#btnRecord').on('click', () => this.confirmRecord());
         $('#conSearch').on('input', () => this.renderList());
+        // When supplier changes, reload sales persons for that supplier
+        $('#conSupplier').on('change', function () {
+            const suppId = parseInt($(this).val()) || 0;
+            $('#conSalesPerson').val('');
+            $('#conSalesName, #conSalesCompany, #conSalesContact').val('');
+            ConPage.loadSalesPersons(suppId);
+        });
         $(document).on('click', '.con-status-filter', function () {
             $('.con-status-filter').removeClass('active btn-primary btn-success btn-secondary')
                 .addClass(function () { return 'btn-outline-' + ($(this).data('status') === 'all' ? 'primary' : $(this).data('status') == 1 ? 'success' : 'secondary'); });
@@ -42,19 +50,49 @@ const ConPage = {
         } catch (e) { console.error(e); }
     },
 
-    async loadProducts() {
+    async loadSalesPersons(supplierId) {
         try {
-            const list = await Common.Api.get('/Product/FillGrid');
-            this.products = Array.isArray(list) ? list : (list && list.result ? list.result : []);
-            const $p = $('#itemProduct').find('option:not(:first)').remove().end();
-            this.products.forEach(p => $p.append(`<option value="${p.id || p.ID}" data-price="${p.unitPrice || p.UnitPrice || 0}">${p.name || p.Name}</option>`));
-            $('#noProductHint').toggle(this.products.length === 0);
-            // auto-fill sell price on select
-            $('#itemProduct').off('change').on('change', function () {
-                const price = $(this).find(':selected').data('price') || 0;
-                $('#itemSellPrice').val(price);
+            if (!supplierId) { 
+                $('#conSalesPerson').find('option:not(:first)').remove();
+                this.salesPersons = [];
+                return; 
+            }
+            const list = await Common.Api.get('/Consignment/GetSalesPersons?supplierId=' + supplierId);
+            this.salesPersons = Array.isArray(list) ? list : [];
+            const $s = $('#conSalesPerson').find('option:not(:first)').remove().end();
+            this.salesPersons.forEach(s => $s.append(`<option value="${s.id || s.ID}" data-name="${s.name || s.Name || ''}" data-company="${s.company || s.Company || ''}" data-contact="${s.contact || s.Contact || ''}">${(s.name || s.Name || '')}${(s.company || s.Company) ? ' (' + (s.company || s.Company) + ')' : ''}</option>`));
+            $('#conSalesPerson').off('change').on('change', function () {
+                const $opt = $(this).find(':selected');
+                $('#conSalesName').val($opt.data('name') || '');
+                $('#conSalesCompany').val($opt.data('company') || '');
+                $('#conSalesContact').val($opt.data('contact') || '');
             });
         } catch (e) { console.error(e); }
+    },
+
+    async loadProducts() {
+        try {
+            const list = await Common.Api.get('/Product/GetProductList');
+            this.products = Array.isArray(list) ? list : (list && list.result ? list.result : []);
+        } catch (e) { console.error(e); }
+    },
+
+    populateProductDropdown(supplierId) {
+        const filtered = supplierId
+            ? this.products.filter(p => String(p.supplierID || p.SupplierID) === String(supplierId))
+            : this.products;
+        const $p = $('#itemProduct').find('option:not(:first)').remove().end();
+        filtered.forEach(p => {
+            const name = p.name || p.Name;
+            const unit = p.unitName || p.UnitName || '';
+            const label = unit ? `${name} (${unit})` : name;
+            $p.append(`<option value="${p.id || p.ID}" data-price="${p.unitPrice || p.UnitPrice || 0}">${label}</option>`);
+        });
+        $('#noProductHint').toggle(filtered.length === 0);
+        $('#itemProduct').off('change').on('change', function () {
+            const price = $(this).find(':selected').data('price') || 0;
+            $('#itemSellPrice').val(price);
+        });
     },
 
     async loadList() {
@@ -85,7 +123,7 @@ const ConPage = {
                     <div class="cust-avatar" style="background:${c.statusID === 1 ? 'linear-gradient(135deg,#16a34a,#22c55e)' : 'linear-gradient(135deg,#6b7280,#9ca3af)'}; color:#fff; font-size:.7rem">${c.statusID === 1 ? '<i class="fa fa-box-open"></i>' : '<i class="fa fa-check"></i>'}</div>
                     <div class="cust-info" style="min-width:0">
                         <div class="cust-name text-truncate">${c.no} ${statusBadge}</div>
-                        <div class="cust-detail text-truncate">${c.supplierName} · ${c.salesPersonName || '-'}</div>
+                        <div class="cust-detail text-truncate">${c.supplierName} · ${c.salesPersonName || '-'}${c.salesPersonCompany ? ` (${c.salesPersonCompany})` : ''}</div>
                         <div class="progress mt-1" style="height:3px"><div class="progress-bar bg-success" style="width:${pct}%"></div></div>
                     </div>
                 </li>`);
@@ -102,6 +140,7 @@ const ConPage = {
         try {
             const c = await Common.Api.get('/Consignment/Get?id=' + id);
             if (!c || !c.id) { toastr.error('Not found'); return; }
+            this.currentSupplierID = c.supplierID || c.SupplierID;
             const items = c.items || [];
             const totalQty = items.reduce((s, i) => s + i.quantity, 0);
             const soldQty = items.reduce((s, i) => s + i.soldQuantity, 0);
@@ -139,6 +178,8 @@ const ConPage = {
                     <div class="card border-0 shadow-sm text-center py-2">
                         <div class="text-muted small">Sales Person</div>
                         <div class="fw-bold text-truncate px-2">${c.salesPersonName || '-'}</div>
+                        ${c.salesPersonCompany ? `<div class="text-muted small text-truncate px-2"><i class="fa fa-building me-1"></i>${c.salesPersonCompany}</div>` : ''}
+                        ${c.salesPersonContact ? `<div class="text-muted small text-truncate px-2"><i class="fa fa-phone me-1"></i>${c.salesPersonContact}</div>` : ''}
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
@@ -200,9 +241,10 @@ const ConPage = {
                     const rem = i.quantity - i.soldQuantity - i.returnedQuantity;
                     const itemProfit = (i.sellingPrice - i.unitPrice) * i.soldQuantity;
                     const itemPct = i.quantity > 0 ? Math.round((i.soldQuantity / i.quantity) * 100) : 0;
+                    const unitLabel = i.unitName ? ` <small class="text-muted">(${i.unitName})</small>` : '';
                     html += `<tr>
                         <td>
-                            <div class="fw-semibold">${i.productName}</div>
+                            <div class="fw-semibold">${i.productName}${unitLabel}</div>
                             <div class="progress mt-1" style="height:3px"><div class="progress-bar bg-success" style="width:${itemPct}%"></div></div>
                         </td>
                         <td class="text-center">${i.quantity}</td>
@@ -258,6 +300,9 @@ const ConPage = {
         $('#conDate').val(new Date().toISOString().slice(0, 10));
         $('#conSupplier').val('');
         $('#conSalesPerson').val('');
+        $('#conSalesName').val('');
+        $('#conSalesCompany').val('');
+        $('#conSalesContact').val('');
         $('#conNote').val('');
         $('#conModalTitle').html('<i class="fa fa-handshake me-2"></i>New Consignment');
         $('#conForm').removeClass('was-validated');
@@ -269,7 +314,23 @@ const ConPage = {
         $('#conID').val(c.id);
         $('#conDate').val((c.date || '').toString().slice(0, 10));
         $('#conSupplier').val(c.supplierID);
-        $('#conSalesPerson').val(c.salesPersonName);
+        // Load sales persons for this supplier, then select
+        await this.loadSalesPersons(c.supplierID);
+        if (c.salesPersonID) {
+            $('#conSalesPerson').val(c.salesPersonID);
+        } else {
+            // Fallback: match by name
+            const spName = c.salesPersonName || '';
+            if (spName && this.salesPersons) {
+                const match = this.salesPersons.find(s => (s.name || s.Name) === spName);
+                if (match) $('#conSalesPerson').val(match.id || match.ID);
+            }
+        }
+        $('#conSalesName').val(c.salesPersonName || '');
+        $('#conSalesCompany').val(c.salesPersonCompany || '');
+        $('#conSalesContact').val(c.salesPersonContact || '');
+        $('#conSalesCompany').val(c.salesPersonCompany || '');
+        $('#conSalesContact').val(c.salesPersonContact || '');
         $('#conNote').val(c.note);
         $('#conModalTitle').html('<i class="fa fa-pen me-2"></i>Edit Consignment');
         new bootstrap.Modal(document.getElementById('conModal')).show();
@@ -282,7 +343,10 @@ const ConPage = {
             ID: parseInt($('#conID').val()) || 0,
             Date: $('#conDate').val(),
             SupplierID: parseInt($('#conSupplier').val()) || 0,
-            SalesPersonName: $('#conSalesPerson').val(),
+            SalesPersonID: parseInt($('#conSalesPerson').val()) || null,
+            SalesPersonName: $('#conSalesName').val() || $('#conSalesPerson option:selected').text().split('(')[0].trim(),
+            SalesPersonCompany: $('#conSalesCompany').val(),
+            SalesPersonContact: $('#conSalesContact').val(),
             Note: $('#conNote').val()
         };
         const $btn = $('#btnSaveCon');
@@ -313,6 +377,7 @@ const ConPage = {
     // ===== Item Management =====
     openAddItem(conId) {
         $('#itemConID').val(conId);
+        this.populateProductDropdown(this.currentSupplierID);
         $('#itemProduct').val('');
         $('#itemQty').val(1);
         $('#itemBuyPrice').val('');

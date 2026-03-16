@@ -130,6 +130,8 @@ public partial class MKSTableContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.Note).HasMaxLength(500);
+            entity.Property(e => e.SalesPersonCompany).HasMaxLength(200);
+            entity.Property(e => e.SalesPersonContact).HasMaxLength(100);
             entity.Property(e => e.SalesPersonName).HasMaxLength(200);
             entity.Property(e => e.SoldAmount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.StatusID).HasDefaultValue((short)1);
@@ -168,6 +170,7 @@ public partial class MKSTableContext : DbContext
             entity.ToTable("Customer");
 
             entity.Property(e => e.Address).HasMaxLength(255);
+            entity.Property(e => e.Company).HasMaxLength(200);
             entity.Property(e => e.ContactNumber).HasMaxLength(20);
             entity.Property(e => e.ContactPerson)
                 .IsRequired()

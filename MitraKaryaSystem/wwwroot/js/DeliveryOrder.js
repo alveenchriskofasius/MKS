@@ -9,7 +9,7 @@ const deliveryOrderModal = (function () {
  const soId = data.salesOrderID || data.SalesOrderID;
  const soNo = data.no || data.No || data.salesOrderNo || data.SalesOrderNo || '-';
  const driverLabel = data.driverName || data.DriverName || data.driverUserID || data.DriverUserID || '-';
- const items = (data.items || data.Items || []).map(i => `<tr><td>${i.productID || i.ProductID || i.productName || i.ProductName || '-'}</td><td>${i.quantity || i.Quantity}</td></tr>`).join('');
+ const items = (data.items || data.Items || []).map(i => `<tr><td>${i.productName || i.ProductName || '-'}</td><td>${i.quantity || i.Quantity}</td></tr>`).join('');
 
  const html = `<div class='text-start'>
  <div class='d-flex gap-3 mb-3'>

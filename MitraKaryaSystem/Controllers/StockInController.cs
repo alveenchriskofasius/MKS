@@ -30,5 +30,6 @@ namespace MitraKaryaSystem.Controllers
         [HttpPost]
         public async Task<JsonResult> CreateFromPO(int poId) => Json(await _stockInService.CreateFromPurchaseOrder(poId));
         public async Task<JsonResult> GetApprovedPOs() => Json(await _stockInService.GetApprovedPurchaseOrders());
+        public async Task<JsonResult> GetPOQties(int id) => Json(await _stockInService.GetPOItemQuantities(id));
     }
 }

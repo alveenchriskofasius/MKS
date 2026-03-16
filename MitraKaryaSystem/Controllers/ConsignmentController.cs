@@ -33,6 +33,14 @@ public class ConsignmentController : Controller
     [HttpGet]
     public async Task<JsonResult> GetSuppliers() => Json(await _supplierService.GetSupplierList());
 
+    [HttpGet]
+    public async Task<JsonResult> GetSalesPersons(int supplierId)
+        => Json(await _supplierService.GetSalesPersonsBySupplier(supplierId));
+
+    [HttpGet]
+    public async Task<JsonResult> GetAllSalesPersons()
+        => Json(await _supplierService.GetAllSalesPersons());
+
     [HttpPost]
     public async Task<JsonResult> Save(ConsignmentModel model) => Json(await _svc.Save(model));
 

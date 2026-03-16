@@ -1,11 +1,116 @@
 ﻿@{
     ViewData["Title"] = "Product";
 }
-
-<div class="row">
-    <partial name="_Table" />
+<style>
+    .prod-list { list-style: none; padding: 0; margin: 0; }
+    .prod-list-item {
+        padding: .55rem .85rem; border-radius: 8px; cursor: pointer;
+        display: flex; align-items: center; gap: .75rem;
+        transition: all .2s; margin-bottom: 3px; border: 1px solid transparent;
+    }
+    .prod-list-item:hover { background: var(--mks-gray-100); }
+    .prod-list-item.active { background: var(--mks-primary-light); border-color: var(--mks-primary); }
+    .prod-avatar {
+        width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: .75rem; flex-shrink: 0;
+        background: var(--mks-primary-light); color: var(--mks-primary);
+    }
+    .prod-list-item.active .prod-avatar { background: var(--mks-primary); color: #fff; }
+    .prod-info { min-width: 0; flex: 1; }
+    .prod-info .prod-name { font-weight: 600; font-size: .84rem; color: var(--mks-gray-800); }
+    .prod-list-item.active .prod-info .prod-name { color: var(--mks-primary); }
+    .prod-info .prod-detail { font-size: .7rem; color: var(--mks-gray-600); }
+    .prod-stock { margin-left: auto; flex-shrink: 0; font-weight: 600; font-size: .78rem; }
+    .prod-group-header {
+        font-weight: 700; font-size: .72rem; text-transform: uppercase; letter-spacing: .8px;
+        color: var(--mks-gray-600); padding: .6rem .85rem .25rem; margin-top: .3rem;
+        border-bottom: 1px solid var(--mks-gray-100);
+    }
+    .prod-group-header i { margin-right: 4px; }
+</style>
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-cubes-stacked fa-lg"></i>
+                <h5 class="mb-0">Products</h5>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-light" id="btnAddProduct"><i class="fa-solid fa-plus"></i> Add Product</button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <!-- Left: Product list -->
+                <div class="col-md-4 col-lg-3 border-end" style="min-height:580px;max-height:85vh;overflow-y:auto">
+                    <div class="p-3">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text bg-white"><i class="fa fa-search text-muted"></i></span>
+                            <input type="text" class="form-control" id="prodSearch" placeholder="Search products…" autocomplete="off">
+                        </div>
+                        <div class="d-flex gap-1 mb-3 flex-wrap">
+                            <button class="btn btn-sm btn-outline-secondary prod-cat-filter active" data-cat="">All</button>
+                        </div>
+                        <ul class="prod-list" id="prodList">
+                            <li class="text-center text-muted py-4"><small>Loading…</small></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Right: Form / Detail panel -->
+                <div class="col-md-8 col-lg-9">
+                    <div id="prodFormPanel" class="p-3">
+                        <div class="empty-state" id="prodEmptyState">
+                            <i class="fa fa-cubes-stacked"></i>
+                            <p>Select a product to edit or create a new one</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Category Modal -->
+<div class="modal fade" id="categoryModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header mks-modal-header">
+                <h5 class="modal-title"><i class="fa fa-tags me-2"></i>Category Information</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="categoryBodyModal"></div>
+            <div class="modal-footer">
+                <button type="button" id="buttonCloseCategory" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="buttonSaveCategory" class="btn btn-primary">
+                    <span class="spinner-border spinner-border-sm" style="display:none"></span> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Unit Modal -->
+<div class="modal fade" id="unitModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header mks-modal-header">
+                <h5 class="modal-title"><i class="fa fa-ruler me-2"></i>Unit Information</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="unitBodyModal"></div>
+            <div class="modal-footer">
+                <button type="button" id="buttonCloseUnit" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="buttonSaveUnit" class="btn btn-primary">
+                    <span class="spinner-border spinner-border-sm" style="display:none"></span> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Barcode Print (hidden) -->
+<div id="barcodePrintArea" style="display:none"></div>
+
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="~/js/Product/Index.js" asp-append-version="true"></script>
     <script src="~/js/Common.js" asp-append-version="true"></script>
 }

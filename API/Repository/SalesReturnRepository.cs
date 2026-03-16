@@ -8,8 +8,8 @@ namespace API.Repository;
 
 public class SalesReturnRepository : ISalesReturnRepository
 {
-    private readonly MKSTableContext _context; private readonly IHttpContextAccessor _http; private readonly IStockLedgerService _stockLedger;
-    public SalesReturnRepository(MKSTableContext ctx, IHttpContextAccessor http, IStockLedgerService stockLedger = null) { _context = ctx; _http = http; _stockLedger = stockLedger; }
+    private readonly MKSTableContext _context; private readonly IHttpContextAccessor _http; private readonly IStockLedgerService _stockLedger; private readonly IConsignmentRepository _consignmentRepo;
+    public SalesReturnRepository(MKSTableContext ctx, IHttpContextAccessor http, IStockLedgerService stockLedger = null, IConsignmentRepository consignmentRepo = null) { _context = ctx; _http = http; _stockLedger = stockLedger; _consignmentRepo = consignmentRepo; }
 
     private async Task WriteLedgerSafe(int productId, int qtyChange, string refNo)
     {
@@ -60,6 +60,28 @@ public class SalesReturnRepository : ISalesReturnRepository
             }
             if (model.ReturnType == "Exchange") { foreach (var r in model.ReplacementDetails) { if (r.ID == 0) await WriteLedgerSafe(r.ProductID, -r.Quantity, trade.No); else { int diff = r.Quantity - (existing.FirstOrDefault(e => e.ID == r.ID)?.Quantity ?? r.Quantity); if (diff != 0) await WriteLedgerSafe(r.ProductID, -diff, trade.No); } } }
             foreach (var rem in toRemove) { int ledgerQty = rem.IsReplacement ? rem.Quantity : -rem.Quantity; await WriteLedgerSafe(rem.ProductID, ledgerQty, trade.No); }
+            // Auto-update consignment sold quantities for returned/exchanged products
+            if (_consignmentRepo != null)
+            {
+                var consignmentReverse = new Dictionary<int, int>();
+                var consignmentDeduct = new Dictionary<int, int>();
+                foreach (var rem in toRemove)
+                {
+                    if (!rem.IsReplacement) { if (!consignmentDeduct.ContainsKey(rem.ProductID)) consignmentDeduct[rem.ProductID] = 0; consignmentDeduct[rem.ProductID] += rem.Quantity; }
+                    else { if (!consignmentReverse.ContainsKey(rem.ProductID)) consignmentReverse[rem.ProductID] = 0; consignmentReverse[rem.ProductID] += rem.Quantity; }
+                }
+                foreach (var d in model.Details)
+                {
+                    if (model.ReturnType == "Refund" || (model.ReturnType == "Exchange" && model.ReturnOriginalToStock))
+                    {
+                        if (d.ID == 0) { if (!consignmentReverse.ContainsKey(d.ProductID)) consignmentReverse[d.ProductID] = 0; consignmentReverse[d.ProductID] += d.Quantity; }
+                        else { int diff = d.Quantity - (existing.FirstOrDefault(e => e.ID == d.ID)?.Quantity ?? d.Quantity); if (diff > 0) { if (!consignmentReverse.ContainsKey(d.ProductID)) consignmentReverse[d.ProductID] = 0; consignmentReverse[d.ProductID] += diff; } else if (diff < 0) { if (!consignmentDeduct.ContainsKey(d.ProductID)) consignmentDeduct[d.ProductID] = 0; consignmentDeduct[d.ProductID] += -diff; } }
+                    }
+                }
+                if (model.ReturnType == "Exchange") { foreach (var r in model.ReplacementDetails) { if (r.ID == 0) { if (!consignmentDeduct.ContainsKey(r.ProductID)) consignmentDeduct[r.ProductID] = 0; consignmentDeduct[r.ProductID] += r.Quantity; } else { int diff = r.Quantity - (existing.FirstOrDefault(e => e.ID == r.ID)?.Quantity ?? r.Quantity); if (diff > 0) { if (!consignmentDeduct.ContainsKey(r.ProductID)) consignmentDeduct[r.ProductID] = 0; consignmentDeduct[r.ProductID] += diff; } else if (diff < 0) { if (!consignmentReverse.ContainsKey(r.ProductID)) consignmentReverse[r.ProductID] = 0; consignmentReverse[r.ProductID] += -diff; } } } }
+                if (consignmentReverse.Any()) await _consignmentRepo.AutoReverseConsignmentSales(consignmentReverse, user);
+                if (consignmentDeduct.Any()) await _consignmentRepo.AutoDeductConsignmentSales(consignmentDeduct, user);
+            }
             if (model.IsLinked && model.LinkedSalesOrderID.HasValue)
             {
                 var soItems = await _context.SalesOrderItems.Where(x => x.TradeID == model.LinkedSalesOrderID).ToListAsync(); if (model.ReturnType == "Refund") { foreach (var d in model.Details.Where(x => x.SourceSalesOrderItemID.HasValue)) { var soItem = soItems.FirstOrDefault(x => x.ID == d.SourceSalesOrderItemID.Value); if (soItem != null) { soItem.QtyRefunded = (soItem.QtyRefunded ?? 0) + d.Quantity; _context.SalesOrderItems.Update(soItem); } } } else if (model.ReturnType == "Exchange") { foreach (var d in model.Details.Where(x => x.SourceSalesOrderItemID.HasValue)) { var soItem = soItems.FirstOrDefault(x => x.ID == d.SourceSalesOrderItemID.Value); if (soItem != null) { soItem.QtyExchanged = (soItem.QtyExchanged ?? 0) + d.Quantity; _context.SalesOrderItems.Update(soItem); } } }

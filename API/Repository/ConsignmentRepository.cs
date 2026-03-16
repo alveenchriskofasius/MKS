@@ -31,6 +31,8 @@ public class ConsignmentRepository : IConsignmentRepository
                 Date = x.c.Date.ToString("yyyy-MM-dd"),
                 SupplierName = x.s != null ? x.s.Name : "-",
                 SalesPersonName = x.c.SalesPersonName ?? "-",
+                SalesPersonCompany = x.c.SalesPersonCompany ?? "",
+                SalesPersonContact = x.c.SalesPersonContact ?? "",
                 StatusID = x.c.StatusID,
                 Status = x.c.StatusID == 1 ? "Active" : x.c.StatusID == 2 ? "Settled" : "Returned",
                 TotalAmount = x.c.TotalAmount,
@@ -50,7 +52,10 @@ public class ConsignmentRepository : IConsignmentRepository
             Date = c.Date,
             No = c.No,
             SupplierID = c.SupplierID,
+            SalesPersonID = c.SalesPersonID,
             SalesPersonName = c.SalesPersonName,
+            SalesPersonCompany = c.SalesPersonCompany,
+            SalesPersonContact = c.SalesPersonContact,
             StatusID = c.StatusID,
             Note = c.Note,
             Items = await GetItemModels(id)
@@ -61,17 +66,20 @@ public class ConsignmentRepository : IConsignmentRepository
     {
         return await _ctx.ConsignmentItems.AsNoTracking()
             .Where(ci => ci.ConsignmentID == consignmentId)
-            .Join(_ctx.Products.AsNoTracking(), ci => ci.ProductID, p => p.ID, (ci, p) => new ConsignmentItemModel
+            .Join(_ctx.Products.AsNoTracking(), ci => ci.ProductID, p => p.ID, (ci, p) => new { ci, p })
+            .GroupJoin(_ctx.Units.AsNoTracking(), x => x.p.UnitID, u => u.ID, (x, ug) => new { x.ci, x.p, ug })
+            .SelectMany(x => x.ug.DefaultIfEmpty(), (x, u) => new ConsignmentItemModel
             {
-                ID = ci.ID,
-                ConsignmentID = ci.ConsignmentID,
-                ProductID = ci.ProductID,
-                ProductName = p.Name,
-                Quantity = ci.Quantity,
-                SoldQuantity = ci.SoldQuantity,
-                ReturnedQuantity = ci.ReturnedQuantity,
-                UnitPrice = ci.UnitPrice,
-                SellingPrice = ci.SellingPrice
+                ID = x.ci.ID,
+                ConsignmentID = x.ci.ConsignmentID,
+                ProductID = x.ci.ProductID,
+                ProductName = x.p.Name,
+                UnitName = u != null ? u.Name : "",
+                Quantity = x.ci.Quantity,
+                SoldQuantity = x.ci.SoldQuantity,
+                ReturnedQuantity = x.ci.ReturnedQuantity,
+                UnitPrice = x.ci.UnitPrice,
+                SellingPrice = x.ci.SellingPrice
             }).ToListAsync();
     }
 
@@ -93,7 +101,10 @@ public class ConsignmentRepository : IConsignmentRepository
                     Date = model.Date,
                     No = no,
                     SupplierID = model.SupplierID,
+                    SalesPersonID = model.SalesPersonID,
                     SalesPersonName = model.SalesPersonName,
+                    SalesPersonCompany = model.SalesPersonCompany,
+                    SalesPersonContact = model.SalesPersonContact,
                     StatusID = 1,
                     Note = model.Note,
                     TotalAmount = 0,
@@ -112,7 +123,10 @@ public class ConsignmentRepository : IConsignmentRepository
                 if (entity.StatusID != 1) return new { success = false, error = "Only active consignments can be edited." };
                 entity.Date = model.Date;
                 entity.SupplierID = model.SupplierID;
+                entity.SalesPersonID = model.SalesPersonID;
                 entity.SalesPersonName = model.SalesPersonName;
+                entity.SalesPersonCompany = model.SalesPersonCompany;
+                entity.SalesPersonContact = model.SalesPersonContact;
                 entity.Note = model.Note;
                 entity.UpdatedBy = userName;
                 entity.UpdatedAt = DateTime.Now;
@@ -295,5 +309,127 @@ public class ConsignmentRepository : IConsignmentRepository
         {
             return new { success = false, error = ex.InnerException?.Message ?? ex.Message };
         }
+    }
+
+    public async Task AutoDeductConsignmentSales(Dictionary<int, int> productQtyMap, string userName)
+    {
+        if (productQtyMap == null || productQtyMap.Count == 0) return;
+
+        var productIds = productQtyMap.Keys.ToList();
+        var activeConsignmentIds = await _ctx.Consignments
+            .Where(c => c.StatusID == 1)
+            .Select(c => c.ID)
+            .ToListAsync();
+
+        if (!activeConsignmentIds.Any()) return;
+
+        var consignmentItems = await _ctx.ConsignmentItems
+            .Where(ci => activeConsignmentIds.Contains(ci.ConsignmentID)
+                         && productIds.Contains(ci.ProductID)
+                         && ci.Quantity - ci.SoldQuantity - ci.ReturnedQuantity > 0)
+            .OrderBy(ci => ci.ID)
+            .ToListAsync();
+
+        if (!consignmentItems.Any()) return;
+
+        var affectedConsignmentIds = new HashSet<int>();
+
+        foreach (var kvp in productQtyMap)
+        {
+            var productId = kvp.Key;
+            var remainingQty = kvp.Value;
+            var items = consignmentItems.Where(ci => ci.ProductID == productId).ToList();
+
+            foreach (var item in items)
+            {
+                if (remainingQty <= 0) break;
+                var available = item.Quantity - item.SoldQuantity - item.ReturnedQuantity;
+                if (available <= 0) continue;
+                var deduct = Math.Min(remainingQty, available);
+                item.SoldQuantity += deduct;
+                remainingQty -= deduct;
+                affectedConsignmentIds.Add(item.ConsignmentID);
+            }
+        }
+
+        if (!affectedConsignmentIds.Any()) return;
+
+        await _ctx.SaveChangesAsync();
+
+        foreach (var cid in affectedConsignmentIds)
+        {
+            var consignment = await _ctx.Consignments.FindAsync(cid);
+            if (consignment != null)
+            {
+                consignment.SoldAmount = await _ctx.ConsignmentItems
+                    .Where(ci => ci.ConsignmentID == cid)
+                    .SumAsync(ci => (decimal?)(ci.UnitPrice * ci.SoldQuantity)) ?? 0;
+                consignment.UpdatedBy = userName;
+                consignment.UpdatedAt = DateTime.Now;
+            }
+        }
+
+        await _ctx.SaveChangesAsync();
+    }
+
+    public async Task AutoReverseConsignmentSales(Dictionary<int, int> productQtyMap, string userName)
+    {
+        if (productQtyMap == null || productQtyMap.Count == 0) return;
+
+        var productIds = productQtyMap.Keys.ToList();
+        var activeConsignmentIds = await _ctx.Consignments
+            .Where(c => c.StatusID == 1)
+            .Select(c => c.ID)
+            .ToListAsync();
+
+        if (!activeConsignmentIds.Any()) return;
+
+        var consignmentItems = await _ctx.ConsignmentItems
+            .Where(ci => activeConsignmentIds.Contains(ci.ConsignmentID)
+                         && productIds.Contains(ci.ProductID)
+                         && ci.SoldQuantity > 0)
+            .OrderByDescending(ci => ci.ID)
+            .ToListAsync();
+
+        if (!consignmentItems.Any()) return;
+
+        var affectedConsignmentIds = new HashSet<int>();
+
+        foreach (var kvp in productQtyMap)
+        {
+            var productId = kvp.Key;
+            var remainingQty = kvp.Value;
+            var items = consignmentItems.Where(ci => ci.ProductID == productId).ToList();
+
+            foreach (var item in items)
+            {
+                if (remainingQty <= 0) break;
+                var reversible = item.SoldQuantity;
+                if (reversible <= 0) continue;
+                var reverse = Math.Min(remainingQty, reversible);
+                item.SoldQuantity -= reverse;
+                remainingQty -= reverse;
+                affectedConsignmentIds.Add(item.ConsignmentID);
+            }
+        }
+
+        if (!affectedConsignmentIds.Any()) return;
+
+        await _ctx.SaveChangesAsync();
+
+        foreach (var cid in affectedConsignmentIds)
+        {
+            var consignment = await _ctx.Consignments.FindAsync(cid);
+            if (consignment != null)
+            {
+                consignment.SoldAmount = await _ctx.ConsignmentItems
+                    .Where(ci => ci.ConsignmentID == cid)
+                    .SumAsync(ci => (decimal?)(ci.UnitPrice * ci.SoldQuantity)) ?? 0;
+                consignment.UpdatedBy = userName;
+                consignment.UpdatedAt = DateTime.Now;
+            }
+        }
+
+        await _ctx.SaveChangesAsync();
     }
 }

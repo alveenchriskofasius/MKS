@@ -23,7 +23,7 @@
         }
     </style>
 </head>
-<body class="hold-transition sidebar-mini  sidebar-collapse layout-footer-fixed">
+<body class="hold-transition sidebar-collapse layout-footer-fixed">
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand navbar-light-primary navbar-light">
@@ -46,6 +46,8 @@
             <partial name="_SideBar" />
 
         </aside>
+        <!-- Sidebar backdrop (click to close) -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
         <!-- Content Wrapper. Contains page content -->
         <div class="content-wrapper">
             <!-- /.content-header -->
@@ -122,8 +124,15 @@
         })();
     </script>
     <script src="~/dist/js/adminlte.js"></script>
+    <script>
+        // Close sidebar when clicking backdrop
+        document.getElementById('sidebarBackdrop').addEventListener('click', function () {
+            document.body.classList.add('sidebar-collapse');
+        });
+    </script>
     <script src="~/js/shared/DataTable.js" asp-append-version="true"></script>
     <script src="~/js/shared/Print.js" asp-append-version="true"></script>
+    <script src="~/js/shared/Sound.js" asp-append-version="true"></script>
     <script src="~/js/shared/ProductSearch.js" asp-append-version="true"></script>
     <script src="~/js/PaymentOut.js" asp-append-version="true"></script>
     <!-- AdminLTE -->

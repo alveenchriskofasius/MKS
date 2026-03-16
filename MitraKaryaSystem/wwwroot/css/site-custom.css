@@ -33,11 +33,20 @@
   background: var(--mks-gray-50) !important;
 }
 
-/* ---------- Sidebar ---------- */
+/* ---------- Sidebar (overlay mode – hidden by default) ---------- */
 .main-sidebar {
   background: linear-gradient(180deg, #1e3a5f 0%, #1a2e4a 100%) !important;
   border-right: none !important;
-  box-shadow: 2px 0 8px rgba(0,0,0,.12);
+  box-shadow: 4px 0 16px rgba(0,0,0,.25);
+  position: fixed !important;
+  top: 0; bottom: 0; left: 0;
+  z-index: 1040 !important;
+  width: 260px;
+  transform: translateX(-260px);
+  transition: transform .3s ease;
+}
+body:not(.sidebar-collapse) .main-sidebar {
+  transform: translateX(0);
 }
 .main-sidebar .brand-link {
   border-bottom: 1px solid rgba(255,255,255,.1) !important;
@@ -52,6 +61,29 @@
 .main-sidebar .brand-image {
   border: 2px solid rgba(255,255,255,.3);
 }
+/* content always full width */
+.content-wrapper,
+.main-header,
+.main-footer {
+  margin-left: 0 !important;
+  transition: none !important;
+}
+/* dark backdrop behind sidebar when open */
+.sidebar-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 1039;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .3s ease, visibility .3s ease;
+}
+body:not(.sidebar-collapse) .sidebar-backdrop {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ---------- Sidebar nav links ---------- */
 .sidebar .nav-sidebar .nav-link {
   color: rgba(255,255,255,.72) !important;
   border-radius: 8px;
@@ -69,21 +101,75 @@
   color: #fff !important;
   box-shadow: 0 2px 8px rgba(37,99,235,.35);
 }
-.sidebar .nav-sidebar .nav-link i {
+.sidebar .nav-sidebar .nav-link > i.nav-icon {
   width: 22px;
   text-align: center;
-  margin-right: 6px;
+  margin-right: 8px;
   font-size: .9rem;
 }
-/* sidebar section headers */
-.sidebar .nav-section {
-  color: rgba(255,255,255,.38);
-  font-size: .65rem;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  padding: .9rem .85rem .3rem 1.1rem;
-  margin-top: .35rem;
+
+/* ---------- Sidebar Treeview / Accordion ---------- */
+.sidebar .nav-sidebar > .nav-item > .nav-link .right {
+  transition: transform .25s ease;
+  margin-left: auto;
+  font-size: .7rem;
+}
+.sidebar .nav-sidebar > .nav-item.menu-open > .nav-link .right {
+  transform: rotate(-90deg);
+}
+.sidebar .nav-treeview {
+  background: rgba(0,0,0,.12);
+  border-radius: 0 0 8px 8px;
+  margin: 0 8px 2px;
+  padding: 4px 0;
+}
+.sidebar .nav-treeview > .nav-item > .nav-link {
+  padding: .4rem .85rem .4rem 1.6rem !important;
+  font-size: .8rem;
+  margin: 1px 4px !important;
+}
+/* sub-item dot indicator – hide FA icon, use pseudo-element */
+.sidebar .nav-treeview .sub-icon {
+  font-size: 0 !important;
+  width: 16px !important;
+  height: 16px;
+  margin-right: 8px !important;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar .nav-treeview .sub-icon::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.35);
+  transition: all .2s ease;
+}
+.sidebar .nav-treeview > .nav-item > .nav-link:hover .sub-icon::before,
+.sidebar .nav-treeview > .nav-item > .nav-link.active .sub-icon::before {
+  background: #fff;
+  transform: scale(1.2);
+}
+
+/* ---------- Sidebar scroll ---------- */
+.main-sidebar .sidebar {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(100vh - 57px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.2) transparent;
+}
+.main-sidebar .sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.main-sidebar .sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.2);
+  border-radius: 4px;
+}
+.main-sidebar .sidebar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* ---------- Navbar ---------- */

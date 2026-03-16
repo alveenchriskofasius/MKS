@@ -39,7 +39,7 @@ namespace API.Services
             return _repo.CreateFromSalesOrder(salesOrderID, UserName);
         }
 
-        public Task<DeliveryOrderModel> Get(int id)
+        public Task<object> Get(int id)
         {
             return _repo.Get(id);
         }

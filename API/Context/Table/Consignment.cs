@@ -33,5 +33,11 @@ public partial class Consignment
 
     public DateTime? UpdatedAt { get; set; }
 
+    public string SalesPersonCompany { get; set; }
+
+    public string SalesPersonContact { get; set; }
+
+    public int? SalesPersonID { get; set; }
+
     public virtual ICollection<ConsignmentItem> ConsignmentItems { get; set; } = new List<ConsignmentItem>();
 }

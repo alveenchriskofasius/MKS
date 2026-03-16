@@ -11,6 +11,7 @@ namespace API.Repository
     {
         private readonly MKSSPContextProcedures _procedure;
         private readonly IStockLedgerService _stockLedger;
+        private readonly IConsignmentRepository _consignmentRepo;
         private enum TradeStatus
         {
             Draft = 1,
@@ -24,11 +25,12 @@ namespace API.Repository
         }
         private static readonly HashSet<short> LockedStatuses = new HashSet<short> { (short)TradeStatus.Paid, (short)TradeStatus.PartialRefund, (short)TradeStatus.Refund, (short)TradeStatus.Exchange, (short)TradeStatus.PartialExchange, (short)TradeStatus.Completed };
 
-        public SalesOrderRepository(MKSTableContext context, MKSSPContextProcedures procedures, IHttpContextAccessor httpContextAccessor, IStockLedgerService stockLedger = null)
+        public SalesOrderRepository(MKSTableContext context, MKSSPContextProcedures procedures, IHttpContextAccessor httpContextAccessor, IStockLedgerService stockLedger = null, IConsignmentRepository consignmentRepo = null)
             : base(context, httpContextAccessor)
         {
             _procedure = procedures;
             _stockLedger = stockLedger;
+            _consignmentRepo = consignmentRepo;
         }
 
         private async Task WriteLedgerSafe(int productId, int qtyChange, Trade trade)
@@ -439,6 +441,11 @@ namespace API.Repository
                     await SaveChangesAsync();
                     var tradeForLedger = await _context.Trades.FindAsync(tradeID);
                     await WriteLedgerSafe(product.ID, -salesOrderDetailModel.Quantity, tradeForLedger);
+                    // Auto-deduct consignment
+                    if (_consignmentRepo != null)
+                        await _consignmentRepo.AutoDeductConsignmentSales(
+                            new Dictionary<int, int> { { product.ID, salesOrderDetailModel.Quantity } },
+                            GetCurrentUserName());
                 }
                 else
                 {
@@ -462,6 +469,18 @@ namespace API.Repository
                     {
                         var tradeForLedger = await _context.Trades.FindAsync(tradeID);
                         await WriteLedgerSafe(product.ID, -quantityDifference, tradeForLedger);
+                        // Auto-deduct or reverse consignment based on delta
+                        if (_consignmentRepo != null)
+                        {
+                            if (quantityDifference > 0)
+                                await _consignmentRepo.AutoDeductConsignmentSales(
+                                    new Dictionary<int, int> { { product.ID, quantityDifference } },
+                                    GetCurrentUserName());
+                            else
+                                await _consignmentRepo.AutoReverseConsignmentSales(
+                                    new Dictionary<int, int> { { product.ID, -quantityDifference } },
+                                    GetCurrentUserName());
+                        }
                     }
                 }
                 return new { success = true };

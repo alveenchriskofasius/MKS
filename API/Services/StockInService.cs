@@ -73,5 +73,10 @@ namespace API.Services
         {
             return await _repository.GetApprovedPurchaseOrders();
         }
+
+        public async Task<object> GetPOItemQuantities(int stockInTradeId)
+        {
+            return await _repository.GetPOItemQuantities(stockInTradeId);
+        }
     }
 }

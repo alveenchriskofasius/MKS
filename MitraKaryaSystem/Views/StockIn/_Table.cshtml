@@ -5,7 +5,9 @@
                 <th hidden>ID</th>
                 <th hidden>ProductID</th>
                 <th>Product</th>
-                <th class="text-end" style="width:100px">Quantity</th>
+                <th class="text-end" style="width:100px">Ordered Qty</th>
+                <th class="text-end" style="width:100px">Received Qty</th>
+                <th class="text-end" style="width:100px">Discrepancy</th>
                 <th class="text-end" style="width:120px">Unit Price</th>
                 <th hidden>SupplierID</th>
                 <th hidden>Barcode</th>
@@ -17,7 +19,9 @@
         <tfoot class="table-group-divider">
             <tr>
                 <td colspan="3" class="text-end fw-bold">Total</td>
+                <td id="totalOrderedQty" class="text-end fw-bold">0</td>
                 <td id="totalQty" class="text-end fw-bold">0</td>
+                <td id="totalDiscrepancy" class="text-end fw-bold">0</td>
                 <td id="totalUnitPrice" class="text-end fw-bold">0</td>
                 <td colspan="4"></td>
             </tr>

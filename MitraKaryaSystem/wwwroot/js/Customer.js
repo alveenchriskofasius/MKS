@@ -3,7 +3,6 @@
 const CustomerPage = {
     currentId: null,
     allCustomers: [],
-    activeFilter: '',
 
     init() {
         this.loadCustomers();
@@ -14,12 +13,6 @@ const CustomerPage = {
     initButtons() {
         $('#buttonAdd').off('click').on('click', () => this.loadForm(0));
         $('#customerSearch').on('input', () => this.renderList());
-        $('.cust-filter').on('click', function () {
-            $('.cust-filter').removeClass('active');
-            $(this).addClass('active');
-            CustomerPage.activeFilter = $(this).data('filter') || '';
-            CustomerPage.renderList();
-        });
     },
 
     async loadCustomers() {
@@ -34,11 +27,8 @@ const CustomerPage = {
 
     renderList() {
         const q = ($('#customerSearch').val() || '').toLowerCase();
-        const filter = this.activeFilter;
-        let list = this.allCustomers;
+        let list = this.allCustomers.filter(c => !c.isSupplier && !c.IsSupplier);
 
-        if (filter === 'supplier') list = list.filter(c => c.isSupplier === true || c.IsSupplier === true);
-        else if (filter === 'customer') list = list.filter(c => !c.isSupplier && !c.IsSupplier);
         if (q) list = list.filter(c => (c.name || c.Name || '').toLowerCase().includes(q) || (c.contactPerson || c.ContactPerson || '').toLowerCase().includes(q) || (c.contactNumber || c.ContactNumber || '').toLowerCase().includes(q));
 
         const $ul = $('#customerList').empty();
@@ -50,12 +40,8 @@ const CustomerPage = {
             const id = c.id || c.ID;
             const name = c.name || c.Name || '';
             const phone = c.contactNumber || c.ContactNumber || '';
-            const isSupplier = c.isSupplier === true || c.IsSupplier === true;
             const initials = name.split(' ').map(w => (w[0] || '')).join('').substring(0, 2);
             const isActive = id === CustomerPage.currentId;
-            const badge = isSupplier
-                ? '<span class="badge bg-info" style="font-size:.65rem">Supplier</span>'
-                : '<span class="badge bg-success" style="font-size:.65rem">Customer</span>';
 
             $ul.append(
                 `<li class="cust-list-item${isActive ? ' active' : ''}" data-id="${id}">
@@ -64,7 +50,6 @@ const CustomerPage = {
                         <div class="cust-name text-truncate">${name}</div>
                         <div class="cust-detail text-truncate">${phone || '—'}</div>
                     </div>
-                    <span class="cust-badge">${badge}</span>
                 </li>`
             );
         });
@@ -186,8 +171,8 @@ const customerControl = {
         $(document).off('click', '.cust-type-btn').on('click', '.cust-type-btn', function () {
             $('.cust-type-btn').removeClass('active');
             $(this).addClass('active');
-            const isSupplier = $(this).data('type') === 'supplier';
-            $('#isSupplier').val(isSupplier ? 'true' : 'false');
+            const type = $(this).data('type');
+            $('#isSupplier').val(type === 'supplier' ? 'true' : 'false');
             customerControl.visibility();
         });
     },

@@ -17,5 +17,6 @@ namespace API.Repository.Interfaces
         Task<object> Verify(int id);
         Task<object> CreateFromPurchaseOrder(int poId);
         Task<object> GetApprovedPurchaseOrders();
+        Task<object> GetPOItemQuantities(int stockInTradeId);
     }
 }

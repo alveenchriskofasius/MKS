@@ -1,6 +1,7 @@
 using API.Context.SP;
 using API.Context.Table;
 using API.Models;
+using API.Repository.Interfaces;
 using API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,8 @@ namespace API.Services
         private readonly MKSTableContext _ctx;
         private readonly MKSSPContextProcedures _sp;
         private readonly IHttpContextAccessor _http;
-        public PosService(MKSTableContext ctx, MKSSPContextProcedures sp, IHttpContextAccessor http) { _ctx = ctx; _sp = sp; _http = http; }
+        private readonly IConsignmentRepository _consignmentRepo;
+        public PosService(MKSTableContext ctx, MKSSPContextProcedures sp, IHttpContextAccessor http, IConsignmentRepository consignmentRepo) { _ctx = ctx; _sp = sp; _http = http; _consignmentRepo = consignmentRepo; }
 
         // Use TradeTypeID = 9 for POS (custom) if available; else fallback to 2 but separate numbering prefix POS
         private const short PosTradeTypeId = 2; // re-use base trade type semantics for stock & payment fields
@@ -113,6 +115,9 @@ namespace API.Services
                 }
 
                 await _ctx.SaveChangesAsync(); // persist items and stock updates
+
+                // Auto-deduct consignment sold quantities (FIFO)
+                await _consignmentRepo.AutoDeductConsignmentSales(qtyMap, user);
 
                 // payment logic (store PaymentIn if Full or DP)
                 decimal paidApplied = 0m;

@@ -1,6 +1,28 @@
 @{
     ViewData["Title"] = "Consignment";
 }
+<style>
+    /* ── Consignment list (reuse cust-list pattern) ── */
+    .cust-list { list-style: none; padding: 0; margin: 0; }
+    .cust-list-item {
+        padding: .6rem .85rem; border-radius: 8px; cursor: pointer;
+        display: flex; align-items: center; gap: .75rem;
+        transition: all .2s; margin-bottom: 4px; border: 1px solid transparent;
+    }
+    .cust-list-item:hover { background: var(--mks-gray-100); }
+    .cust-list-item.active { background: var(--mks-primary-light); border-color: var(--mks-primary); }
+    .cust-avatar {
+        width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: .82rem; text-transform: uppercase; flex-shrink: 0;
+        background: var(--mks-primary-light); color: var(--mks-primary);
+    }
+    .cust-list-item.active .cust-avatar { background: var(--mks-primary); color: #fff; }
+    .cust-info { min-width: 0; flex: 1; }
+    .cust-info .cust-name { font-weight: 600; font-size: .85rem; color: var(--mks-gray-800); }
+    .cust-list-item.active .cust-info .cust-name { color: var(--mks-primary); }
+    .cust-info .cust-detail { font-size: .72rem; color: var(--mks-gray-600); }
+    .cust-list-item .cust-badge { margin-left: auto; flex-shrink: 0; }
+</style>
 <div class="fade-slide-up">
     <div class="card page-header-card">
         <div class="card-header card-header-accent">
@@ -71,9 +93,15 @@
                         <div class="invalid-feedback">Please select a supplier.</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Sales Person Name</label>
-                        <input type="text" class="form-control" id="conSalesPerson" placeholder="Nama sales yang datang" />
+                        <label class="form-label fw-semibold small">Sales Person</label>
+                        <select class="form-select" id="conSalesPerson">
+                            <option value="">-- Select Sales Person --</option>
+                        </select>
+                        <small class="text-muted">Pilih supplier dulu, lalu pilih sales person dari supplier tersebut</small>
                     </div>
+                    <input type="hidden" id="conSalesName" />
+                    <input type="hidden" id="conSalesCompany" />
+                    <input type="hidden" id="conSalesContact" />
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Note</label>
                         <textarea class="form-control" id="conNote" rows="2" placeholder="Catatan…"></textarea>

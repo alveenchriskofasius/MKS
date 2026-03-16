@@ -536,5 +536,27 @@ namespace API.Repository
                 return new { success = false, result = e.Message };
             }
         }
+
+        public async Task<object> GetPOItemQuantities(int stockInTradeId)
+        {
+            try
+            {
+                var trade = await _context.Trades.AsNoTracking().FirstOrDefaultAsync(t => t.ID == stockInTradeId);
+                if (trade == null || trade.PurchaseOrderID == null)
+                    return new List<object>();
+
+                var poId = trade.PurchaseOrderID.Value;
+                var poItems = await _context.PurchaseOrderItems
+                    .Where(pi => pi.TradeID == poId)
+                    .Select(pi => new { pi.ProductID, OrderedQty = pi.Quantity })
+                    .ToListAsync();
+
+                return poItems;
+            }
+            catch
+            {
+                return new List<object>();
+            }
+        }
     }
 }

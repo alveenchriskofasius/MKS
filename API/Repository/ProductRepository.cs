@@ -46,7 +46,7 @@ namespace API.Repository
                 var ids = list.Select(x => x.ID).Distinct().ToList();
                 var extraMap = await _context.Products.AsNoTracking()
                     .Where(p => ids.Contains(p.ID))
-                    .Select(p => new { p.ID, p.Barcode, p.HasDiscount, p.DiscountPercentage })
+                    .Select(p => new { p.ID, p.Barcode, p.HasDiscount, p.DiscountPercentage, p.LowStockThreshold })
                     .ToDictionaryAsync(x => x.ID);
                 return list.Select(p =>
                 {
@@ -65,6 +65,7 @@ namespace API.Repository
                         supplierID = p.SupplierID,
                         supplierName = p.SupplierName,
                         barcode = extra?.Barcode,
+                        lowStockThreshold = extra?.LowStockThreshold,
                         hasDiscount = extra?.HasDiscount ?? false,
                         discountPercentage = extra?.DiscountPercentage ?? 0m
                     };
@@ -249,7 +250,7 @@ namespace API.Repository
             entity.UnitID = model.UnitID;
             entity.Description = model.Description;
             entity.UnitPrice = model.UnitPrice;
-            entity.StockQuantity = model.StockQuantity;
+            // StockQuantity is managed by inventory operations (Stock In / Stock Out), not product editing
             entity.LowStockThreshold = model.LowStockThreshold;
             entity.SupplierID = model.SupplierID;
             entity.Barcode = model.Barcode;

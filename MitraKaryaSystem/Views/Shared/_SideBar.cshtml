@@ -17,12 +17,11 @@
 <div class="sidebar">
     <!-- Sidebar Menu -->
     <nav class="mt-2">
-        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-            <!-- Overview -->
-            <li class="nav-section">Overview</li>
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="true">
+            <!-- Dashboard -->
             <li class="nav-item">
                 <a asp-action="Index" asp-controller="Home" class="nav-link">
-                    <i class="fa-solid fa-chart-line"></i>
+                    <i class="nav-icon fa-solid fa-chart-line"></i>
                     <p>Dashboard</p>
                 </a>
             </li>
@@ -30,7 +29,7 @@
             {
                 <li class="nav-item">
                     <a asp-action="Index" asp-controller="Pos" class="nav-link">
-                        <i class="fa-solid fa-cash-register"></i>
+                        <i class="nav-icon fa-solid fa-cash-register"></i>
                         <p>Point of Sale</p>
                     </a>
                 </li>
@@ -39,262 +38,312 @@
             @if(CanSee("Sales Order") || CanSee("Sales Invoice") || CanSee("Delivery Order") || CanSee("Sales Return") || CanSee("Payment In"))
             {
                 <!-- Sales -->
-                <li class="nav-section">Sales</li>
-                @if(CanSee("Sales Order"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="SalesOrder" class="nav-link">
-                            <i class="fa-solid fa-file-invoice-dollar"></i>
-                            <p>Sales Order</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Sales Invoice"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="SalesInvoice" class="nav-link">
-                            <i class="fa-solid fa-file-invoice"></i>
-                            <p>Sales Invoice</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Delivery Order"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="DeliveryOrder" class="nav-link">
-                            <i class="fa-solid fa-truck-fast"></i>
-                            <p>Delivery Order</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Sales Return"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="SalesReturn" class="nav-link">
-                            <i class="fa-solid fa-rotate-left"></i>
-                            <p>Sales Return</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Payment In"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="PaymentIn" class="nav-link">
-                            <i class="fa-solid fa-hand-holding-dollar"></i>
-                            <p>Payment In</p>
-                        </a>
-                    </li>
-                }
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fa-solid fa-file-invoice-dollar"></i>
+                        <p>Sales<i class="right fas fa-angle-left"></i></p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        @if(CanSee("Sales Order"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="SalesOrder" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Sales Order</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Sales Invoice"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="SalesInvoice" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Sales Invoice</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Delivery Order"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="DeliveryOrder" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Delivery Order</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Sales Return"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="SalesReturn" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Sales Return</p>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </li>
             }
 
             @if(CanSee("Purchase Order") || CanSee("Purchase Invoice") || CanSee("Purchase Return") || CanSee("Payment Out"))
             {
                 <!-- Purchasing -->
-                <li class="nav-section">Purchasing</li>
-                @if(CanSee("Purchase Order"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="PurchaseOrder" class="nav-link">
-                            <i class="fa-solid fa-cart-shopping"></i>
-                            <p>Purchase Order</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Purchase Invoice"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="PurchaseInvoice" class="nav-link">
-                            <i class="fa-solid fa-file-invoice"></i>
-                            <p>Purchase Invoice</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Purchase Return"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="PurchaseReturn" class="nav-link">
-                            <i class="fa-solid fa-rotate-right"></i>
-                            <p>Purchase Return</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Payment Out"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="PaymentOut" class="nav-link">
-                            <i class="fa-solid fa-money-bill-wave"></i>
-                            <p>Payment Out</p>
-                        </a>
-                    </li>
-                }
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fa-solid fa-cart-shopping"></i>
+                        <p>Purchasing<i class="right fas fa-angle-left"></i></p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        @if(CanSee("Purchase Order"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="PurchaseOrder" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Purchase Order</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Purchase Invoice"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="PurchaseInvoice" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Purchase Invoice</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Purchase Return"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="PurchaseReturn" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Purchase Return</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Payment Out"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="PaymentOut" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Payment Out</p>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </li>
             }
 
             @if(CanSee("Product") || CanSee("Stock In") || CanSee("Stock Count") || CanSee("Consignment"))
             {
                 <!-- Inventory -->
-                <li class="nav-section">Inventory</li>
-                @if(CanSee("Product"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Product" class="nav-link">
-                            <i class="fa-solid fa-cubes-stacked"></i>
-                            <p>Products</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Stock In"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="StockIn" class="nav-link">
-                            <i class="fa-solid fa-boxes-stacked"></i>
-                            <p>Stock In</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Stock Count"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="StockCount" class="nav-link">
-                            <i class="fa-solid fa-clipboard-check"></i>
-                            <p>Stock Count</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Consignment"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Consignment" class="nav-link">
-                            <i class="fa-solid fa-handshake"></i>
-                            <p>Consignment</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Product"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Stock" class="nav-link">
-                            <i class="fa-solid fa-id-card"></i>
-                            <p>Stock Card</p>
-                        </a>
-                    </li>
-                }
-                }
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fa-solid fa-cubes-stacked"></i>
+                        <p>Inventory<i class="right fas fa-angle-left"></i></p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        @if(CanSee("Product"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Product" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Products</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Stock In"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="StockIn" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Stock In</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Stock Count"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="StockCount" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Stock Count</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Consignment"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Consignment" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Consignment</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Product"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Stock" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Stock Card</p>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </li>
+            }
 
             @if(CanSee("Customer") || CanSee("Driver") || CanSee("Category") || CanSee("Unit"))
             {
                 <!-- Master Data -->
-                <li class="nav-section">Master Data</li>
-                @if(CanSee("Customer"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Customer" class="nav-link">
-                            <i class="fa-solid fa-user-group"></i>
-                            <p>Customers</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Driver"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Driver" class="nav-link">
-                            <i class="fa-solid fa-id-badge"></i>
-                            <p>Drivers</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Category") || CanSee("Unit"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="MasterSetting" class="nav-link">
-                            <i class="fa-solid fa-cogs"></i>
-                            <p>Master Settings</p>
-                        </a>
-                    </li>
-                }
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fa-solid fa-database"></i>
+                        <p>Master Data<i class="right fas fa-angle-left"></i></p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        @if(CanSee("Customer"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Customer" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Customers</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Driver"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Driver" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Drivers</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Category") || CanSee("Unit"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="MasterSetting" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Master Settings</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Supplier"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Supplier" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Supplier</p>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </li>
             }
 
-            @if(CanSee("Customer Deposit") || CanSee("Debt") || CanSee("Expense") || CanSee("Customer Statement"))
+            @if(CanSee("Customer Deposit") || CanSee("Debt") || CanSee("Expense") || CanSee("Customer Statement") || CanSee("Customer Aging"))
             {
                 <!-- Finance -->
-                <li class="nav-section">Finance</li>
-                @if(CanSee("Customer Deposit"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="CustomerDeposit" class="nav-link">
-                            <i class="fa-solid fa-wallet"></i>
-                            <p>Customer Deposit</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Debt"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Debt" class="nav-link">
-                            <i class="fa-solid fa-scale-balanced"></i>
-                            <p>Debt Management</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Expense"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Expense" class="nav-link">
-                            <i class="fa-solid fa-receipt"></i>
-                            <p>Expense</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Customer Statement"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="CustomerStatement" class="nav-link">
-                            <i class="fa-solid fa-file-lines"></i>
-                            <p>Customer Statement</p>
-                        </a>
-                    </li>
-                }
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fa-solid fa-wallet"></i>
+                        <p>Finance<i class="right fas fa-angle-left"></i></p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        @if(CanSee("Customer Deposit"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="CustomerDeposit" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Customer Deposit</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Debt"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Debt" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Debt Management</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Expense"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Expense" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Expense</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Customer Statement"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="CustomerStatement" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Customer Statement</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Customer Aging"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="CustomerAging" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Customer Aging</p>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </li>
             }
 
             @if(CanSee("Report") || CanSee("Profit Loss") || CanSee("Price History"))
             {
                 <!-- Reports -->
-                <li class="nav-section">Reports</li>
-                @if(CanSee("Report"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Report" class="nav-link">
-                            <i class="fa-solid fa-chart-bar"></i>
-                            <p>Reports</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Profit Loss"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="ProfitLoss" class="nav-link">
-                            <i class="fa-solid fa-chart-pie"></i>
-                            <p>Profit &amp; Loss</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Price History"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="PriceHistory" class="nav-link">
-                            <i class="fa-solid fa-tags"></i>
-                            <p>Price List &amp; History</p>
-                        </a>
-                    </li>
-                }
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fa-solid fa-chart-bar"></i>
+                        <p>Reports<i class="right fas fa-angle-left"></i></p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        @if(CanSee("Report"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Report" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Reports</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Profit Loss"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="ProfitLoss" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Profit &amp; Loss</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Price History"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="PriceHistory" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Price List &amp; History</p>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </li>
             }
 
             @if(CanSee("Promo"))
             {
-                <!-- Promo -->
-                <li class="nav-section">Marketing</li>
+                <!-- Marketing -->
                 <li class="nav-item">
                     <a asp-action="Index" asp-controller="Promo" class="nav-link">
-                        <i class="fa-solid fa-percent"></i>
+                        <i class="nav-icon fa-solid fa-percent"></i>
                         <p>Promo Management</p>
                     </a>
                 </li>
@@ -303,34 +352,41 @@
             @if(CanSee("User") || CanSee("Role") || CanSee("Audit Log"))
             {
                 <!-- Administration -->
-                <li class="nav-section">Administration</li>
-                @if(CanSee("User"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="User" class="nav-link">
-                            <i class="fa-solid fa-users"></i>
-                            <p>Users</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Role"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="Role" class="nav-link">
-                            <i class="fa-solid fa-shield-halved"></i>
-                            <p>Roles &amp; Permissions</p>
-                        </a>
-                    </li>
-                }
-                @if(CanSee("Audit Log"))
-                {
-                    <li class="nav-item">
-                        <a asp-action="Index" asp-controller="AuditLog" class="nav-link">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
-                            <p>Audit Log</p>
-                        </a>
-                    </li>
-                }
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="nav-icon fa-solid fa-shield-halved"></i>
+                        <p>Administration<i class="right fas fa-angle-left"></i></p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        @if(CanSee("User"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="User" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Users</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Role"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="Role" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Roles &amp; Permissions</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Audit Log"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="AuditLog" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Audit Log</p>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </li>
             }
         </ul>
     </nav>

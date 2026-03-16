@@ -8,6 +8,8 @@
 });
 
 const StockInStatus = {1: 'Draft', 2: 'Submitted', 3: 'Verified' };
+// PO ordered quantities keyed by ProductID; populated when PO-linked
+let _poQtyMap = {};
 
 function UpdateStockInStatusBadge(statusID) {
  const $b = $('#stockInStatus');
@@ -132,6 +134,12 @@ let TableStockIn = {
   }
  const statusID = parseInt($('#stockInStatusID').val()||'1',10);
  const canEdit = statusID < 3; // editable until verified
+ const hasPO = Object.keys(_poQtyMap).length > 0;
+ // Inject orderedQty from PO map into each row
+ dataList.forEach(row => {
+   const pid = row.productID || row.ProductID;
+   row.orderedQty = _poQtyMap[pid] ?? null;
+ });
  let columns = [
  { 
    data: null,
@@ -153,20 +161,49 @@ let TableStockIn = {
      return row.product || row.Product;
    }
  },
+ // Ordered Qty (from PO, readonly)
+ { 
+   data: null,
+   className: 'text-end',
+   visible: hasPO,
+   render: function(data, type, row) {
+     const oq = row.orderedQty;
+     return oq != null ? oq : '-';
+   }
+ },
+ // Received Qty (editable)
  canEdit ? { 
    data: null,
+   className: 'text-end',
    render: function(data, type, row) {
      const qty = row.quantity || row.Quantity;
      return type === 'display' ? `<input type="number" class="form-control change" value="${qty}" min="1" />` : qty;
    }
  } : { 
    data: null,
+   className: 'text-end',
    render: function(data, type, row) {
      return row.quantity || row.Quantity;
    }
  },
- { 
+ // Discrepancy
+ {
    data: null,
+   className: 'text-end',
+   visible: hasPO,
+   render: function(data, type, row) {
+     const oq = row.orderedQty;
+     if (oq == null) return '-';
+     const rq = parseInt(row.quantity || row.Quantity) || 0;
+     const diff = rq - oq;
+     if (diff === 0) return '<span class="badge text-bg-success">Match</span>';
+     if (diff < 0) return `<span class="badge text-bg-danger">${diff}</span>`;
+     return `<span class="badge text-bg-info">+${diff}</span>`;
+   }
+ },
+ {
+   data: null,
+   className: 'text-end',
    render: function(data, type, row) {
      const price = row.unitPrice || row.UnitPrice || 0;
      if (type === 'display') {
@@ -325,7 +362,7 @@ let ControlStockIn = {
 
  ControlStockIn.ProductSelect();
  },
- ProductSelect: function () { $('#selectProduct').on('select2:select', function (e) { let data = e.params.data; ControlStockIn.AddOrIncrease(data); $(this).val(null).trigger('change'); $(this).select2('close'); }); },
+ ProductSelect: function () { $('#selectProduct').on('select2:select', function (e) { let data = e.params.data; ControlStockIn.AddOrIncrease(data); if (typeof MksSound !== 'undefined') MksSound.success(); $(this).val(null).trigger('change'); $(this).select2('close'); }); },
  AddOrIncrease: function (selectedProduct) {
  let table = $('#tableProduct').DataTable();
  let exists = false;
@@ -347,27 +384,41 @@ let ControlStockIn = {
  table.draw(false);
  ControlStockIn.UpdateSummary();
  },
- AddRow: function (productID, productName, quantity, unitPrice, barcode, supplierID, supplier) { let table = $('#tableProduct').DataTable(); table.row.add({ id: undefined, productID, product: productName, quantity, unitPrice, supplierID, barcode, supplier }).draw(); },
+ AddRow: function (productID, productName, quantity, unitPrice, barcode, supplierID, supplier) { let table = $('#tableProduct').DataTable(); const oq = _poQtyMap[productID] ?? null; table.row.add({ id: undefined, productID, product: productName, quantity, orderedQty: oq, unitPrice, supplierID, barcode, supplier }).draw(); },
  AddProduct: function () { let selectedData = $('#selectProduct').select2('data')[0]; if (!selectedData) { toastr.info('Select a product first'); return; } ControlStockIn.AddOrIncrease(selectedData); $('#quantity').val(1); },
  UpdateSummary: function () {
  let table = $('#tableProduct').DataTable();
  const data = table.rows().data();
  let totalQty =0;
  let totalValue =0;
+ let totalOrdered =0;
+ let totalDiscrep =0;
+ const hasPO = Object.keys(_poQtyMap).length > 0;
  for (let i =0; i < data.length; i++) {
  let qty = parseInt(data[i].quantity || data[i].Quantity) ||0;
  let price = parseFloat(data[i].unitPrice || data[i].UnitPrice) ||0;
+ let oq = data[i].orderedQty || 0;
  totalQty += qty;
  totalValue += qty * price;
+ totalOrdered += oq;
+ totalDiscrep += (oq > 0 ? qty - oq : 0);
  }
  $('#totalQty').text(totalQty);
  $('#totalUnitPrice').text(totalValue.toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }));
+ if (hasPO) {
+   $('#totalOrderedQty').text(totalOrdered);
+   const cls = totalDiscrep === 0 ? 'text-success' : (totalDiscrep < 0 ? 'text-danger' : 'text-info');
+   $('#totalDiscrepancy').html(`<span class="${cls}">${totalDiscrep >= 0 ? '+' : ''}${totalDiscrep}</span>`);
+ } else {
+   $('#totalOrderedQty').text('-');
+   $('#totalDiscrepancy').text('-');
+ }
  }
 };
 
 let FormStockIn = {
  ResetProductForm: function () { $('#selectProduct').val(null).trigger('change'); $('#quantity').val(1); },
- Reset: function () { this.FillForm(0, true); ControlStockIn.UpdateSummary(); },
+ Reset: function () { _poQtyMap = {}; this.FillForm(0, true); ControlStockIn.UpdateSummary(); },
  Save: function () {
  var postData = { ID: $('#stockInID').val(), Date: $('#stockInDate').val(), No: $('#stockInNumber').val(), PurchaseOrderID: $('#stockInPO').val() || null, StockInDetails: [] };
  let table = $('#tableProduct').DataTable();
@@ -410,10 +461,20 @@ let FormStockIn = {
    if (statusVal > 1 || poId) $('#stockInPO').prop('disabled', true); else $('#stockInPO').prop('disabled', false);
  });
  UpdateStockInStatusBadge(statusVal);
- TableStockIn.FillGridProduct(id, isReset);
+ // Load PO quantities before rendering grid
+ const linkedPOId = parseInt($('#stockInPurchaseOrderID').val() || '0', 10);
+ if (id && linkedPOId > 0) {
+   Common.Api.get('/StockIn/GetPOQties?id=' + id).then(poItems => {
+     _poQtyMap = {};
+     if (Array.isArray(poItems)) poItems.forEach(pi => { _poQtyMap[pi.productID || pi.ProductID] = pi.orderedQty || pi.OrderedQty; });
+     TableStockIn.FillGridProduct(id, isReset);
+   }).catch(() => { _poQtyMap = {}; TableStockIn.FillGridProduct(id, isReset); });
+ } else {
+   _poQtyMap = {};
+   TableStockIn.FillGridProduct(id, isReset);
+ }
  // If linked to a PO, lock product add controls (items come from PO)
- const linkedPO = $('#stockInPurchaseOrderID').val();
- if (linkedPO && parseInt(linkedPO) > 0) {
+ if (linkedPOId > 0) {
    $('#buttonAdd').prop('disabled', true);
    $('#selectProduct').prop('disabled', true);
    if ($.fn.select2 && $('#selectProduct').data('select2')) $('#selectProduct').trigger('change.select2');

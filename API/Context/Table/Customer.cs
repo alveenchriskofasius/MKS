@@ -29,5 +29,9 @@ public partial class Customer
 
     public string Note { get; set; }
 
+    public bool IsSales { get; set; }
+
+    public string Company { get; set; }
+
     public virtual ICollection<PaymentIn> PaymentIns { get; set; } = new List<PaymentIn>();
 }

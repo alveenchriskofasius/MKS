@@ -62,7 +62,7 @@ const MksProductSearch = (function () {
                     '</div></div>');
 
                 $row.on('click', function () {
-                    if (isOut && opts.blockZeroStock) { toastr.warning('Stok habis'); return; }
+                    if (isOut && opts.blockZeroStock) { if (typeof MksSound !== 'undefined') MksSound.error(); toastr.warning('Stok habis'); return; }
                     opts.onSelect({
                         id: p.id || p.ID,
                         name: name,
@@ -73,6 +73,7 @@ const MksProductSearch = (function () {
                         unit: p.unit || p.Unit,
                         barcode: p.barcode || p.Barcode
                     });
+                    if (typeof MksSound !== 'undefined') MksSound.success();
                     destroySuggest();
                     $input.val('').focus();
                 });
@@ -146,8 +147,9 @@ const MksProductSearch = (function () {
                             stockQuantity: p.stockQuantity != null ? p.stockQuantity : p.StockQuantity,
                             unit: p.unit || p.Unit, barcode: p.barcode || p.Barcode
                         });
+                        if (typeof MksSound !== 'undefined') MksSound.success();
                         $(self).val('').focus();
-                    } else { toastr.warning('Product not found'); }
+                    } else { if (typeof MksSound !== 'undefined') MksSound.error(); toastr.warning('Product not found'); }
                 });
             } else if (e.key === 'Escape') { destroySuggest(); }
         });

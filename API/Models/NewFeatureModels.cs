@@ -122,3 +122,28 @@ public class PromoListItem
     public int AffectedProducts { get; set; }
     public string CreatedBy { get; set; }
 }
+
+// ==================== Customer Aging ====================
+public class CustomerAgingResult
+{
+    public DateTime AsOfDate { get; set; }
+    public decimal TotalOutstanding { get; set; }
+    public decimal TotalCurrent { get; set; }
+    public decimal Total31_60 { get; set; }
+    public decimal Total61_90 { get; set; }
+    public decimal TotalOver90 { get; set; }
+    public List<CustomerAgingRow> Rows { get; set; } = [];
+}
+
+public class CustomerAgingRow
+{
+    public int CustomerID { get; set; }
+    public string CustomerName { get; set; }
+    public decimal Current { get; set; }
+    public decimal Days31_60 { get; set; }
+    public decimal Days61_90 { get; set; }
+    public decimal Over90 { get; set; }
+    public decimal Total { get; set; }
+    public int InvoiceCount { get; set; }
+    public string OldestInvoiceDate { get; set; }
+}

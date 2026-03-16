@@ -55,7 +55,7 @@ namespace API.Repository
             return customerModel;
         }
 
-        public async Task<object> GetList() => await _context.Customers.Select(x => new
+        public async Task<object> GetList() => await _context.Customers.Where(x => !x.IsSales).Select(x => new
         {
             ID = x.ID,
             Name = x.Name,
@@ -80,7 +80,6 @@ namespace API.Repository
                         IsSupplier = customer.IsSupplier,
                         Note = customer.Note,
                         CreatedBy = _httpContextAccessor.HttpContext.User.Identity.Name,
-
                     });
                 }
                 else
