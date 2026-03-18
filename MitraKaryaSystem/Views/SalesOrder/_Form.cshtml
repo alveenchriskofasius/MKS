@@ -1,4 +1,5 @@
 ﻿@using API.Models
+@using API.Context.Table
 @model SalesOrderViewModel
 <form id="salesOrderForm">
     <input type="text" id="salesOrderID" hidden asp-for="SalesOrder.ID" />
@@ -16,7 +17,14 @@
         </div>
         <div class="col-md-3">
             <label for="selectCustomer" class="form-label small mb-0 fw-semibold">Customer</label>
-            @Html.DropDownListFor(m => m.SalesOrder.CustomerID, Model.Customers, "Select a customer", new { @class = "form-select form-select-sm", id = "selectCustomer" })
+            <select id="selectCustomer" name="SalesOrder.CustomerID" class="form-select form-select-sm">
+                <option value="0" data-address="">Umum</option>
+                @foreach (var c in Model.CustomerList)
+                {
+                    var isSelected = Model.SalesOrder.CustomerID == c.ID;
+                    <option value="@c.ID" data-address="@c.Address" selected="@isSelected">@c.Name</option>
+                }
+            </select>
         </div>
         <div class="col-md-3">
             <label for="salesOrderNote" class="form-label small mb-0 fw-semibold">Note</label>

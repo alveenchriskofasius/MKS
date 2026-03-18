@@ -137,7 +137,25 @@ namespace API.Repository
             var list = await q.ToListAsync();
             return list;
         }
-        public async Task<object> GetDetailListById(int id) => await _procedure.uspGetPurchaseOrderItemListAsync(id);
+        public async Task<object> GetDetailListById(int id)
+        {
+            var spResult = await _procedure.uspGetPurchaseOrderItemListAsync(id);
+            // Overlay PurchasePrice from Products table so PO shows buying price, not selling price
+            var productIds = spResult.Where(x => x.ProductID.HasValue).Select(x => x.ProductID!.Value).Distinct().ToList();
+            var priceMap = await _context.Products.AsNoTracking()
+                .Where(p => productIds.Contains(p.ID))
+                .Select(p => new { p.ID, p.PurchasePrice })
+                .ToDictionaryAsync(x => x.ID, x => x.PurchasePrice);
+            foreach (var item in spResult)
+            {
+                if (item.ProductID.HasValue && priceMap.TryGetValue(item.ProductID.Value, out var purchasePrice) && purchasePrice > 0)
+                {
+                    item.UnitPrice = purchasePrice;
+                    item.SubTotal = purchasePrice * item.Quantity;
+                }
+            }
+            return spResult;
+        }
 
         public async Task<object> Save(PurchaseOrderModel model)
         {

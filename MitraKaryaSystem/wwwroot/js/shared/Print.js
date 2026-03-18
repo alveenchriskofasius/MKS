@@ -144,7 +144,9 @@ const MksPrint = (function () {
         const date = $('#salesOrderDate').val();
         const note = $('#salesOrderNote').val();
         const customer = $('#selectCustomer option:selected').text() || 'Umum';
+        const customerAddress = $('#selectCustomer option:selected').data('address') || '';
         const status = $('#salesOrderStatus').text() || 'Draft';
+        const paidAmount = Number($('#salesOrderPaidAmount').val() || 0);
 
         const table = $('#tableProduct').DataTable();
         const rows = [];
@@ -155,26 +157,81 @@ const MksPrint = (function () {
             grandTotal += parseFloat(r.subTotal || r.subtotal || 0);
         });
 
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">SALES ORDER</div><div class="doc-no">' + no + '</div></div></div>';
-        html += buildInfoSection([
-            { label: 'Date', value: formatDate(date) },
-            { label: 'Customer', value: customer },
-            { label: 'Status', value: status }
-        ]);
-        html += buildTable(
-            [
-                { title: '#', align: 'text-center', render: function (r, i) { return i + 1; } },
-                { title: 'Product', render: function (r) { return r.product || r.productName || r.name || ''; } },
-                { title: 'Qty', align: 'text-center', render: function (r) { return r.quantity || r.qty || 0; } },
-                { title: 'Unit Price', align: 'text-end', render: function (r) { return formatMoney(r.unitPrice || r.price || 0); } },
-                { title: 'Subtotal', align: 'text-end', render: function (r) { return formatMoney(r.subTotal || r.subtotal || 0); } }
-            ],
-            rows, true, 'Total', formatMoney(grandTotal)
-        );
-        if (note) html += '<div class="print-note"><strong>Note:</strong> ' + note + '</div>';
-        html += buildSignature(['Prepared by', 'Customer']);
-        html += '<div class="print-date">Printed: ' + new Date().toLocaleString('id-ID') + '</div>';
-        openPrintWindow(html);
+        var itemsHtml = '';
+        rows.forEach(function (r, i) {
+            var name = r.product || r.productName || r.name || '';
+            var qty = r.quantity || r.qty || 0;
+            var unit = r.unit || r.Unit || '-';
+            var price = parseFloat(r.unitPrice || r.price || 0);
+            var sub = parseFloat(r.subTotal || r.subtotal || 0);
+            itemsHtml += '<tr><td style="text-align:center;">' + (i + 1) + '</td><td>' + name + '</td><td style="text-align:center;">' + qty + '</td><td style="text-align:center;">' + unit + '</td><td style="text-align:right;">' + formatMoney(price) + '</td><td style="text-align:right;">' + formatMoney(sub) + '</td></tr>';
+        });
+
+        var outstanding = grandTotal - paidAmount;
+        var dpLine = paidAmount > 0 ? '<div class="summary-line"><span>Uang Muka</span><span>' + formatMoney(paidAmount) + '</span></div>' : '';
+        var outstandingLine = outstanding > 0 ? '<div class="summary-line debt"><span>Sisa</span><span>' + formatMoney(outstanding) + '</span></div>' : '';
+        var noteLine = note ? '<div class="so-note"><strong>Catatan:</strong> ' + note + '</div>' : '';
+
+        var soHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sales Order - ' + no + '</title>'
+            + '<style>'
+            + '@page { size: A4; margin: 16mm 20mm; }'
+            + '* { margin:0; padding:0; box-sizing:border-box; }'
+            + 'body { font-family: "Segoe UI", Arial, sans-serif; font-size: 13px; color: #000; max-width: 720px; margin: 0 auto; padding: 20px; }'
+            + '.so-title { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 24px; }'
+            + '.so-company { text-align: left; margin-bottom: 16px; }'
+            + '.so-company .company-name { font-size: 16px; font-weight: 700; color: #1b2a4a; margin-bottom: 2px; }'
+            + '.info-section { margin-bottom: 16px; }'
+            + '.info-section .info-line { margin-bottom: 4px; font-size: 13px; }'
+            + '.info-section .info-line strong { display: inline-block; min-width: 130px; }'
+            + 'table { width: 100%; border-collapse: collapse; margin: 16px 0; }'
+            + 'thead th { background: #1b2a4a; color: #fff; font-size: 12px; font-weight: 600; padding: 8px 10px; }'
+            + 'tbody td { padding: 7px 10px; border-bottom: 1px solid #ddd; font-size: 12px; }'
+            + 'tbody tr:last-child td { border-bottom: 2px solid #1b2a4a; }'
+            + '.summary-section { display: flex; justify-content: flex-end; margin-top: 12px; }'
+            + '.summary-inner { width: 280px; }'
+            + '.summary-line { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }'
+            + '.summary-line.grand { font-size: 16px; font-weight: 700; border-top: 2px solid #000; padding-top: 6px; margin-top: 4px; }'
+            + '.summary-line.debt { color: #c00; font-weight: 600; }'
+            + '.so-note { margin-top: 16px; padding: 8px 10px; background: #f8fafc; border-left: 3px solid #1b2a4a; font-size: 12px; color: #555; }'
+            + '.signatures { display: flex; justify-content: space-between; margin-top: 60px; }'
+            + '.sig-box { text-align: center; width: 200px; }'
+            + '.sig-box .sig-label { font-size: 13px; font-weight: 600; margin-bottom: 80px; }'
+            + '.sig-box .sig-name { border-top: 1px solid #000; padding-top: 4px; font-size: 13px; }'
+            + '.so-footer { text-align: center; margin-top: 30px; font-size: 10px; color: #999; }'
+            + '@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }'
+            + '</style></head><body>'
+            + '<div class="so-title">Sales Order</div>'
+            + '<div class="so-company"><div class="company-name">' + companyName + '</div></div>'
+            + '<div class="info-section">'
+            + '<div class="info-line"><strong>Tanggal:</strong> ' + formatDate(date) + '</div>'
+            + '<div class="info-line"><strong>No:</strong> ' + no + '</div>'
+            + '<div class="info-line"><strong>Customer:</strong> ' + customer + '</div>'
+            + (customerAddress ? '<div class="info-line"><strong>Alamat:</strong> ' + customerAddress + '</div>' : '')
+            + '<div class="info-line"><strong>Status:</strong> ' + status + '</div>'
+            + '</div>'
+            + '<table>'
+            + '<thead><tr><th style="text-align:center;width:40px;">No</th><th style="text-align:left;">Deskripsi</th><th style="text-align:center;width:60px;">Unit</th><th style="text-align:center;width:60px;">Satuan</th><th style="text-align:right;width:130px;">Harga Satuan</th><th style="text-align:right;width:130px;">Jumlah</th></tr></thead>'
+            + '<tbody>' + itemsHtml + '</tbody>'
+            + '</table>'
+            + '<div class="summary-section"><div class="summary-inner">'
+            + '<div class="summary-line grand"><span>Total</span><span>' + formatMoney(grandTotal) + '</span></div>'
+            + dpLine
+            + outstandingLine
+            + '</div></div>'
+            + noteLine
+            + '<div class="signatures">'
+            + '<div class="sig-box"><div class="sig-label">Penerima</div><div class="sig-name">' + customer + '</div></div>'
+            + '<div class="sig-box"><div class="sig-label">Pemilik Usaha</div><div class="sig-name">Mitra Karya</div></div>'
+            + '</div>'
+            + '<div class="so-footer">Printed: ' + new Date().toLocaleString('id-ID') + '</div>'
+            + '</body></html>';
+
+        var w = window.open('', '_blank', 'width=800,height=900');
+        if (!w) { toastr.error('Popup blocked. Please allow popups.'); return; }
+        w.document.write(soHtml);
+        w.document.close();
+        w.focus();
+        setTimeout(function () { w.print(); }, 400);
     }
 
     function printStockIn() {

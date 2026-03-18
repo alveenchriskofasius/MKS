@@ -40,4 +40,6 @@ public partial class Consignment
     public int? SalesPersonID { get; set; }
 
     public virtual ICollection<ConsignmentItem> ConsignmentItems { get; set; } = new List<ConsignmentItem>();
+
+    public virtual SalesPerson SalesPerson { get; set; }
 }

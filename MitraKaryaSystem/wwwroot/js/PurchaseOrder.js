@@ -122,12 +122,13 @@ let POTable = {
         const isLocked = IsPOLockedForEdit(statusID);
         let columns = [
             { data: 'productID', visible: false },
-            { data: 'product' },
+            { data: 'product', className: 'text-start' },
             // quantity: editable only when not locked
-            isLocked ? { data: 'quantity', render: $.fn.dataTable.render.number(',', '.', 0) }
-                : { data: 'quantity', render: (d, t) => t === 'display' ? `<input type="number" class="form-control po-qty" value="${d}" min="1" />` : d },
-            { data: 'unitPrice', render: $.fn.dataTable.render.number(',', '.', 2) },
-            { data: 'subTotal', render: $.fn.dataTable.render.number(',', '.', 2) },
+            isLocked
+                ? { data: 'quantity', className: 'text-center', render: $.fn.dataTable.render.number(',', '.', 0) }
+                : { data: 'quantity', className: 'text-center', render: (d, t) => t === 'display' ? `<input type="number" class="form-control po-qty" value="${d}" min="1" />` : d },
+            { data: 'unitPrice', className: 'text-end', render: $.fn.dataTable.render.number(',', '.', 2) },
+            { data: 'subTotal', className: 'text-end', render: $.fn.dataTable.render.number(',', '.', 2) },
             { data: null, orderable: false, className: 'text-center', render: () => isLocked ? '' : `<button class='btn btn-sm btn-outline-danger po-delete' title='Delete'><i class='fa fa-trash'></i></button>` }
         ];
         // Diagnostic: log header th count vs defined columns
@@ -342,11 +343,12 @@ let POControl = {
             showPrice: true,
             showStock: true,
             blockZeroStock: false,
+            usePurchasePrice: true,
             supplierId: function () { return $('#filterSupplier').val() || null; },
             onSelect: (prod) => this.AddOrIncrease(prod)
         });
     },
-    AddOrIncrease: function (prod) { let table = $('#tablePurchaseOrderProduct').DataTable(); let exists = false; let rows = table.rows().nodes(); $(rows).each(function () { let rowData = table.row(this).data(); if (rowData.productID == prod.id) { exists = true; let newQuantity = parseInt(rowData.quantity) + 1; rowData.quantity = newQuantity; rowData.subTotal = newQuantity * rowData.unitPrice; table.row(this).data(rowData).invalidate(); } }); if (!exists) { table.row.add({ productID: prod.id, product: prod.name, quantity: 1, unitPrice: prod.unitPrice, subTotal: prod.unitPrice, id: 0 }).draw(); } table.draw(false); this.CalcTotal(); },
+    AddOrIncrease: function (prod) { let table = $('#tablePurchaseOrderProduct').DataTable(); let exists = false; let rows = table.rows().nodes(); $(rows).each(function () { let rowData = table.row(this).data(); if (rowData.productID == prod.id) { exists = true; let newQuantity = parseInt(rowData.quantity) + 1; rowData.quantity = newQuantity; rowData.subTotal = newQuantity * rowData.unitPrice; table.row(this).data(rowData).invalidate(); } }); if (!exists) { const price = Number(prod.purchasePrice || 0) > 0 ? Number(prod.purchasePrice) : Number(prod.unitPrice || 0); table.row.add({ productID: prod.id, product: prod.name, quantity: 1, unitPrice: price, subTotal: price, id: 0 }).draw(); } table.draw(false); this.CalcTotal(); },
     CalcTotal: function () { let table = $('#tablePurchaseOrderProduct').DataTable(); let total = 0; table.rows().every(function () { let r = this.data(); total += (parseFloat(r.unitPrice) || 0) * (parseInt(r.quantity) || 0); }); $('#poTotal').text(total.toFixed(2)); }
 };
 

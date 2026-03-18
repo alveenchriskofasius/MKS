@@ -61,6 +61,8 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<SalesOrderItem> SalesOrderItems { get; set; }
 
+    public virtual DbSet<SalesPerson> SalesPeople { get; set; }
+
     public virtual DbSet<SalesReturnItem> SalesReturnItems { get; set; }
 
     public virtual DbSet<StockCount> StockCounts { get; set; }
@@ -138,6 +140,10 @@ public partial class MKSTableContext : DbContext
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+
+            entity.HasOne(d => d.SalesPerson).WithMany(p => p.Consignments)
+                .HasForeignKey(d => d.SalesPersonID)
+                .HasConstraintName("FK_Consignment_SalesPerson");
         });
 
         modelBuilder.Entity<ConsignmentItem>(entity =>
@@ -429,6 +435,7 @@ public partial class MKSTableContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__Product__Created__5629CD9C")
                 .HasColumnType("date");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
@@ -437,12 +444,18 @@ public partial class MKSTableContext : DbContext
             entity.Property(e => e.Description)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-            entity.Property(e => e.DiscountPercentage).HasColumnType("decimal(5, 2)");
-            entity.Property(e => e.LowStockThreshold).HasDefaultValue(0);
+            entity.Property(e => e.DiscountPercentage)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__Product__Discoun__40C49C62")
+                .HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.HasDiscount).HasAnnotation("Relational:DefaultConstraintName", "DF__Product__HasDisc__3FD07829");
+            entity.Property(e => e.LowStockThreshold)
+                .HasDefaultValue(0)
+                .HasAnnotation("Relational:DefaultConstraintName", "DF__Product__LowStoc__2CBDA3B5");
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.PurchasePrice).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.UnitPrice).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.UpdatedAt).HasColumnType("date");
             entity.Property(e => e.UpdatedBy)
@@ -539,6 +552,25 @@ public partial class MKSTableContext : DbContext
             entity.HasIndex(e => e.TradeID, "IX_SalesOrderItem_TradeID");
 
             entity.Property(e => e.QtyExchanged).HasDefaultValue(0);
+        });
+
+        modelBuilder.Entity<SalesPerson>(entity =>
+        {
+            entity.ToTable("SalesPerson");
+
+            entity.HasIndex(e => e.SupplierID, "IX_SalesPerson_SupplierID");
+
+            entity.Property(e => e.Company).HasMaxLength(200);
+            entity.Property(e => e.Contact).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.HasOne(d => d.Supplier).WithMany(p => p.SalesPeople)
+                .HasForeignKey(d => d.SupplierID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SalesPerson_Customer");
         });
 
         modelBuilder.Entity<SalesReturnItem>(entity =>

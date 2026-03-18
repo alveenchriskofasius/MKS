@@ -122,7 +122,7 @@ const ProductPage = {
         $('.prod-list-item').removeClass('active');
         $(`.prod-list-item[data-id="${id}"]`).addClass('active');
 
-        let product = { id: 0, name: '', barcode: '', description: '', unitPrice: '', categoryID: '', unitID: '', supplierID: '', stockQuantity: 0, lowStockThreshold: '', hasDiscount: false, discountPercentage: 0 };
+        let product = { id: 0, name: '', barcode: '', description: '', unitPrice: '', purchasePrice: '', categoryID: '', unitID: '', supplierID: '', stockQuantity: 0, lowStockThreshold: '', hasDiscount: false, discountPercentage: 0 };
         if (id) {
             const found = this.allProducts.find(p => p.id === id);
             if (found) product = found;
@@ -158,9 +158,14 @@ const ProductPage = {
                         <input type="text" class="form-control" id="prodDescription" value="${this.esc(product.description)}" placeholder="Description" />
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-semibold small">Unit Price <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold small">Unit Price (Sell) <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="prodUnitPrice" required value="${product.unitPrice || ''}" min="0" placeholder="0" />
                         <div class="invalid-feedback">Please enter a price.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Purchase Price (Buy)</label>
+                        <input type="number" class="form-control" id="prodPurchasePrice" value="${product.purchasePrice || ''}" min="0" placeholder="0" />
+                        <small class="text-muted">Harga beli dari supplier.</small>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Low Stock Threshold</label>
@@ -249,6 +254,7 @@ const ProductPage = {
             'ProductModel.Barcode': $('#prodBarcode').val(),
             'ProductModel.Description': $('#prodDescription').val(),
             'ProductModel.UnitPrice': parseFloat($('#prodUnitPrice').val()) || 0,
+            'ProductModel.PurchasePrice': parseFloat($('#prodPurchasePrice').val()) || 0,
             'ProductModel.LowStockThreshold': $('#prodLowStock').val() || '',
             'ProductModel.HasDiscount': $('#prodHasDiscount').is(':checked'),
             'ProductModel.DiscountPercentage': parseFloat($('#prodDiscountPct').val()) || 0,

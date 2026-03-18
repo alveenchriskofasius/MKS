@@ -115,6 +115,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[SalesPerson]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[SalesReturnItem]",
          "ObjectType": 0
       },

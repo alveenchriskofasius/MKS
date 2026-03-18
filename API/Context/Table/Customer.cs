@@ -34,4 +34,6 @@ public partial class Customer
     public string Company { get; set; }
 
     public virtual ICollection<PaymentIn> PaymentIns { get; set; } = new List<PaymentIn>();
+
+    public virtual ICollection<SalesPerson> SalesPeople { get; set; } = new List<SalesPerson>();
 }

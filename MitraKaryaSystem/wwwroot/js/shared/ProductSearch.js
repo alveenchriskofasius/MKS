@@ -14,7 +14,7 @@ const MksProductSearch = (function () {
 
         let suggestIndex = -1;
         let typingTimer = null;
-        const opts = Object.assign({ showPrice: true, showStock: true, blockZeroStock: false, onSelect: function () { } }, options || {});
+        const opts = Object.assign({ showPrice: true, showStock: true, blockZeroStock: false, usePurchasePrice: false, onSelect: function () { } }, options || {});
 
         function destroySuggest() { suggestIndex = -1; $wrap.find('.mks-suggest').remove(); }
 
@@ -42,7 +42,7 @@ const MksProductSearch = (function () {
             list.slice(0, 10).forEach(function (p, i) {
                 var name = p.name || p.Name || '';
                 var supplier = p.supplierName || p.SupplierName || '';
-                var price = Number(p.unitPrice || p.UnitPrice || 0);
+                var price = opts.usePurchasePrice ? Number(p.purchasePrice || p.PurchasePrice || p.unitPrice || p.UnitPrice || 0) : Number(p.unitPrice || p.UnitPrice || 0);
                 var stockRaw = p.stockQuantity != null ? p.stockQuantity : p.StockQuantity;
                 var stock = (stockRaw != null && stockRaw !== '') ? Number(stockRaw) : null;
                 var highlighted = highlightMatch(name, query);
@@ -67,6 +67,7 @@ const MksProductSearch = (function () {
                         id: p.id || p.ID,
                         name: name,
                         unitPrice: price,
+                        purchasePrice: Number(p.purchasePrice || p.PurchasePrice || 0),
                         supplierID: p.supplierID || p.SupplierID,
                         supplierName: supplier,
                         stockQuantity: stock,
@@ -142,6 +143,7 @@ const MksProductSearch = (function () {
                         opts.onSelect({
                             id: p.id || p.ID, name: p.name || p.Name,
                             unitPrice: Number(p.unitPrice || p.UnitPrice || 0),
+                            purchasePrice: Number(p.purchasePrice || p.PurchasePrice || 0),
                             supplierID: p.supplierID || p.SupplierID,
                             supplierName: p.supplierName || p.SupplierName,
                             stockQuantity: p.stockQuantity != null ? p.stockQuantity : p.StockQuantity,

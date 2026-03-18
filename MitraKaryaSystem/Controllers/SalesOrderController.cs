@@ -27,7 +27,8 @@ namespace MitraKaryaSystem.Controllers
             var salesOrder = new SalesOrderViewModel
             {
                 Customers = customers.Select(x => new SelectListItem { Value = x.ID.ToString(), Text = x.Name }).ToList(),
-                SalesOrder = await _salesOrderService.FillForm(id)
+                SalesOrder = await _salesOrderService.FillForm(id),
+                CustomerList = customers.ToList()
             };
             salesOrder.Customers.Insert(0, new SelectListItem { Selected = true, Value = "0", Text = "Umum" });
             return PartialView("_Form", salesOrder);

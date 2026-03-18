@@ -27,10 +27,18 @@
     </div>
 
     <div class="row mb-3">
-        <label for="unitPrice" class="form-label col-sm-2">Unit Price<span class="asterisk">*</span></label>
+        <label for="unitPrice" class="form-label col-sm-2">Unit Price (Sell)<span class="asterisk">*</span></label>
         <div class="col-sm-9">
             <input type="text" asp-for="ProductModel.UnitPrice" required class="form-control" maxlength="7" />
             <div class="invalid-feedback">Please enter a valid unit price.</div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label for="purchasePrice" class="form-label col-sm-2">Purchase Price (Buy)</label>
+        <div class="col-sm-9">
+            <input type="text" asp-for="ProductModel.PurchasePrice" class="form-control" maxlength="7" />
+            <small class="text-muted">Harga beli dari supplier. Digunakan untuk Purchase Order.</small>
         </div>
     </div>
 

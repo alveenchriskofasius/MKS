@@ -46,7 +46,7 @@ namespace API.Repository
                 var ids = list.Select(x => x.ID).Distinct().ToList();
                 var extraMap = await _context.Products.AsNoTracking()
                     .Where(p => ids.Contains(p.ID))
-                    .Select(p => new { p.ID, p.Barcode, p.HasDiscount, p.DiscountPercentage, p.LowStockThreshold })
+                    .Select(p => new { p.ID, p.Barcode, p.HasDiscount, p.DiscountPercentage, p.LowStockThreshold, p.PurchasePrice })
                     .ToDictionaryAsync(x => x.ID);
                 return list.Select(p =>
                 {
@@ -61,6 +61,7 @@ namespace API.Repository
                         unitName = p.UnitName,
                         description = p.Description,
                         unitPrice = p.UnitPrice,
+                        purchasePrice = extra?.PurchasePrice ?? 0m,
                         stockQuantity = p.StockQuantity,
                         supplierID = p.SupplierID,
                         supplierName = p.SupplierName,
@@ -84,7 +85,7 @@ namespace API.Repository
             var ids = spList.Select(x => x.ID).Distinct().ToList();
             var discountMap = await _context.Products.AsNoTracking()
                 .Where(p => ids.Contains(p.ID))
-                .Select(p => new { p.ID, p.HasDiscount, p.DiscountPercentage })
+                .Select(p => new { p.ID, p.HasDiscount, p.DiscountPercentage, p.PurchasePrice })
                 .ToDictionaryAsync(x => x.ID);
             return spList.Select(p =>
             {
@@ -94,6 +95,7 @@ namespace API.Repository
                     p.ID,
                     p.Name,
                     p.UnitPrice,
+                    purchasePrice = disc?.PurchasePrice ?? 0m,
                     p.SupplierID,
                     p.SupplierName,
                     p.Barcode,
@@ -214,6 +216,7 @@ namespace API.Repository
                 UnitID = product.UnitID,
                 Description = product.Description,
                 UnitPrice = product.UnitPrice,
+                PurchasePrice = product.PurchasePrice,
                 StockQuantity = product.StockQuantity,
                 SupplierID = product.SupplierID,
                 Barcode = product.Barcode,
@@ -232,6 +235,7 @@ namespace API.Repository
                 UnitID = model.UnitID,
                 Description = model.Description,
                 UnitPrice = model.UnitPrice,
+                PurchasePrice = model.PurchasePrice,
                 StockQuantity = model.StockQuantity,
                 LowStockThreshold = model.LowStockThreshold,
                 SupplierID = model.SupplierID,
@@ -250,6 +254,7 @@ namespace API.Repository
             entity.UnitID = model.UnitID;
             entity.Description = model.Description;
             entity.UnitPrice = model.UnitPrice;
+            entity.PurchasePrice = model.PurchasePrice;
             // StockQuantity is managed by inventory operations (Stock In / Stock Out), not product editing
             entity.LowStockThreshold = model.LowStockThreshold;
             entity.SupplierID = model.SupplierID;
