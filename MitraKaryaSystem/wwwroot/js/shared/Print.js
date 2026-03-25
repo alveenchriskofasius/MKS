@@ -3,7 +3,20 @@
    Opens a new window with formatted print-ready content
    ======================================================================== */
 const MksPrint = (function () {
-    const companyName = 'Mitra Karya System';
+    /** Get store profile from global module */
+    function getStoreProfile() {
+        if (typeof MksStoreProfile !== 'undefined') return MksStoreProfile.get();
+        return {};
+    }
+    function getCompanyName() { return getStoreProfile().storeName || 'Mitra Karya System'; }
+    function getStoreAddress() { return getStoreProfile().address || ''; }
+    function getReceiptFooter() { return getStoreProfile().receiptFooter || ''; }
+
+    /** Build the left side of the standard print header (company name + address) */
+    function buildHeaderLeft() {
+        var addr = getStoreAddress();
+        return '<div class="company">' + getCompanyName() + '</div>' + (addr ? '<div style="font-size:10px;color:#666;">' + addr + '</div>' : '');
+    }
 
     function buildStyles(theme) {
         var t = theme || {};
@@ -117,7 +130,7 @@ const MksPrint = (function () {
         const rows = [];
         table.rows().every(function () { rows.push(this.data()); });
 
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">PURCHASE ORDER</div><div class="doc-no">' + no + '</div></div></div>';
+        let html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">PURCHASE ORDER</div><div class="doc-no">' + no + '</div></div></div>';
         html += buildInfoSection([
             { label: 'Date', value: formatDate(date) },
             { label: 'Supplier', value: supplier },
@@ -201,7 +214,7 @@ const MksPrint = (function () {
             + '@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }'
             + '</style></head><body>'
             + '<div class="so-title">Sales Order</div>'
-            + '<div class="so-company"><div class="company-name">' + companyName + '</div></div>'
+            + '<div class="so-company"><div class="company-name">' + getCompanyName() + '</div>' + (getStoreAddress() ? '<div style="font-size:12px;color:#666;">' + getStoreAddress() + '</div>' : '') + '</div>'
             + '<div class="info-section">'
             + '<div class="info-line"><strong>Tanggal:</strong> ' + formatDate(date) + '</div>'
             + '<div class="info-line"><strong>No:</strong> ' + no + '</div>'
@@ -221,7 +234,7 @@ const MksPrint = (function () {
             + noteLine
             + '<div class="signatures">'
             + '<div class="sig-box"><div class="sig-label">Penerima</div><div class="sig-name">' + customer + '</div></div>'
-            + '<div class="sig-box"><div class="sig-label">Pemilik Usaha</div><div class="sig-name">Mitra Karya</div></div>'
+            + '<div class="sig-box"><div class="sig-label">Pemilik Usaha</div><div class="sig-name">' + getCompanyName() + '</div></div>'
             + '</div>'
             + '<div class="so-footer">Printed: ' + new Date().toLocaleString('id-ID') + '</div>'
             + '</body></html>';
@@ -244,7 +257,7 @@ const MksPrint = (function () {
         const rows = [];
         table.rows().every(function () { rows.push(this.data()); });
 
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">STOCK IN</div><div class="doc-no">' + no + '</div></div></div>';
+        let html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">STOCK IN</div><div class="doc-no">' + no + '</div></div></div>';
         html += buildInfoSection([
             { label: 'Date', value: formatDate(date) },
             { label: 'Status', value: status }
@@ -276,7 +289,7 @@ const MksPrint = (function () {
         const date = $('#prDate').val();
         const supplier = $('#prSupplierID option:selected').text() || $('#prSupplierName').text() || '-';
 
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">PURCHASE RETURN</div><div class="doc-no">' + no + '</div></div></div>';
+        let html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">PURCHASE RETURN</div><div class="doc-no">' + no + '</div></div></div>';
         html += buildInfoSection([
             { label: 'Date', value: formatDate(date) },
             { label: 'Supplier', value: supplier }
@@ -310,7 +323,7 @@ const MksPrint = (function () {
         const customer = $('#srCustomer option:selected').text() || $('#srCustomerName').text() || '-';
         const refund = $('#lblSummaryRefund').text() || '0.00';
 
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">SALES RETURN</div><div class="doc-no">' + no + '</div></div></div>';
+        let html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">SALES RETURN</div><div class="doc-no">' + no + '</div></div></div>';
         html += buildInfoSection([
             { label: 'Date', value: formatDate(date) },
             { label: 'Customer', value: customer }
@@ -340,7 +353,7 @@ const MksPrint = (function () {
         const note = $('#scNote').val();
         const totalDiff = $('#totalDiffValue').text() || '0.00';
 
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">STOCK COUNT</div><div class="doc-no">' + no + '</div></div></div>';
+        let html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">STOCK COUNT</div><div class="doc-no">' + no + '</div></div></div>';
         html += buildInfoSection([
             { label: 'Date', value: formatDate(date) },
             { label: 'Total Diff Value', value: totalDiff }
@@ -376,7 +389,8 @@ const MksPrint = (function () {
 
         let html = '<div style="max-width:300px; margin:0 auto; font-family:monospace; font-size:12px;">';
         html += '<div style="text-align:center; border-bottom:1px dashed #333; padding-bottom:8px; margin-bottom:8px;">';
-        html += '<div style="font-size:16px; font-weight:bold;">' + companyName + '</div>';
+        html += '<div style="font-size:16px; font-weight:bold;">' + getCompanyName() + '</div>';
+        if (getStoreAddress()) html += '<div style="font-size:10px; color:#666;">' + getStoreAddress() + '</div>';
         html += '<div style="font-size:10px; color:#666;">SALES RECEIPT</div>';
         html += '<div style="font-size:10px;">' + new Date().toLocaleString('id-ID') + '</div>';
         html += '</div>';
@@ -404,14 +418,14 @@ const MksPrint = (function () {
             html += '<div style="display:flex; justify-content:space-between; margin-top:4px;"><span>Payment</span><span>' + paymentType + '</span></div>';
         }
         html += '</div>';
-        html += '<div style="text-align:center; margin-top:16px; font-size:10px; color:#999;">Thank you for your purchase!</div>';
+        html += '<div style="text-align:center; margin-top:16px; font-size:10px; color:#999;">' + (getReceiptFooter() || 'Thank you for your purchase!') + '</div>';
         html += '</div>';
         openPrintWindow(html);
     }
 
     function printDeliveryOrder(data) {
         const d = data || {};
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">DELIVERY ORDER</div><div class="doc-no">' + (d.no || '-') + '</div></div></div>';
+        let html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">DELIVERY ORDER</div><div class="doc-no">' + (d.no || '-') + '</div></div></div>';
         html += buildInfoSection([
             { label: 'Sales Order', value: d.salesOrderNo || '-' },
             { label: 'Driver', value: d.driverName || '-' },
@@ -435,7 +449,7 @@ const MksPrint = (function () {
 
     function printPaymentIn(data) {
         const d = data || {};
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">PAYMENT RECEIPT</div><div class="doc-no">' + (d.no || '-') + '</div></div></div>';
+        let html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">PAYMENT RECEIPT</div><div class="doc-no">' + (d.no || '-') + '</div></div></div>';
         html += buildInfoSection([
             { label: 'Date', value: formatDate(d.date) },
             { label: 'Customer', value: d.customerName || '-' },
@@ -450,7 +464,7 @@ const MksPrint = (function () {
 
     function printPaymentOut(data) {
         const d = data || {};
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">PAYMENT VOUCHER</div><div class="doc-no">' + (d.no || '-') + '</div></div></div>';
+        let html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">PAYMENT VOUCHER</div><div class="doc-no">' + (d.no || '-') + '</div></div></div>';
         html += buildInfoSection([
             { label: 'Date', value: formatDate(d.date) },
             { label: 'Supplier', value: d.supplierName || '-' },
@@ -466,7 +480,7 @@ const MksPrint = (function () {
 
     function printSalesInvoice(data) {
         const d = data || {};
-        let html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">SALES INVOICE</div><div class="doc-no">' + (d.no || '-') + '</div></div></div>';
+        let html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">SALES INVOICE</div><div class="doc-no">' + (d.no || '-') + '</div></div></div>';
         html += buildInfoSection([
             { label: 'Date', value: formatDate(d.date) },
             { label: 'Customer', value: d.customerName || '-' },
@@ -519,7 +533,7 @@ const MksPrint = (function () {
         var totalPaymentIn = $('#totalPaymentIn').text() || '-';
         var totalPaymentOut = $('#totalPaymentOut').text() || '-';
 
-        var html = '<div class="print-header"><div><div class="company">' + companyName + '</div></div><div><div class="doc-title">REPORT SUMMARY</div></div></div>';
+        var html = '<div class="print-header"><div>' + buildHeaderLeft() + '</div><div><div class="doc-title">REPORT SUMMARY</div></div></div>';
 
         html += '<div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;">';
         html += '<div style="flex:1;min-width:140px;padding:10px 14px;border:1px solid #e2e8f0;border-radius:6px;"><div style="font-size:10px;color:#999;text-transform:uppercase;">Total Sales</div><div style="font-size:16px;font-weight:700;color:#2563eb;">' + totalSales + '</div></div>';

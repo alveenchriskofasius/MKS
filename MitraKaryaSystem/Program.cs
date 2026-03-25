@@ -90,6 +90,8 @@ builder.Services.AddScoped<IConsignmentRepository, ConsignmentRepository>();
 builder.Services.AddScoped<IConsignmentService, ConsignmentService>();
 // POS
 builder.Services.AddScoped<IPosService, PosService>();
+// Store Profile
+builder.Services.AddScoped<IStoreProfileService, StoreProfileService>();
 // Profit & Loss
 builder.Services.AddScoped<IProfitLossService, ProfitLossService>();
 // Price History

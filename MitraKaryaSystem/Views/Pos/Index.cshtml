@@ -6,6 +6,8 @@
   <div class="pos-action-bar">
     <span class="me-auto fw-semibold"><i class="fa fa-cash-register me-1 text-primary"></i> Point of Sale</span>
     <button class="btn btn-outline-secondary btn-sm me-1" id="posBtnHistory"><i class="fa fa-clock-rotate-left"></i> History</button>
+    <button class="btn btn-outline-secondary btn-sm me-1" id="posBtnPrinterSettings" title="Pengaturan Printer"><i class="fa fa-print"></i></button>
+    <button class="btn btn-outline-secondary btn-sm me-1" id="posBtnTestPrint" title="Test Print"><i class="fa fa-file-lines"></i></button>
     <button class="btn btn-outline-secondary btn-sm" id="posBtnCancel"><i class="fa fa-refresh"></i> Reset</button>
   </div>
   <div class="pos-panels">
@@ -146,6 +148,7 @@
 
 @await Html.PartialAsync("_PaymentInModal")
 @section Scripts{
+  <script src="~/js/shared/ThermalPrinter.js" asp-append-version="true"></script>
   <script src="~/js/PaymentIn.js" asp-append-version="true"></script>
   <script src="~/js/Pos.js" asp-append-version="true"></script>
 }

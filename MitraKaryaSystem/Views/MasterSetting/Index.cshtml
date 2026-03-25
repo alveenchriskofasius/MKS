@@ -6,8 +6,10 @@
 
 	var showCategory = CanSee("Category");
 	var showUnit = CanSee("Unit");
-	var categoryActive = showCategory;
-	var unitActive = !showCategory && showUnit;
+	var showStoreProfile = true;
+	var storeProfileActive = true;
+	var categoryActive = !showStoreProfile && showCategory;
+	var unitActive = !showStoreProfile && !showCategory && showUnit;
 }
 <div class="fade-slide-up">
 	<div class="card page-header-card">
@@ -19,6 +21,14 @@
 		</div>
 		<div class="card-body">
 			<ul class="nav nav-tabs mb-3" id="masterSettingTabs" role="tablist">
+				@if (showStoreProfile)
+				{
+					<li class="nav-item" role="presentation">
+						<button class="nav-link @(storeProfileActive ? "active" : "")" id="tab-storeprofile" data-bs-toggle="tab" data-bs-target="#pane-storeprofile" type="button" role="tab">
+							<i class="fa fa-store me-1"></i> Store Profile
+						</button>
+					</li>
+				}
 				@if (showCategory)
 				{
 					<li class="nav-item" role="presentation">
@@ -37,6 +47,44 @@
 				}
 			</ul>
 			<div class="tab-content" id="masterSettingContent">
+				@if (showStoreProfile)
+				{
+					<div class="tab-pane fade @(storeProfileActive ? "show active" : "")" id="pane-storeprofile" role="tabpanel">
+						<div class="row justify-content-center">
+							<div class="col-lg-8 col-xl-6">
+								<div class="mb-3">
+									<label class="form-label fw-semibold">Store Name</label>
+									<input type="text" id="spStoreName" class="form-control form-control-sm" placeholder="e.g. Mitra Karya" />
+								</div>
+								<div class="mb-3">
+									<label class="form-label fw-semibold">Address</label>
+									<textarea id="spAddress" class="form-control form-control-sm" rows="2" placeholder="Store address"></textarea>
+								</div>
+								<div class="row">
+									<div class="col-md-6 mb-3">
+										<label class="form-label fw-semibold">Phone</label>
+										<input type="text" id="spPhone" class="form-control form-control-sm" placeholder="e.g. 0812-xxxx-xxxx" />
+									</div>
+									<div class="col-md-6 mb-3">
+										<label class="form-label fw-semibold">Email</label>
+										<input type="email" id="spEmail" class="form-control form-control-sm" placeholder="e.g. info@mitrakarya.com" />
+									</div>
+								</div>
+								<hr />
+								<h6 class="fw-semibold"><i class="fa fa-receipt me-1 text-muted"></i> Receipt Settings</h6>
+								<div class="mb-3">
+									<label class="form-label fw-semibold">Receipt Header <small class="text-muted">(subtitle below store name)</small></label>
+									<input type="text" id="spReceiptHeader" class="form-control form-control-sm" placeholder="e.g. Jl. Contoh No.123, Kota" />
+								</div>
+								<div class="mb-3">
+									<label class="form-label fw-semibold">Receipt Footer</label>
+									<input type="text" id="spReceiptFooter" class="form-control form-control-sm" placeholder="e.g. Terima kasih atas kunjungan Anda!" />
+								</div>
+								<button class="btn btn-primary" id="spBtnSave"><i class="fa fa-save me-1"></i> Save Store Profile</button>
+							</div>
+						</div>
+					</div>
+				}
 				@if (showCategory)
 				{
 					<div class="tab-pane fade @(categoryActive ? "show active" : "")" id="pane-category" role="tabpanel">
@@ -108,7 +156,35 @@
 	</div>
 </div>
 @section Scripts {
+	<script src="~/js/shared/MksStoreProfile.js" asp-append-version="true"></script>
 	<script src="~/js/Category.js" asp-append-version="true"></script>
 	<script src="~/js/Unit.js" asp-append-version="true"></script>
 	<script src="~/js/Common.js" asp-append-version="true"></script>
+	<script>
+		(function(){
+			MksStoreProfile.load(true).then(function(p){
+				$('#spStoreName').val(p.storeName||'');
+				$('#spAddress').val(p.address||'');
+				$('#spPhone').val(p.phone||'');
+				$('#spEmail').val(p.email||'');
+				$('#spReceiptHeader').val(p.receiptHeader||'');
+				$('#spReceiptFooter').val(p.receiptFooter||'');
+			});
+			$('#spBtnSave').on('click', function(){
+				var $btn = $(this).prop('disabled',true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
+				MksStoreProfile.save({
+					storeName: $('#spStoreName').val().trim(),
+					address: $('#spAddress').val().trim(),
+					phone: $('#spPhone').val().trim(),
+					email: $('#spEmail').val().trim(),
+					receiptHeader: $('#spReceiptHeader').val().trim(),
+					receiptFooter: $('#spReceiptFooter').val().trim()
+				}).then(function(res){
+					if(res && res.success) toastr.success('Store profile saved');
+					else toastr.error((res && res.error) || 'Failed');
+				}).catch(function(){ toastr.error('Failed to save'); })
+				.always(function(){ $btn.prop('disabled',false).html('<i class="fa fa-save me-1"></i> Save Store Profile'); });
+			});
+		})();
+	</script>
 }

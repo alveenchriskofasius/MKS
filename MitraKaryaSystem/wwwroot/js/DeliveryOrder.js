@@ -46,9 +46,53 @@ const doPages = (function () {
  { data: 'statusID', render: d => `<span class="badge-status ${doStatusBadge[d] || 'badge-draft'}">${doStatusMap[d] || d}</span>` },
  { data: 'driverName', render: d => d || '<span class="text-muted">—</span>' },
  { data: 'deliveryAddress', render: d => d ? (d.length > 40 ? d.substring(0,40)+'…' : d) : '<span class="text-muted">—</span>' },
- { data: null, orderable: false, className: 'text-center', render: () => `<button class='btn btn-sm btn-outline-primary do-view' title='View details'><i class='fa fa-eye'></i></button> <button class='btn btn-sm btn-outline-secondary do-print' title='Print'><i class='fa fa-print'></i></button>` }
+ { data: null, orderable: false, className: 'text-center align-middle', render: function (_d, _t, row) {
+    // action buttons depending on status: Assigned -> Start, OutForDelivery -> Deliver
+    const status = row && (row.statusID || row.StatusID) ? (row.statusID || row.StatusID) : 0;
+    const viewBtn = `<button class='btn btn-sm btn-outline-primary do-view' title='View details'><i class='fa fa-eye'></i></button>`;
+    const printBtn = `<button class='btn btn-sm btn-outline-secondary do-print' title='Print'><i class='fa fa-print'></i></button>`;
+    let extra = '';
+    if (status === 2) { // Assigned
+        extra = `<button class='btn btn-sm btn-outline-warning do-start' title='Start delivery' style='margin-left:6px'><i class='fa fa-truck-fast'></i></button>`;
+    } else if (status === 3) { // Out For Delivery
+        extra = `<button class='btn btn-sm btn-outline-success do-deliver' title='Mark delivered' style='margin-left:6px'><i class='fa fa-check-circle'></i></button>`;
+    }
+    return `<div class='d-flex align-items-center justify-content-center' style='gap:6px'>${viewBtn}${printBtn}${extra}</div>`;
+ } }
  ]
  });
+
+  // Start delivery (Assigned -> OutForDelivery)
+  $('#tableDeliveryOrder').off('click', '.do-start').on('click', '.do-start', function () {
+    const row = $('#tableDeliveryOrder').DataTable().row($(this).closest('tr')).data();
+    if (!row) return;
+    const id = row.id || row.ID;
+    if (!id) return;
+    Swal.fire({ title: 'Start Delivery?', text: 'Mark this delivery order as Out For Delivery?', icon: 'question', showCancelButton: true }).then(async (res) => {
+      if (!res.isConfirmed) return;
+      try {
+        const r = await Common.Api.post('/DeliveryOrder/UpdateStatus', { id: id, newStatus: 3 });
+        if (r && r.success) { toastr.success('Delivery started'); doPages.init && doPages.init(); /* reload table */ }
+        else toastr.error(r && (r.result || r.error) ? (r.result || r.error) : 'Failed to start delivery');
+      } catch (e) { toastr.error(e && e.message ? e.message : 'Request failed'); }
+    });
+  });
+
+  // Mark delivered (OutForDelivery -> Delivered)
+  $('#tableDeliveryOrder').off('click', '.do-deliver').on('click', '.do-deliver', function () {
+    const row = $('#tableDeliveryOrder').DataTable().row($(this).closest('tr')).data();
+    if (!row) return;
+    const id = row.id || row.ID;
+    if (!id) return;
+    Swal.fire({ title: 'Mark Delivered?', text: 'Mark this delivery order as Delivered?', icon: 'question', showCancelButton: true }).then(async (res) => {
+      if (!res.isConfirmed) return;
+      try {
+        const r = await Common.Api.post('/DeliveryOrder/UpdateStatus', { id: id, newStatus: 4 });
+        if (r && r.success) { toastr.success('Delivery marked as delivered'); doPages.init && doPages.init(); }
+        else toastr.error(r && (r.result || r.error) ? (r.result || r.error) : 'Failed to mark delivered');
+      } catch (e) { toastr.error(e && e.message ? e.message : 'Request failed'); }
+    });
+  });
 
  $('#tableDeliveryOrder').off('click', '.do-view').on('click', '.do-view', function () {
  const row = $('#tableDeliveryOrder').DataTable().row($(this).closest('tr')).data();

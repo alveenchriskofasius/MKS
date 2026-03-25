@@ -220,9 +220,12 @@ namespace API.Services
                 where si.TradeID == id
                 join p in _ctx.Products.AsNoTracking() on si.ProductID equals p.ID into pg
                 from prod in pg.DefaultIfEmpty()
+                join u in _ctx.Units.AsNoTracking() on (prod != null ? prod.UnitID : (short)0) equals (short)u.ID into ug
+                from unit in ug.DefaultIfEmpty()
                 select new
                 {
                     productName = prod != null ? prod.Name : "-",
+                    unit = unit != null ? unit.Name : "",
                     quantity = si.Quantity,
                     unitPrice = prod != null ? prod.UnitPrice : 0m,
                     hasDiscount = prod != null && prod.HasDiscount,
@@ -235,7 +238,7 @@ namespace API.Services
                 var price = i.unitPrice;
                 if (i.hasDiscount && i.discountPercentage > 0)
                     price = price - (price * i.discountPercentage / 100m);
-                return new { i.productName, i.quantity, unitPrice = price, subTotal = price * i.quantity };
+                return new { i.productName, i.unit, i.quantity, unitPrice = price, subTotal = price * i.quantity };
             }).ToList();
 
             return new

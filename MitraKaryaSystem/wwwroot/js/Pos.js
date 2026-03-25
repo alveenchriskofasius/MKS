@@ -1,6 +1,6 @@
 (function(){
   const state = { items: [], taxRate: 0.11, suggestIndex: -1, _searchSeq: 0 };
-  const fmt = n => 'Rp ' + (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:0, maximumFractionDigits:0});
+  const fmt = n => (Number(n)||0).toLocaleString('id-ID',{minimumFractionDigits:0, maximumFractionDigits:0});
 
   function getPayType(){ return $('input[name="posPayType"]:checked').val() || 'Full'; }
 
@@ -61,11 +61,12 @@
       return;
     }
     const id = p.id; const name = p.text||p.name; let price = Number(p.unitPrice||p.price||0);
+    const unit = p.unit || p.Unit || '';
     const hasDiscount = p.hasDiscount || p.HasDiscount || false;
     const discPct = Number(p.discountPercentage || p.DiscountPercentage || 0);
     if (hasDiscount && discPct > 0) price = price - (price * discPct / 100);
     let f = state.items.find(i=>i.id===id);
-    if(f) f.qty += 1; else state.items.push({ id, name, price, qty:1, hasDiscount, discPct });
+    if(f) f.qty += 1; else state.items.push({ id, name, price, qty:1, unit, hasDiscount, discPct });
     state._searchSeq++;
     render();
     destroySuggest();
@@ -99,7 +100,7 @@
       $row.on('click keydown', e=>{
         if(e.type==='click' || e.key==='Enter'){
           if(isOut){ if (typeof MksSound !== 'undefined') MksSound.error(); toastr.warning('Stok 0 / habis. Tidak bisa ditambahkan ke cart.'); return; }
-          addOrInc({ id:p.id||p.ID, text:rawName, unitPrice:price, stockQuantity: stock, hasDiscount: hasDisc, discountPercentage: discPct });
+          addOrInc({ id:p.id||p.ID, text:rawName, unitPrice:price, stockQuantity: stock, unit: p.unit||p.Unit||'', hasDiscount: hasDisc, discountPercentage: discPct });
           if (typeof MksSound !== 'undefined') MksSound.success();
           destroySuggest();
         }
@@ -166,7 +167,7 @@
       const $items = $('.pos-suggest-item');
       if(e.key==='ArrowDown'){ e.preventDefault(); if($items.length){ state.suggestIndex = Math.min(state.suggestIndex+1, $items.length-1); setActiveSuggestion(); } }
       else if(e.key==='ArrowUp'){ e.preventDefault(); if($items.length){ state.suggestIndex = Math.max(state.suggestIndex-1, 0); setActiveSuggestion(); } }
-      else if(e.key==='Enter'){ e.preventDefault(); clearTimeout(typingTimer); if($items.length && state.suggestIndex>=0){ $items.eq(state.suggestIndex).trigger('click'); return; } destroySuggest(); const q=this.value.trim(); if(!q) return; const seq=++state._searchSeq; searchProductsAsync(q).then(list=>{ if(seq!==state._searchSeq) return; if(list.length>0){ const p=list[0]; addOrInc({ id:p.id||p.ID, text:p.name||p.Name, unitPrice:Number(p.unitPrice||p.UnitPrice||0), stockQuantity: (p.stockQuantity ?? p.StockQuantity), hasDiscount: p.hasDiscount || p.HasDiscount || false, discountPercentage: p.discountPercentage || p.DiscountPercentage || 0 }); if (typeof MksSound !== 'undefined') MksSound.success(); } else { if (typeof MksSound !== 'undefined') MksSound.error(); } }); }
+      else if(e.key==='Enter'){ e.preventDefault(); clearTimeout(typingTimer); if($items.length && state.suggestIndex>=0){ $items.eq(state.suggestIndex).trigger('click'); return; } destroySuggest(); const q=this.value.trim(); if(!q) return; const seq=++state._searchSeq; searchProductsAsync(q).then(list=>{ if(seq!==state._searchSeq) return; if(list.length>0){ const p=list[0]; addOrInc({ id:p.id||p.ID, text:p.name||p.Name, unitPrice:Number(p.unitPrice||p.UnitPrice||0), stockQuantity: (p.stockQuantity ?? p.StockQuantity), unit: p.unit||p.Unit||'', hasDiscount: p.hasDiscount || p.HasDiscount || false, discountPercentage: p.discountPercentage || p.DiscountPercentage || 0 }); if (typeof MksSound !== 'undefined') MksSound.success(); } else { if (typeof MksSound !== 'undefined') MksSound.error(); } }); }
       else if(e.key==='Escape'){ destroySuggest(); }
     });
     $input.on('blur', ()=> setTimeout(destroySuggest, 180));
@@ -182,13 +183,14 @@
 
   function captureReceiptData(payResponse){
     const { subtotal, tax, total, change } = recalc();
+    const tender = parseFloat($('#posTender').val()||0);
     return {
-      items: state.items.map(i=> ({ name:i.name, qty:i.qty, price:i.price })),
+      items: state.items.map(i=> ({ name:i.name, qty:i.qty, price:i.price, unit:i.unit||'' })),
       subtotal, tax, total, change,
       customer: $('#posCustomer option:selected').text() || 'Umum',
       payType: $('input[name="posPayType"]:checked').val() || 'Full',
       no: payResponse.no || '-',
-      paid: payResponse.paid || 0,
+      paid: tender || payResponse.paid || 0,
       changeAmt: payResponse.change || change
     };
   }
@@ -214,7 +216,23 @@
   }
 
   function buildPrintableReceiptHtml(snap){
-    const itemsHtml = snap.items.map(i=> `<tr><td style="text-align:left;">${i.name}</td><td style="text-align:center;">${i.qty}</td><td style="text-align:right;">${fmt(i.price)}</td><td style="text-align:right;">${fmt(i.price*i.qty)}</td></tr>`).join('');
+    // Use thermal printer utility if available (supports 58mm Panda PRJ-CX58B)
+    if (typeof MksThermalPrinter !== 'undefined') {
+      return MksThermalPrinter.buildReceiptHtml({
+        no: snap.no,
+        customer: snap.customer,
+        payType: snap.payType,
+        items: snap.items,
+        subtotal: snap.subtotal,
+        tax: snap.tax,
+        total: snap.total,
+        paid: snap.paid,
+        changeAmt: snap.changeAmt
+      });
+    }
+    // Fallback: original 80mm receipt layout
+    const sp = (typeof MksStoreProfile !== 'undefined') ? MksStoreProfile.get() : {};
+    const itemsHtml = snap.items.map(i=> `<tr><td style="text-align:left;width:40%;">${i.name}</td><td style="text-align:center;width:10%;">${i.qty}</td><td style="text-align:right;width:25%;">${fmt(i.price)}</td><td style="text-align:right;width:25%;">${fmt(i.price*i.qty)}</td></tr>`).join('');
     return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Receipt - ${snap.no}</title>
 <style>
@@ -228,7 +246,7 @@
   .divider { border: none; border-top: 1px dashed #999; margin: 6px 0; }
   .info { font-size: 11px; margin-bottom: 4px; }
   .info span { display: inline-block; }
-  table { width: 100%; border-collapse: collapse; margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0; table-layout: fixed; }
   th { font-size: 11px; font-weight: 600; border-bottom: 1px solid #333; padding: 3px 2px; }
   td { font-size: 11px; padding: 3px 2px; vertical-align: top; }
   .summary { margin-top: 4px; }
@@ -240,8 +258,9 @@
 <body>
 <div class="receipt">
   <div class="header">
-    <h2>Mitra Karya</h2>
-    <div class="sub">Thank you for your purchase</div>
+    <h2>${sp.storeName || 'Mitra Karya'}</h2>
+    ${sp.address ? `<div class="sub">${sp.address}</div>` : ''}
+    ${sp.receiptHeader ? `<div class="sub">${sp.receiptHeader}</div>` : '<div class="sub">Thank you for your purchase</div>'}
   </div>
   <hr class="divider">
   <div class="info"><strong>No:</strong> ${snap.no}</div>
@@ -250,7 +269,7 @@
   <div class="info"><strong>Payment:</strong> ${snap.payType}</div>
   <hr class="divider">
   <table>
-    <thead><tr><th style="text-align:left;">Item</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Price</th><th style="text-align:right;">Total</th></tr></thead>
+    <thead><tr><th style="text-align:left;width:40%;">Item</th><th style="text-align:center;width:10%;">Qty</th><th style="text-align:right;width:25%;">Price</th><th style="text-align:right;width:25%;">Total</th></tr></thead>
     <tbody>${itemsHtml}</tbody>
   </table>
   <hr class="divider">
@@ -263,12 +282,28 @@
     ${snap.paid < snap.total ? `<div class="line" style="color:#c00;font-weight:600"><span>Remaining Debt</span><span>${fmt(snap.total - snap.paid)}</span></div>` : ''}
   </div>
   <hr class="divider">
-  <div class="footer">Mitra Karya System<br/>Thank you!</div>
+  <div class="footer">${sp.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</div>
 </div>
 </body></html>`;
   }
 
   function printReceipt(snap){
+    // Use thermal printer utility if available (Panda PRJ-CX58B / 58mm support)
+    if (typeof MksThermalPrinter !== 'undefined') {
+      MksThermalPrinter.printReceipt({
+        no: snap.no,
+        customer: snap.customer,
+        payType: snap.payType,
+        items: snap.items,
+        subtotal: snap.subtotal,
+        tax: snap.tax,
+        total: snap.total,
+        paid: snap.paid,
+        changeAmt: snap.changeAmt
+      });
+      return;
+    }
+    // Fallback: original window.open print
     const html = buildPrintableReceiptHtml(snap);
     const w = window.open('', '_blank', 'width=350,height=600');
     if(!w){ toastr.warning('Pop-up blocked. Please allow pop-ups to print.'); return; }
@@ -358,6 +393,9 @@
     });
     $('#posBtnQris').on('click', startQris);
     $('#qrisBtnCancel').on('click', function(){ clearInterval(qrisPolling); if(qrisModal) qrisModal.hide(); });
+    // Thermal printer buttons
+    $('#posBtnPrinterSettings').on('click', function(){ if(typeof MksThermalPrinter !== 'undefined') MksThermalPrinter.openSettingsModal(); else toastr.info('ThermalPrinter module not loaded'); });
+    $('#posBtnTestPrint').on('click', function(){ if(typeof MksThermalPrinter !== 'undefined') MksThermalPrinter.testPrint(); else toastr.info('ThermalPrinter module not loaded'); });
     $('#posSearch').focus();
   }
 
@@ -433,7 +471,7 @@
       </div>`;
       // Build snap for printing
       const snap = {
-        items: items.map(i=>({ name:i.productName, qty:i.quantity, price:i.unitPrice })),
+        items: items.map(i=>({ name:i.productName, qty:i.quantity, price:i.unitPrice, unit:i.unit||'' })),
         subtotal, tax, total,
         customer: res.customerName,
         payType: res.paymentType || 'Full',
