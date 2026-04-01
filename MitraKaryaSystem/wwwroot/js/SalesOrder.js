@@ -133,7 +133,7 @@ const buttonSalesOrder = {
             if (table.rows().count() <= 0) { toastr.info('Insert at least1 product', 'Cannot save'); return; }
             formSalesOrder.save(false);
         });
-        $('#buttonSearch').click(function () { tableManager.fillGridSearch(); });
+        $('#buttonSearch').click(function () { tableManager.fillGridSearch('2'); });
         $('#buttonNew').click(function () { formSalesOrder.reset(); });
         $('#buttonPrint').click(function () { const id = parseInt($('#salesOrderID').val() || '0', 10); if (!id) { toastr.info('Save Sales Order first'); return; } MksPrint.salesOrder(); });
 
@@ -161,6 +161,7 @@ const buttonSalesOrder = {
                     if (res && res.success) {
                         toastr.success('Invoice created' + (res.no ? ` (${res.no})` : ''));
                         $('#btnCreateInvoice').addClass('d-none');
+                        showOrHideCreateDOButton();
                     } else {
                         toastr.error((res && res.result) || 'Failed create invoice');
                     }
@@ -383,29 +384,77 @@ const tableManager = {
             });
         }
     },
-    fillGridSearch: function () {
-        const tableSelector = '#tableSearch'; const $table = $(tableSelector);
-        Common.Api.get('/SalesOrder/FillGrid')
+    fillGridSearch: function (tradeType) {
+        const tableSelector = '#tableSearch';
+        const $table = $(tableSelector);
+        const filterParam = tradeType ? '?tradeType=' + tradeType : '';
+        Common.Api.get('/SalesOrder/FillGrid' + filterParam)
             .then(data => {
                 const columns = [
-                    { data:'no' }, { data:'date', render: d => Common.Format.Date(d) }, { data:'amount' },
-                    { data:null, render: (_d,_t,row) => { const s = row && (row.statusID || row.StatusID || row.status || row.Status); return tradeStatus[s] || (s || ''); } },
-                    { data:'customerName' }, { data:'createdBy' }, { data:'updatedBy' },
-                    { data:null, render: (_d,_t,row) => `<div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-outline-primary edit"><i class="fa fa-pencil"></i></button>
-                        <button class="btn btn-outline-danger delete"><i class="fa fa-trash"></i></button>
-                    </div>`, orderable:false }
+                    { data: 'no' },
+                    { data: 'date', render: d => Common.Format.Date(d) },
+                    { data: 'amount' },
+                    {
+                        data: null,
+                        render: (_d, _t, row) => {
+                            const s = row && (row.statusID || row.StatusID || row.status || row.Status);
+                            return tradeStatus[s] || (s || '');
+                        }
+                    },
+                    { data: 'customerName' },
+                    { data: 'createdBy' },
+                    { data: 'updatedBy' },
+                    {
+                        data: null,
+                        render: (_d, _t, row) => `<div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-primary edit"><i class="fa fa-pencil"></i></button>
+                            <button class="btn btn-outline-danger delete"><i class="fa fa-trash"></i></button>
+                        </div>`,
+                        orderable: false
+                    }
                 ];
-                const dt = $table.DataTable({ deferRender:true, processing:true, serverSide:false, destroy:true, filter:true, searching:false, responsive:true, data, columns });
+                const dt = $table.DataTable({
+                    deferRender: true,
+                    processing: true,
+                    serverSide: false,
+                    destroy: true,
+                    filter: true,
+                    searching: false,
+                    responsive: true,
+                    data,
+                    columns
+                });
                 $table.find('tbody').off();
-                $table.find('tbody').on('click', '.edit', function(){ const row = dt.row($(this).parents('tr')).data(); const soId = row.id || row.ID; formSalesOrder.fillForm(soId, true); $('#searchModal').modal('hide'); });
-                $table.find('tbody').on('click', '.delete', function(){ const row = dt.row($(this).parents('tr')).data(); Swal.fire({
-                    title:'Are you sure?', text:"You won't be able to revert this!", icon:'warning', showCancelButton:true, confirmButtonText:'Yes, delete it', showLoaderOnConfirm:true,
-                    preConfirm: () => Common.Api.post(`/SalesOrder/Delete`, { id: row.id || row.ID })
-                        .then(response => { toastr.options.onShown = () => { tableManager.fillGridSearch(); formSalesOrder.reset(); }; if (response && response.success) toastr.success('Data has been deleted'); else toastr.error('Data not deleted'); })
-                        .catch(error => { Swal.showValidationMessage(error.message || 'Request failed'); }),
-                    allowOutsideClick: () => !Swal.isLoading()
-                }); });
+                $table.find('tbody').on('click', '.edit', function () {
+                    const row = dt.row($(this).parents('tr')).data();
+                    const soId = row.id || row.ID;
+                    formSalesOrder.fillForm(soId, true);
+                    $('#searchModal').modal('hide');
+                });
+                $table.find('tbody').on('click', '.delete', function () {
+                    const row = dt.row($(this).parents('tr')).data();
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "You won't be able to revert this!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, delete it',
+                        showLoaderOnConfirm: true,
+                        preConfirm: () => Common.Api.post(`/SalesOrder/Delete`, { id: row.id || row.ID })
+                            .then(response => {
+                                toastr.options.onShown = () => {
+                                    tableManager.fillGridSearch();
+                                    formSalesOrder.reset();
+                                };
+                                if (response && response.success) toastr.success('Data has been deleted');
+                                else toastr.error('Data not deleted');
+                            })
+                            .catch(error => {
+                                Swal.showValidationMessage(error.message || 'Request failed');
+                            }),
+                        allowOutsideClick: () => !Swal.isLoading()
+                    });
+                });
             })
             .catch(() => toastr.error('Failed load SO list'));
     }
@@ -422,9 +471,67 @@ const controlSalesOrder = {
             onSelect: (prod) => this.checkProduct(prod)
         });
     },
-    addRow: function (productID, supplierID, stockQuantity, productName, supplier, quantity, unit, unitPrice) { const table = $('#tableProduct').DataTable(); table.row.add({ productID, supplierID, stockQuantity: stockQuantity ?? 0, product: productName, supplier, quantity, unit, unitPrice, subTotal: quantity * unitPrice }).draw(); },
-    checkProduct: function (selectedProduct) { if (selectedProduct.stockQuantity === 0) { toastr.info('Stock is empty'); return; } const table = $('#tableProduct').DataTable(); let exists = false; const rows = table.rows().nodes(); $(rows).each(function(){ const rowData = table.row(this).data(); if (rowData.productID == selectedProduct.id) { exists = true; let newQuantity = parseInt(rowData.quantity) + 1; if (newQuantity > selectedProduct.stockQuantity) { return toastr.info('Quantity reach stock quantity'); } rowData.quantity = newQuantity; rowData.subTotal = newQuantity * rowData.unitPrice; table.row(this).data(rowData).invalidate(); } }); if (!exists) { controlSalesOrder.addRow(selectedProduct.id, selectedProduct.supplierID, selectedProduct.stockQuantity, selectedProduct.name, selectedProduct.supplierName, 1, selectedProduct.unit, selectedProduct.unitPrice); } table.draw(false); controlSalesOrder.calculateGrandTotal(); },
-    calculateGrandTotal: function () { let totalSum = 0; const table = $('#tableProduct').DataTable(); const rows = table.rows().nodes(); $(rows).each(function(){ const rowData = table.row(this).data(); const subTotal = (parseFloat(rowData.unitPrice) || 0) * (parseInt(rowData.quantity) || 0); totalSum += subTotal; }); $('#total').text(uiHelpers.formatNumber(totalSum, 2)); }
+    addRow: function (productID, supplierID, stockQuantity, productName, supplier, quantity, unit, unitPrice) {
+        const table = $('#tableProduct').DataTable();
+        table.row.add({
+            productID,
+            supplierID,
+            stockQuantity: stockQuantity ?? 0,
+            product: productName,
+            supplier,
+            quantity,
+            unit,
+            unitPrice,
+            subTotal: quantity * unitPrice
+        }).draw();
+    },
+    checkProduct: function (selectedProduct) {
+        if (selectedProduct.stockQuantity === 0) {
+            toastr.info('Stock is empty');
+            return;
+        }
+        const table = $('#tableProduct').DataTable();
+        let exists = false;
+        const rows = table.rows().nodes();
+        $(rows).each(function () {
+            const rowData = table.row(this).data();
+            if (rowData.productID == selectedProduct.id) {
+                exists = true;
+                let newQuantity = parseInt(rowData.quantity) + 1;
+                if (newQuantity > selectedProduct.stockQuantity) {
+                    return toastr.info('Quantity reach stock quantity');
+                }
+                rowData.quantity = newQuantity;
+                rowData.subTotal = newQuantity * rowData.unitPrice;
+                table.row(this).data(rowData).invalidate();
+            }
+        });
+        if (!exists) {
+            controlSalesOrder.addRow(
+                selectedProduct.id,
+                selectedProduct.supplierID,
+                selectedProduct.stockQuantity,
+                selectedProduct.name,
+                selectedProduct.supplierName,
+                1,
+                selectedProduct.unit,
+                selectedProduct.unitPrice
+            );
+        }
+        table.draw(false);
+        controlSalesOrder.calculateGrandTotal();
+    },
+    calculateGrandTotal: function () {
+        let totalSum = 0;
+        const table = $('#tableProduct').DataTable();
+        const rows = table.rows().nodes();
+        $(rows).each(function () {
+            const rowData = table.row(this).data();
+            const subTotal = (parseFloat(rowData.unitPrice) || 0) * (parseInt(rowData.quantity) || 0);
+            totalSum += subTotal;
+        });
+        $('#total').text(uiHelpers.formatNumber(totalSum, 2));
+    }
 };
 
 // ==================== FORM SALES ORDER ====================
@@ -434,12 +541,50 @@ const formSalesOrder = {
             .then(result => {
                 try {
                     if (result && typeof result === 'object' && result.success === false) { toastr.error(result.result || 'Error load data'); return; }
-                    if (typeof result === 'string') { $('#salesOrderHeaderBody').html(result); }
-                    else if (result && typeof result === 'object' && result.html) { $('#salesOrderHeaderBody').html(result.html); }
-                    else if (result && typeof result === 'object') { const possibleHtml = result.result || result.data || null; if (typeof possibleHtml === 'string') $('#salesOrderHeaderBody').html(possibleHtml); else $('#salesOrderHeaderBody').html('<pre class="text-danger">Unexpected response format. Check server logs.</pre>'); }
+                    if (typeof result === 'string') {
+                        $('#salesOrderHeaderBody').html(result);
+                    } else if (result && typeof result === 'object' && result.html) {
+                        $('#salesOrderHeaderBody').html(result.html);
+                    } else if (result && typeof result === 'object') {
+                        const possibleHtml = result.result || result.data || null;
+                        if (typeof possibleHtml === 'string') {
+                            $('#salesOrderHeaderBody').html(possibleHtml);
+                        } else {
+                            $('#salesOrderHeaderBody').html(
+                                '<pre class="text-danger">Unexpected response format. Check server logs.</pre>'
+                            );
+                        }
+                    }
                     // ensure table exists
                     if (!$('#tableProduct').length) {
-                        $('#salesOrderHeaderBody').after(`<div class='table-responsive'><table class='table table-sm table-hover align-middle mb-0' width='100%' id='tableProduct'><thead><tr><th hidden>ProductID</th><th hidden>SupplierID</th><th hidden>Stock Quantity</th><th>Name</th><th>Supplier</th><th class="text-center" style="width:90px">Quantity</th><th style="width:80px">Unit</th><th class="text-end" style="width:120px">Unit Price</th><th class="text-end" style="width:130px">Subtotal</th><th class="text-center" style="width:60px"></th></tr></thead><tbody></tbody><tfoot><tr><th colspan='8' class='text-end text-muted small fw-semibold'>TOTAL</th><th id='total' class='text-end fs-5 fw-bold text-primary'>0</th><th></th></tr></tfoot></table></div>`);
+                        $('#salesOrderHeaderBody').after(`
+                            <div class='table-responsive'>
+                                <table class='table table-sm table-hover align-middle mb-0' width='100%' id='tableProduct'>
+                                    <thead>
+                                        <tr>
+                                            <th hidden>ProductID</th>
+                                            <th hidden>SupplierID</th>
+                                            <th hidden>Stock Quantity</th>
+                                            <th>Name</th>
+                                            <th>Supplier</th>
+                                            <th class="text-center" style="width:90px">Quantity</th>
+                                            <th style="width:80px">Unit</th>
+                                            <th class="text-end" style="width:120px">Unit Price</th>
+                                            <th class="text-end" style="width:130px">Subtotal</th>
+                                            <th class="text-center" style="width:60px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan='8' class='text-end text-muted small fw-semibold'>TOTAL</th>
+                                            <th id='total' class='text-end fs-5 fw-bold text-primary'>0</th>
+                                            <th></th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        `);
                     }
                     const statusVal = parseInt($('#salesOrderStatusID').val() || '1', 10); updateStatusBadge(statusVal);
                     setTimeout(() => { try { tableManager.fillGridProduct(id, true); } catch (e) { console.error('fillGridProduct failed', e); } }, 0);
@@ -451,12 +596,53 @@ const formSalesOrder = {
             .catch(error => { toastr.error(error.message || 'Error load data'); });
     },
     save: function (isPay) {
-        const postData = { ID: parseInt($('#salesOrderID').val() || '0', 10), Date: $('#salesOrderDate').val(), No: $('#salesOrderNumber').val(), CustomerID: $('#selectCustomer').val(), Note: $('#salesOrderNote').val(), SalesOrderDetails: [], IsPaid: !!isPay };
+        const postData = {
+            ID: parseInt($('#salesOrderID').val() || '0', 10),
+            Date: $('#salesOrderDate').val(),
+            No: $('#salesOrderNumber').val(),
+            CustomerID: $('#selectCustomer').val(),
+            Note: $('#salesOrderNote').val(),
+            SalesOrderDetails: [],
+            IsPaid: !!isPay
+        };
         const table = $('#tableProduct').DataTable();
-        table.rows().every(function(){ const r = this.data(); if (r && r.productID && r.quantity) { postData.SalesOrderDetails.push({ ProductID: r.productID, Quantity: r.quantity, ID: r.id == undefined ? 0 : r.id, Subtotal: r.subTotal, UnitPrice: r.unitPrice }); } });
-        const $btn = $('#buttonSave'); const originalHtml = $btn.html(); $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
+        table.rows().every(function () {
+            const r = this.data();
+            if (r && r.productID && r.quantity) {
+                postData.SalesOrderDetails.push({
+                    ProductID: r.productID,
+                    Quantity: r.quantity,
+                    ID: r.id == undefined ? 0 : r.id,
+                    Subtotal: r.subTotal,
+                    UnitPrice: r.unitPrice
+                });
+            }
+        });
+        const $btn = $('#buttonSave');
+        const originalHtml = $btn.html();
+        $btn.prop('disabled', true).html(
+            '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...'
+        );
         Common.Api.postJson('/SalesOrder/Save', postData)
-            .then(result => { if (result && result.success) { toastr.success('Data saved'); const newId = result.id || result.ID; if (newId) formSalesOrder.fillForm(newId, true); else console.warn('Save response missing id/ID'); if (result.lowStockWarnings && result.lowStockWarnings.length > 0) { var msgs = result.lowStockWarnings.map(function(w){ return (w.name||w.Name)+': '+(w.stockQuantity??0)+'/'+(w.lowStockThreshold??0); }); toastr.warning('Low stock: ' + msgs.join(', '), 'Stock Alert', { timeOut: 8000 }); } } else { toastr.error((result && result.result) || 'Data not saved'); } })
+            .then(result => {
+                if (result && result.success) {
+                    toastr.success('Data saved');
+                    const newId = result.id || result.ID;
+                    if (newId) {
+                        formSalesOrder.fillForm(newId, true);
+                    } else {
+                        console.warn('Save response missing id/ID');
+                    }
+                    if (result.lowStockWarnings && result.lowStockWarnings.length > 0) {
+                        var msgs = result.lowStockWarnings.map(function (w) {
+                            return (w.name || w.Name) + ': ' + (w.stockQuantity ?? 0) + '/' + (w.lowStockThreshold ?? 0);
+                        });
+                        toastr.warning('Low stock: ' + msgs.join(', '), 'Stock Alert', { timeOut: 8000 });
+                    }
+                } else {
+                    toastr.error((result && result.result) || 'Data not saved');
+                }
+            })
             .catch(err => { toastr.error(err.message || 'Error', 'Data not saved'); })
             .finally(() => { $btn.prop('disabled', false).html(originalHtml); });
     },

@@ -247,10 +247,15 @@ namespace API.Repository
             }
             return salesOrderDetailModels;
         }
-        public async Task<object> GetSearchList()
+        public async Task<object> GetSearchList(short? tradeTypeFilter = null)
         {
+            // Default: show both SO (2) and MO (4). Filter narrows to one type.
+            var tradeTypeIds = tradeTypeFilter.HasValue
+                ? new[] { tradeTypeFilter.Value }
+                : new short[] { 2, 4 };
+
             var q = from t in _context.Trades.AsNoTracking()
-                    where t.TradeTypeID == 2
+                    where tradeTypeIds.Contains(t.TradeTypeID)
                     join c in _context.Customers.AsNoTracking() on t.CustomerID equals c.ID into cgroup
                     from cust in cgroup.DefaultIfEmpty()
                     join l in _context.Lookups.Where(x => x.Entity == "SalesOrderStatus").AsNoTracking() on t.StatusID equals (short?)l.Key into lgroup
@@ -266,7 +271,11 @@ namespace API.Repository
                         createdBy = t.CreatedBy,
                         updatedBy = t.UpdatedBy,
                         statusID = t.StatusID,
-                        status = ls != null ? ls.Name : null
+                        status = ls != null ? ls.Name : null,
+                        tradeTypeID = (int)t.TradeTypeID,
+                        paymentMethod = t.PaymentMethod,
+                        deliveryMethod = t.DeliveryMethod,
+                        hasDeliveryOrder = _context.DeliveryOrders.Any(d => d.SalesOrderID == t.ID)
                     };
 
             var list = await q.ToListAsync();

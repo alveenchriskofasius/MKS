@@ -1,0 +1,571 @@
+/* ========================================
+   Marketplace – Tokopedia-inspired Styles
+   ======================================== */
+
+:root {
+    --mp-green: #00AA5B;
+    --mp-green-dark: #008C4A;
+    --mp-green-light: #E8F8EF;
+    --mp-bg: #f3f4f5;
+    --mp-text: #212121;
+    --mp-text-muted: #6D7588;
+    --mp-border: #e5e7e9;
+    --mp-card-radius: 8px;
+    --mp-red: #F94D63;
+}
+
+/* === Global === */
+body {
+    font-family: 'Open Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--mp-bg);
+    color: var(--mp-text);
+}
+
+a { color: var(--mp-green); }
+a:hover { color: var(--mp-green-dark); }
+
+/* === Navbar (Tokopedia-style white) === */
+.mp-navbar {
+    background: #fff !important;
+    border-bottom: 1px solid var(--mp-border);
+    box-shadow: 0 1px 6px rgba(49,53,59,.12);
+    padding: .5rem 0;
+}
+
+.mp-navbar .navbar-brand {
+    color: var(--mp-green) !important;
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.mp-navbar .navbar-toggler {
+    border-color: var(--mp-border);
+}
+
+.mp-navbar .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23212121' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.mp-navbar .nav-link {
+    color: var(--mp-text) !important;
+    font-size: .9rem;
+    font-weight: 500;
+    padding: .4rem .75rem !important;
+}
+
+.mp-navbar .nav-link:hover {
+    color: var(--mp-green) !important;
+}
+
+.mp-navbar .form-control {
+    border-radius: 8px;
+    border: 2px solid var(--mp-border);
+    font-size: .9rem;
+    padding: .45rem .75rem;
+}
+
+.mp-navbar .form-control:focus {
+    border-color: var(--mp-green);
+    box-shadow: 0 0 0 .2rem rgba(0,170,91,.15);
+}
+
+.mp-navbar .btn-success {
+    background: var(--mp-green);
+    border-color: var(--mp-green);
+    border-radius: 0 8px 8px 0;
+}
+
+.mp-navbar .btn-success:hover {
+    background: var(--mp-green-dark);
+}
+
+.mp-navbar .btn-outline-success {
+    color: var(--mp-green);
+    border-color: var(--mp-green);
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.mp-navbar .btn-outline-success:hover {
+    background: var(--mp-green);
+    color: #fff;
+}
+
+/* === Cart Badge === */
+.cart-badge {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    font-size: .6rem;
+    background: var(--mp-red) !important;
+    color: #fff !important;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    padding: 0 4px;
+}
+
+/* === Buttons (Tokopedia green) === */
+.btn-warning, .btn-success {
+    background: var(--mp-green) !important;
+    border-color: var(--mp-green) !important;
+    color: #fff !important;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.btn-warning:hover, .btn-success:hover {
+    background: var(--mp-green-dark) !important;
+    border-color: var(--mp-green-dark) !important;
+    color: #fff !important;
+}
+
+.btn-outline-dark {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-outline-success {
+    color: var(--mp-green);
+    border-color: var(--mp-green);
+    border-radius: 8px;
+}
+
+.btn-outline-success:hover {
+    background: var(--mp-green);
+    color: #fff;
+}
+
+/* === Product Card (Tokopedia style) === */
+.product-card {
+    background: #fff;
+    border: 1px solid var(--mp-border) !important;
+    border-radius: var(--mp-card-radius) !important;
+    overflow: hidden;
+    transition: box-shadow .2s ease, transform .2s ease;
+}
+
+.product-card:hover {
+    box-shadow: 0 2px 12px rgba(49,53,59,.15) !important;
+    transform: translateY(-2px);
+}
+
+.product-img-wrapper {
+    overflow: hidden;
+}
+
+.product-img {
+    height: 200px;
+    object-fit: cover;
+    width: 100%;
+    transition: transform .3s ease;
+}
+
+.product-card:hover .product-img {
+    transform: scale(1.04);
+}
+
+.product-category {
+    display: inline-block;
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-weight: 600;
+    color: var(--mp-text-muted);
+    margin-bottom: .35rem;
+}
+
+.product-name {
+    font-size: .85rem;
+    line-height: 1.35;
+    margin-bottom: .5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-name a {
+    color: var(--mp-text) !important;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.product-name a:hover {
+    color: var(--mp-green) !important;
+}
+
+.product-price {
+    font-weight: 700;
+    font-size: .95rem;
+    color: var(--mp-red);
+}
+
+.discount-chip {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--mp-red);
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    z-index: 2;
+}
+
+/* === Promo Overlay === */
+.promo-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 4px 8px;
+    background: linear-gradient(transparent, rgba(0,0,0,.55));
+    color: #fff;
+}
+
+.promo-ribbon {
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+.promo-ribbon i {
+    color: #fbbf24;
+}
+
+/* === Hero Banner (Tokopedia-style) === */
+.hero-section {
+    background: linear-gradient(135deg, var(--mp-green) 0%, #00C853 100%);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: rgba(255,255,255,.08);
+    border-radius: 50%;
+    top: -120px;
+    right: -100px;
+}
+
+.hero-section::after {
+    content: '';
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    background: rgba(255,255,255,.05);
+    border-radius: 50%;
+    bottom: -80px;
+    left: -60px;
+}
+
+.hero-section h1 {
+    font-weight: 700;
+}
+
+.hero-section .btn-warning {
+    background: #fff !important;
+    color: var(--mp-green) !important;
+    border: none !important;
+    font-weight: 700;
+    padding: .6rem 1.75rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+
+.hero-section .btn-warning:hover {
+    background: #f0f0f0 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.18);
+}
+
+/* === Category Chips === */
+.cat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .4rem .9rem;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 500;
+    background: #fff;
+    border: 1px solid var(--mp-border);
+    color: var(--mp-text);
+    transition: all .2s;
+    text-decoration: none;
+}
+
+.cat-chip:hover,
+.cat-chip.active {
+    background: var(--mp-green-light);
+    color: var(--mp-green);
+    border-color: var(--mp-green);
+}
+
+/* === Section Headers === */
+.section-title {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--mp-text);
+    position: relative;
+    display: inline-block;
+    padding-bottom: .3rem;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 40px;
+    background: var(--mp-green);
+    border-radius: 3px;
+}
+
+/* === Breadcrumb === */
+.breadcrumb {
+    background: none;
+    padding: 0;
+    font-size: .85rem;
+}
+
+.breadcrumb a {
+    color: var(--mp-green);
+    text-decoration: none;
+}
+
+/* === Footer === */
+.mp-footer {
+    background: #fff;
+    border-top: 1px solid var(--mp-border);
+}
+
+.mp-footer h6 {
+    font-weight: 700;
+    color: var(--mp-text);
+}
+
+.mp-footer a {
+    color: var(--mp-text-muted);
+    text-decoration: none;
+    transition: color .2s;
+}
+
+.mp-footer a:hover {
+    color: var(--mp-green);
+}
+
+/* === Cards (General) === */
+.card {
+    border: 1px solid var(--mp-border);
+    border-radius: var(--mp-card-radius);
+    box-shadow: none;
+}
+
+.card.shadow-sm {
+    border: 1px solid var(--mp-border);
+    border-radius: var(--mp-card-radius);
+    box-shadow: 0 1px 6px rgba(49,53,59,.08);
+}
+
+.card-header {
+    background: #fff;
+    border-bottom: 1px solid var(--mp-border);
+    font-weight: 600;
+}
+
+/* === Catalog Sidebar === */
+.list-group-item-action {
+    font-size: .9rem;
+    color: var(--mp-text);
+    border-color: var(--mp-border);
+}
+
+.list-group-item-action.active,
+.list-group-item-action:active {
+    background-color: var(--mp-green-light);
+    border-color: var(--mp-border);
+    color: var(--mp-green);
+    font-weight: 600;
+}
+
+.list-group-item-action:hover {
+    background-color: var(--mp-bg);
+}
+
+/* === Table === */
+.table-dark {
+    background: var(--mp-green) !important;
+    --bs-table-bg: var(--mp-green);
+}
+
+/* === Cart item image === */
+.cart-item-img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+}
+
+.cart-item-img-placeholder {
+    width: 60px;
+    height: 60px;
+    background: var(--mp-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ccc;
+    font-size: 1.5rem;
+}
+
+/* === Quantity Input === */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* === Order Status Badges === */
+.badge.bg-success { background: var(--mp-green) !important; }
+.badge.bg-warning { background: #FF8B00 !important; color: #fff !important; }
+.badge.bg-danger  { background: var(--mp-red) !important; }
+
+/* === Auth Pages === */
+.card-header.bg-dark {
+    background: var(--mp-green) !important;
+    border: none;
+}
+
+/* === QRIS Section === */
+#qrisPaySection .card,
+#qrisSection .card {
+    border-radius: var(--mp-card-radius);
+    overflow: hidden;
+}
+
+#qrisPaySection .card-header,
+#qrisSection .card-header {
+    background: var(--mp-green) !important;
+    color: #fff;
+}
+
+/* === Dropdown === */
+.dropdown-menu {
+    border: 1px solid var(--mp-border);
+    border-radius: var(--mp-card-radius);
+    box-shadow: 0 4px 16px rgba(49,53,59,.12);
+}
+
+.dropdown-item:active {
+    background: var(--mp-green-light);
+    color: var(--mp-green);
+}
+
+/* === Wishlist Badge === */
+.wishlist-badge {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    font-size: .6rem;
+    background: var(--mp-red) !important;
+    color: #fff !important;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    padding: 0 4px;
+}
+
+/* === Notification Badge === */
+.notif-badge {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    font-size: .6rem;
+    background: var(--mp-red) !important;
+    color: #fff !important;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    padding: 0 4px;
+}
+
+/* === Wishlist Heart Button on Cards === */
+.btn-wish-toggle {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.85);
+    border: none;
+    color: #aaa;
+    transition: all .2s;
+}
+
+.btn-wish-toggle:hover,
+.btn-wish-toggle.active {
+    background: #fff;
+    color: var(--mp-red);
+}
+
+.btn-wish-toggle.active i {
+    color: var(--mp-red);
+}
+
+/* === Order Status Filter Pills === */
+#orderStatusFilter .nav-link {
+    color: var(--mp-text-muted);
+    background: #fff;
+    border: 1px solid var(--mp-border);
+    font-size: .85rem;
+    font-weight: 500;
+    border-radius: 20px;
+    padding: .35rem .9rem;
+}
+
+#orderStatusFilter .nav-link.active {
+    background: var(--mp-green);
+    border-color: var(--mp-green);
+    color: #fff;
+}
+
+#orderStatusFilter .nav-link:hover:not(.active) {
+    background: var(--mp-green-light);
+    color: var(--mp-green);
+    border-color: var(--mp-green);
+}
+
+/* === Notification List === */
+.list-group-item-action:hover {
+    background-color: var(--mp-green-light);
+}
+
+/* === FAQ Accordion === */
+.accordion-button:not(.collapsed) {
+    background-color: var(--mp-green-light);
+    color: var(--mp-green);
+    font-weight: 600;
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 .2rem rgba(0,170,91,.15);
+    border-color: var(--mp-green);
+}
+
+/* === Responsive === */
+@media (max-width: 576px) {
+    .product-name { font-size: .78rem; }
+    .product-price { font-size: .85rem; }
+    .product-img { height: 150px; }
+    .hero-section h1 { font-size: 1.5rem; }
+}

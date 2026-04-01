@@ -46,7 +46,16 @@ namespace API.Repository
                 var ids = list.Select(x => x.ID).Distinct().ToList();
                 var extraMap = await _context.Products.AsNoTracking()
                     .Where(p => ids.Contains(p.ID))
-                    .Select(p => new { p.ID, p.Barcode, p.HasDiscount, p.DiscountPercentage, p.LowStockThreshold, p.PurchasePrice })
+                    .Select(p => new
+                    {
+                        p.ID,
+                        p.Barcode,
+                        p.HasDiscount,
+                        p.DiscountPercentage,
+                        p.LowStockThreshold,
+                        p.PurchasePrice,
+                        p.ImageUrl
+                    })
                     .ToDictionaryAsync(x => x.ID);
                 return list.Select(p =>
                 {
@@ -68,7 +77,8 @@ namespace API.Repository
                         barcode = extra?.Barcode,
                         lowStockThreshold = extra?.LowStockThreshold,
                         hasDiscount = extra?.HasDiscount ?? false,
-                        discountPercentage = extra?.DiscountPercentage ?? 0m
+                        discountPercentage = extra?.DiscountPercentage ?? 0m,
+                        imageUrl = extra?.ImageUrl
                     };
                 }).ToList();
             }
@@ -189,6 +199,36 @@ namespace API.Repository
             return list;
         }
 
+        public async Task<object> GetProductsBySupplier(int supplierId)
+        {
+            try
+            {
+                var list = await GetProductListWithFreshStockAsync();
+                var filtered = list.Where(p => p.SupplierID == supplierId).ToList();
+                var ids = filtered.Select(x => x.ID).ToList();
+                var extraMap = await _context.Products.AsNoTracking()
+                    .Where(p => ids.Contains(p.ID))
+                    .Select(p => new { p.ID, p.PurchasePrice })
+                    .ToDictionaryAsync(x => x.ID);
+                return filtered.Select(p =>
+                {
+                    var extra = extraMap.TryGetValue(p.ID, out var e) ? e : null;
+                    return new
+                    {
+                        id = p.ID,
+                        name = p.Name,
+                        purchasePrice = extra?.PurchasePrice ?? 0m,
+                        stockQuantity = p.StockQuantity,
+                        unitName = p.UnitName
+                    };
+                }).ToList();
+            }
+            catch (Exception e)
+            {
+                return CreateErrorResponse(e);
+            }
+        }
+
         private async Task<Dictionary<int, int>> BuildStockMapAsync()
         {
             return await _context.Products.AsNoTracking()
@@ -222,7 +262,8 @@ namespace API.Repository
                 Barcode = product.Barcode,
                 LowStockThreshold = product.LowStockThreshold,
                 HasDiscount = product.HasDiscount,
-                DiscountPercentage = product.DiscountPercentage
+                DiscountPercentage = product.DiscountPercentage,
+                ImageUrl = product.ImageUrl
             };
         }
 
@@ -243,7 +284,8 @@ namespace API.Repository
                 CreatedAt = createdAt,
                 Barcode = model.Barcode,
                 HasDiscount = model.HasDiscount,
-                DiscountPercentage = model.DiscountPercentage
+                DiscountPercentage = model.DiscountPercentage,
+                ImageUrl = model.ImageUrl
             };
         }
 
@@ -261,6 +303,28 @@ namespace API.Repository
             entity.Barcode = model.Barcode;
             entity.HasDiscount = model.HasDiscount;
             entity.DiscountPercentage = model.DiscountPercentage;
+            entity.ImageUrl = model.ImageUrl;
+        }
+
+        public async Task<object> UpdateProductImage(int id, string imageUrl)
+        {
+            try
+            {
+                var product = await _context.Products.FindAsync(id);
+                if (product == null)
+                    return new { success = false, error = "Product not found" };
+
+                product.ImageUrl = imageUrl;
+                product.UpdatedBy = GetCurrentUserName();
+                product.UpdatedAt = DateTime.Now;
+                _context.Products.Update(product);
+                await SaveChangesAsync();
+                return new { success = true, imageUrl };
+            }
+            catch (Exception e)
+            {
+                return CreateErrorResponse(e);
+            }
         }
     }
 }

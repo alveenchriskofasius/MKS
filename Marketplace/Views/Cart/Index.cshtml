@@ -1,0 +1,65 @@
+@{
+    ViewData["Title"] = "Keranjang Belanja";
+}
+
+<div class="container py-4">
+    <h4 class="fw-bold mb-3"><i class="bi bi-cart3"></i> Keranjang</h4>
+
+    <div id="cartLoading" class="text-center py-5">
+        <div class="spinner-border" style="color:var(--mp-green);" role="status"></div>
+    </div>
+
+    <div id="cartEmpty" class="text-center py-5" style="display:none;">
+        <i class="bi bi-cart-x" style="font-size:4rem;color:#ccc;"></i>
+        <p class="text-muted mt-3">Keranjang belanja kamu masih kosong.</p>
+        <a href="/Catalog" class="btn btn-warning">
+            <i class="bi bi-grid"></i> Mulai Belanja
+        </a>
+    </div>
+
+    <div id="cartContent" style="display:none;">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0" id="cartTable">
+                        <thead>
+                            <tr class="bg-light">
+                                <th class="ps-3">Produk</th>
+                                <th style="width:120px;">Harga Satuan</th>
+                                <th style="width:150px;">Jumlah</th>
+                                <th style="width:140px;">Subtotal</th>
+                                <th style="width:50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <a href="/Catalog" class="btn btn-outline-dark">
+                    <i class="bi bi-arrow-left"></i> Lanjut Belanja
+                </a>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">Total Belanja</span>
+                            <h4 class="fw-bold mb-0" id="cartTotal" style="color:var(--mp-red);"></h4>
+                        </div>
+                        <a href="/Checkout" class="btn btn-warning w-100 btn-lg" id="btnCheckout">
+                            <i class="bi bi-shield-check"></i> Checkout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Cart/Index.js" asp-append-version="true"></script>
+}

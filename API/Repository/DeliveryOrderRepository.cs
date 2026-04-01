@@ -21,7 +21,12 @@ public class DeliveryOrderRepository : IDeliveryOrderRepository
         if (await _ctx.DeliveryOrders.AnyAsync(d => d.SalesOrderID == salesOrderID)) return new { success = false, result = "Delivery Order already exists" };
         var soItems = await _ctx.SalesOrderItems.Where(i => i.TradeID == salesOrderID).ToListAsync();
         if (!soItems.Any()) return new { success = false, result = "Sales Order has no items" };
-        var doEntity = new DeliveryOrder { No = await GenerateNo(DateTime.Now), SalesOrderID = salesOrderID, StatusID = (short)DeliveryOrderStatus.Pending, CreatedAt = DateTime.Now, CreatedBy = userName, DeliveryAddress = so.Note }; // simplistic address reuse
+        var rawNote = so.Note ?? "";
+        var alamatIdx = rawNote.IndexOf("Alamat: ", StringComparison.OrdinalIgnoreCase);
+        var deliveryAddr = alamatIdx >= 0
+            ? rawNote.Substring(alamatIdx + 8).Split(new[] { " | ", "|" }, StringSplitOptions.RemoveEmptyEntries)[0].Trim()
+            : rawNote;
+        var doEntity = new DeliveryOrder { No = await GenerateNo(DateTime.Now), SalesOrderID = salesOrderID, StatusID = (short)DeliveryOrderStatus.Pending, CreatedAt = DateTime.Now, CreatedBy = userName, DeliveryAddress = deliveryAddr };
         await _ctx.DeliveryOrders.AddAsync(doEntity); await _ctx.SaveChangesAsync();
         foreach (var i in soItems) { await _ctx.DeliveryOrderItems.AddAsync(new DeliveryOrderItem { DeliveryOrderID = doEntity.ID, SalesOrderItemID = i.ID, ProductID = i.ProductID ?? 0, Quantity = i.Quantity, CreatedAt = DateTime.Now, CreatedBy = userName }); }
         await _ctx.SaveChangesAsync();

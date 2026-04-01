@@ -8,7 +8,7 @@ namespace API.Repository.Interfaces
         Task<SalesOrderModel> FillForm(int id);
         Task<object> GetSalesOrderDetailById(int id);
         Task<object> DeleteProductById(int id);
-        Task<object> GetSearchList();
+        Task<object> GetSearchList(short? tradeTypeFilter = null);
         Task<object> Delete(int id);
         Task<List<SalesOrderDetailModel>> GetSalesOrderDetailModelById(int id);
     }

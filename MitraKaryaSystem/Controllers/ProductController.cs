@@ -12,12 +12,19 @@ namespace MitraKaryaSystem.Controllers
         private readonly ICategoryService _categoryService;
         private readonly IUnitService _unitService;
         private readonly ISupplierService _supplierService;
-        public ProductController(IProductService service, ICategoryService categoryService, IUnitService unitService, ISupplierService supplierService)
+        private readonly IWebHostEnvironment _env;
+        public ProductController(
+            IProductService service,
+            ICategoryService categoryService,
+            IUnitService unitService,
+            ISupplierService supplierService,
+            IWebHostEnvironment env)
         {
             _service = service;
             _categoryService = categoryService;
             _unitService = unitService;
             _supplierService = supplierService;
+            _env = env;
         }
 
         [HasPermission("Product")]
@@ -47,7 +54,26 @@ namespace MitraKaryaSystem.Controllers
         public async Task<object> GetUnitList() => await _unitService.GetUnitList();
 
         [HasPermission("Product")]
-        public async Task<JsonResult> SaveProduct(ProductViewModel product) => Json(await _service.SaveProduct(product.ProductModel));
+        public async Task<JsonResult> SaveProduct(ProductViewModel product)
+        {
+            try
+            {
+                if (product.ImageFile != null && product.ImageFile.Length > 0)
+                {
+                    var uploadsDir = Path.Combine(Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "Uploads")), "products");
+                    Directory.CreateDirectory(uploadsDir);
+                    var fileName = Guid.NewGuid() + Path.GetExtension(product.ImageFile.FileName);
+                    using var stream = new FileStream(Path.Combine(uploadsDir, fileName), FileMode.Create);
+                    await product.ImageFile.CopyToAsync(stream);
+                    product.ProductModel.ImageUrl = "/uploads/products/" + fileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = "Image upload failed: " + ex.Message });
+            }
+            return Json(await _service.SaveProduct(product.ProductModel));
+        }
 
         [HasPermission("Product")]
         public async Task<JsonResult> SaveCategory(CategoryModel category) => Json(await _categoryService.SaveCategory(category));
@@ -74,6 +100,10 @@ namespace MitraKaryaSystem.Controllers
         [HttpGet]
         public async Task<JsonResult> GetProductComboList(string name = "") => Json(await _service.GetProductComboList(name));
 
+        // Products filtered by supplier — used by Purchase Order picker; no Product permission required.
+        [HttpGet]
+        public async Task<JsonResult> GetProductsBySupplier(int supplierId) => Json(await _service.GetProductsBySupplier(supplierId));
+
         [HasPermission("Product")]
         public async Task<IActionResult> FillFormProduct(int id)
         {
@@ -84,13 +114,40 @@ namespace MitraKaryaSystem.Controllers
                 {
                     ProductModel = data
                 };
-                return PartialView("Form", viewModel); // Return the "Form" view with the filled data
+                return PartialView("Form", viewModel);
             }
             catch (Exception)
             {
-                // Handle the exception, you might want to log it or return an error view
                 return View("Error");
             }
+        }
+
+        [HasPermission("Product")]
+        [HttpPost]
+        public async Task<JsonResult> UploadProductImage(int id, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return Json(new { success = false, error = "No file uploaded." });
+
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowed.Contains(ext))
+                return Json(new { success = false, error = "Only jpg, png, webp allowed." });
+
+            var uploadsDir = Path.Combine(Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "Uploads")), "products");
+            Directory.CreateDirectory(uploadsDir);
+
+            var fileName = $"product_{id}_{DateTime.Now:yyyyMMddHHmmss}{ext}";
+            var filePath = Path.Combine(uploadsDir, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var imageUrl = $"/uploads/products/{fileName}";
+            var result = await _service.UpdateProductImage(id, imageUrl);
+            return Json(result);
         }
     }
 }

@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using API.Context.Table;
+﻿using API.Context.Table;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace API.Models
 {

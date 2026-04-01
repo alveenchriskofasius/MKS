@@ -49,6 +49,10 @@ public partial class Trade
 
     public int? PurchaseOrderID { get; set; }
 
+    public string PaymentMethod { get; set; }
+
+    public string DeliveryMethod { get; set; }
+
     public virtual ICollection<DeliveryOrder> DeliveryOrders { get; set; } = new List<DeliveryOrder>();
 
     public virtual ICollection<PaymentIn> PaymentIns { get; set; } = new List<PaymentIn>();

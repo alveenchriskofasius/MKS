@@ -1,0 +1,60 @@
+@{
+    ViewData["Title"] = "Mitra Karya";
+}
+
+<!-- Hero Banner -->
+<section class="hero-section py-5">
+    <div class="container position-relative" style="z-index:1;">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h1 class="display-5 fw-bold mb-2" id="heroStoreName">Mitra Karya</h1>
+                <p class="mb-1 opacity-75" id="heroAddress" style="display:none;"><i class="bi bi-geo-alt-fill"></i> <span></span></p>
+                <p class="mb-3 opacity-75" id="heroPhone" style="display:none;"><i class="bi bi-telephone-fill"></i> <span></span></p>
+                <p class="lead mb-4 opacity-90">Belanja produk berkualitas dengan harga terbaik</p>
+                <a href="/Catalog" class="btn btn-warning btn-lg">
+                    <i class="bi bi-grid-3x3-gap-fill"></i> Mulai Belanja
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Discounted / Promo Products -->
+<section class="py-4" id="sectionDiscounted" style="display:none;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="section-title mb-0"><i class="bi bi-lightning-fill" style="color:var(--mp-red);"></i> Promo &amp; Diskon</h5>
+            <a href="/Catalog" class="text-decoration-none small fw-semibold">Lihat Semua <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-4 row-cols-lg-5 g-3" id="discountedList"></div>
+    </div>
+</section>
+
+<!-- Popular Products -->
+<section class="py-4" id="sectionPopular" style="display:none;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="section-title mb-0"><i class="bi bi-fire" style="color:var(--mp-red);"></i> Produk Popular</h5>
+        </div>
+        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-4 row-cols-lg-5 g-3" id="popularList"></div>
+    </div>
+</section>
+
+<!-- All Products (Infinite Scroll) -->
+<section class="py-4" id="sectionAllProducts">
+    <div class="container">
+        <h5 class="section-title mb-3"><i class="bi bi-grid-3x3-gap" style="color:var(--mp-green);"></i> Semua Produk</h5>
+        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-4 row-cols-lg-5 g-3" id="allProductsList"></div>
+        <div class="text-center py-4" id="loadMoreSpinner" style="display:none;">
+            <div class="spinner-border" style="color:var(--mp-green);" role="status"></div>
+            <p class="text-muted mt-2 small">Memuat produk lainnya...</p>
+        </div>
+        <div class="text-center py-3" id="noMoreProducts" style="display:none;">
+            <p class="text-muted small">Semua produk sudah ditampilkan.</p>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/Home/Index.js" asp-append-version="true"></script>
+}

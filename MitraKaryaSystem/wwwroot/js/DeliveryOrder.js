@@ -45,14 +45,20 @@ const doPages = (function () {
  { data: 'salesOrderNo', render: d => d || (d ===0 ? '0' : '-') },
  { data: 'statusID', render: d => `<span class="badge-status ${doStatusBadge[d] || 'badge-draft'}">${doStatusMap[d] || d}</span>` },
  { data: 'driverName', render: d => d || '<span class="text-muted">—</span>' },
- { data: 'deliveryAddress', render: d => d ? (d.length > 40 ? d.substring(0,40)+'…' : d) : '<span class="text-muted">—</span>' },
+ { data: 'deliveryAddress', render: d => {
+    if (!d) return '<span class="text-muted">—</span>';
+    const clean = d.replace(/^Alamat:\s*/i, '');
+    return clean.length > 40 ? clean.substring(0, 40) + '…' : clean;
+ } },
  { data: null, orderable: false, className: 'text-center align-middle', render: function (_d, _t, row) {
     // action buttons depending on status: Assigned -> Start, OutForDelivery -> Deliver
     const status = row && (row.statusID || row.StatusID) ? (row.statusID || row.StatusID) : 0;
     const viewBtn = `<button class='btn btn-sm btn-outline-primary do-view' title='View details'><i class='fa fa-eye'></i></button>`;
     const printBtn = `<button class='btn btn-sm btn-outline-secondary do-print' title='Print'><i class='fa fa-print'></i></button>`;
     let extra = '';
-    if (status === 2) { // Assigned
+    if (status === 1) { // Pending - assign driver
+        extra = `<button class='btn btn-sm btn-outline-info do-assign' title='Assign Driver' style='margin-left:6px'><i class='fa fa-user-plus'></i></button>`;
+    } else if (status === 2) { // Assigned
         extra = `<button class='btn btn-sm btn-outline-warning do-start' title='Start delivery' style='margin-left:6px'><i class='fa fa-truck-fast'></i></button>`;
     } else if (status === 3) { // Out For Delivery
         extra = `<button class='btn btn-sm btn-outline-success do-deliver' title='Mark delivered' style='margin-left:6px'><i class='fa fa-check-circle'></i></button>`;
@@ -61,6 +67,38 @@ const doPages = (function () {
  } }
  ]
  });
+
+  // Assign driver (Pending -> Assigned)
+  $('#tableDeliveryOrder').off('click', '.do-assign').on('click', '.do-assign', function () {
+    const row = $('#tableDeliveryOrder').DataTable().row($(this).closest('tr')).data();
+    if (!row) return;
+    const id = row.id || row.ID;
+    if (!id) return;
+    Common.Api.get('/DeliveryOrder/GetDrivers')
+      .then(list => {
+        let drivers = list;
+        if (list && list.result) drivers = list.result;
+        const options = (drivers || []).map(u => `<option value='${u.id || u.ID}'>${u.name || u.Name || u.userName || u.UserName}</option>`).join('');
+        Swal.fire({
+          title: 'Assign Driver',
+          html: `<select id='swalSelectDriver' class='form-select mt-2'><option value=''>-- Select driver --</option>${options}</select>`,
+          showCancelButton: true,
+          confirmButtonText: 'Assign',
+          showLoaderOnConfirm: true,
+          preConfirm: () => {
+            const driverID = document.getElementById('swalSelectDriver').value;
+            if (!driverID) { Swal.showValidationMessage('Pilih driver terlebih dahulu'); return false; }
+            return Common.Api.post('/DeliveryOrder/AssignDriver', { id: id, driverUserID: parseInt(driverID) })
+              .then(res => { if (!res.success) throw new Error(res.result || 'Gagal assign driver'); return res; })
+              .catch(err => Swal.showValidationMessage(err.message || 'Request failed'));
+          },
+          allowOutsideClick: () => !Swal.isLoading()
+        }).then(result => {
+          if (result.isConfirmed) { toastr.success('Driver berhasil diassign'); doPages.init(); }
+        });
+      })
+      .catch(() => toastr.error('Gagal memuat daftar driver'));
+  });
 
   // Start delivery (Assigned -> OutForDelivery)
   $('#tableDeliveryOrder').off('click', '.do-start').on('click', '.do-start', function () {

@@ -1,0 +1,261 @@
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<div class="container py-4">
+    <h4 class="fw-bold mb-3"><i class="bi bi-shield-check"></i> Checkout</h4>
+
+    <div id="checkoutLoading" class="text-center py-5">
+        <div class="spinner-border" style="color:var(--mp-green);" role="status"></div>
+    </div>
+
+    <!-- Cart Summary -->
+    <div id="checkoutContent" style="display:none;">
+        <div class="row">
+            <div class="col-md-7">
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-bag"></i> Ringkasan Pesanan</h6>
+                        <table class="table table-sm" id="checkoutItems">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Produk</th>
+                                    <th>Qty</th>
+                                    <th>Harga</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Delivery Method -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-truck"></i> Metode Pengiriman
+                        </h6>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio"
+                                   name="deliveryMethod" id="deliveryPickup"
+                                   value="pickup" checked />
+                            <label class="form-check-label" for="deliveryPickup">
+                                <i class="bi bi-shop"></i> Ambil di Toko (Pickup)
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio"
+                                   name="deliveryMethod" id="deliveryDeliver"
+                                   value="delivery" />
+                            <label class="form-check-label" for="deliveryDeliver">
+                                <i class="bi bi-bicycle"></i> Kirim ke Alamat (Delivery)
+                            </label>
+                        </div>
+
+                        <!-- Store Map (shown for pickup) -->
+                        <div id="storeMapSection" class="mt-3">
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-geo-alt-fill"></i> Lokasi Toko
+                            </p>
+                            <div class="ratio ratio-16x9 rounded overflow-hidden border">
+                                <iframe
+                                    src="https://maps.google.com/maps?q=TB+Mitra+Karya+Simpangan&t=&z=17&ie=UTF8&iwloc=&output=embed"
+                                    style="border:0;" allowfullscreen="" loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade">
+                                </iframe>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Address (shown for delivery) -->
+                        <div id="deliveryAddressSection" class="mt-3" style="display:none;">
+                            <label class="form-label small fw-semibold">
+                                Alamat Pengiriman
+                            </label>
+                            <textarea class="form-control" id="deliveryAddress"
+                                      rows="3" placeholder="Masukkan alamat lengkap">
+                            </textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-chat-dots"></i> Catatan
+                        </h6>
+                        <textarea class="form-control" id="orderNote"
+                                  rows="3"
+                                  placeholder="Catatan untuk pesanan (opsional)">
+                        </textarea>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-credit-card"></i> Metode Pembayaran
+                        </h6>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio"
+                                   name="paymentMethod" id="payQris"
+                                   value="qris" checked />
+                            <label class="form-check-label" for="payQris">
+                                <i class="bi bi-qr-code"></i> QRIS
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio"
+                                   name="paymentMethod" id="payBank"
+                                   value="bank_transfer" />
+                            <label class="form-check-label" for="payBank">
+                                <i class="bi bi-bank"></i> Transfer Bank
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio"
+                                   name="paymentMethod" id="payVA"
+                                   value="virtual_account" />
+                            <label class="form-check-label" for="payVA">
+                                <i class="bi bi-wallet2"></i> Virtual Account
+                            </label>
+                        </div>
+                        <div id="vaBankSection" class="ms-4 mb-2" style="display:none;">
+                            <label class="form-label small fw-semibold">Pilih Bank</label>
+                            <select class="form-select form-select-sm" id="vaBank">
+                                <option value="bca">BCA</option>
+                                <option value="bni">BNI</option>
+                                <option value="bri">BRI</option>
+                                <option value="permata">Permata</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">Total Belanja</span>
+                            <h4 class="fw-bold mb-0" id="checkoutTotal"
+                                style="color:var(--mp-red);"></h4>
+                        </div>
+                        <button class="btn btn-warning btn-lg w-100" id="btnPlaceOrder">
+                            <span class="spinner-border spinner-border-sm"
+                                  style="display:none;" id="orderSpinner"></span>
+                            <i class="bi bi-check-circle"></i> Buat Pesanan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QRIS Payment -->
+    <div id="qrisSection" class="text-center py-4" style="display:none;">
+        <div class="card shadow-sm mx-auto" style="max-width:400px;">
+            <div class="card-header text-white"
+                 style="background:var(--mp-green);">
+                <i class="bi bi-qr-code"></i> Pembayaran QRIS
+            </div>
+            <div class="card-body">
+                <p>Order: <strong id="qrisOrderNo"></strong></p>
+                <p>Total: <strong id="qrisAmount"
+                                  style="color:var(--mp-red);"></strong></p>
+                <img id="qrisImage" src="" alt="QR Code"
+                     class="img-fluid mb-3" style="max-width:280px;" />
+                <p class="text-muted small">
+                    Scan QR code di atas untuk membayar
+                </p>
+                <div id="qrisStatus" class="alert alert-info">
+                    Menunggu pembayaran...
+                </div>
+                <a href="/Order" class="btn btn-outline-dark mt-2">
+                    Lihat Pesanan Saya
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Transfer / VA Info -->
+    <div id="bankInfoSection" class="py-4" style="display:none;">
+        <div class="card shadow-sm mx-auto" style="max-width:500px;">
+            <div class="card-header text-white"
+                 style="background:var(--mp-green);">
+                <i class="bi bi-bank"></i> Informasi Pembayaran
+            </div>
+            <div class="card-body">
+                <p>Order: <strong id="bankOrderNo"></strong></p>
+                <p>Total: <strong id="bankAmount"
+                                  style="color:var(--mp-red);"></strong></p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i>
+                    Silakan transfer ke rekening berikut:
+                </div>
+                <div class="border rounded p-3 mb-3">
+                    <p class="mb-1">
+                        <strong>Bank BCA</strong>
+                    </p>
+                    <p class="mb-1 d-flex align-items-center gap-2">
+                        No. Rekening: <strong id="bankAccountNo">123-456-7890</strong>
+                        <button class="btn btn-sm btn-outline-secondary py-0" onclick="navigator.clipboard.writeText(document.getElementById('bankAccountNo').textContent).then(function(){Common.showToast('Nomor rekening disalin!')})" title="Salin nomor rekening">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </p>
+                    <p class="mb-0">
+                        Atas Nama: <strong>Mitra Karya</strong>
+                    </p>
+                </div>
+                <p class="text-muted small">
+                    Kirim bukti transfer ke WhatsApp atau
+                    konfirmasi di halaman pesanan Anda.
+                </p>
+                <a href="/Order" class="btn btn-warning w-100">
+                    <i class="bi bi-bag"></i> Lihat Pesanan Saya
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Virtual Account Info -->
+    <div id="vaInfoSection" class="py-4" style="display:none;">
+        <div class="card shadow-sm mx-auto" style="max-width:500px;">
+            <div class="card-header text-white"
+                 style="background:var(--mp-green);">
+                <i class="bi bi-wallet2"></i> Virtual Account
+            </div>
+            <div class="card-body">
+                <p>Order: <strong id="vaOrderNo"></strong></p>
+                <p>Total: <strong id="vaAmount"
+                                  style="color:var(--mp-red);"></strong></p>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Transfer ke Virtual Account berikut:
+                </div>
+                <div class="border rounded p-3 mb-3 text-center">
+                    <p class="mb-1 text-muted">Bank</p>
+                    <h5 class="fw-bold mb-2" id="vaBankName"></h5>
+                    <p class="mb-1 text-muted">Nomor Virtual Account</p>
+                    <div class="d-flex align-items-center justify-content-center gap-2">
+                        <h4 class="fw-bold text-primary mb-0" id="vaNumber"></h4>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('vaNumber').textContent).then(function(){Common.showToast('Nomor VA disalin!')})" title="Salin nomor VA">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="vaPayStatus" class="alert alert-info">
+                    Menunggu pembayaran...
+                </div>
+                <a href="/Order" class="btn btn-warning w-100 mt-2">
+                    <i class="bi bi-bag"></i> Lihat Pesanan Saya
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Checkout/Index.js" asp-append-version="true"></script>
+}

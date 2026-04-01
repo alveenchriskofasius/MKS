@@ -180,8 +180,9 @@ const MksPrint = (function () {
             itemsHtml += '<tr><td style="text-align:center;">' + (i + 1) + '</td><td>' + name + '</td><td style="text-align:center;">' + qty + '</td><td style="text-align:center;">' + unit + '</td><td style="text-align:right;">' + formatMoney(price) + '</td><td style="text-align:right;">' + formatMoney(sub) + '</td></tr>';
         });
 
-        var outstanding = grandTotal - paidAmount;
-        var dpLine = paidAmount > 0 ? '<div class="summary-line"><span>Uang Muka</span><span>' + formatMoney(paidAmount) + '</span></div>' : '';
+        var statusID = parseInt($('#salesOrderStatusID').val() || '0', 10);
+        var outstanding = (statusID === 2 || statusID === 8) ? 0 : grandTotal - paidAmount;
+        var dpLine = (paidAmount > 0 && statusID !== 2 && statusID !== 8) ? '<div class="summary-line"><span>Uang Muka</span><span>' + formatMoney(paidAmount) + '</span></div>' : '';
         var outstandingLine = outstanding > 0 ? '<div class="summary-line debt"><span>Sisa</span><span>' + formatMoney(outstanding) + '</span></div>' : '';
         var noteLine = note ? '<div class="so-note"><strong>Catatan:</strong> ' + note + '</div>' : '';
 
@@ -429,7 +430,7 @@ const MksPrint = (function () {
         html += buildInfoSection([
             { label: 'Sales Order', value: d.salesOrderNo || '-' },
             { label: 'Driver', value: d.driverName || '-' },
-            { label: 'Address', value: d.address || '-' },
+            { label: 'Address', value: (d.address || '-').replace(/^Alamat:\s*/i, '') || '-' },
             { label: 'Status', value: d.status || '-' }
         ]);
         if (d.items && d.items.length) {

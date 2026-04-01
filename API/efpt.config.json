@@ -63,6 +63,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[MarketplaceAccount]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Numbering]",
          "ObjectType": 0
       },

@@ -10,5 +10,7 @@ namespace API.Services.Interfaces
         Task<ProductModel> FillFormProduct(int id);
         Task<object> GetProductComboList(string name);
         Task<object> GetLowStockProductList(int threshold = 5);
+        Task<object> UpdateProductImage(int id, string imageUrl);
+        Task<object> GetProductsBySupplier(int supplierId);
     }
 }

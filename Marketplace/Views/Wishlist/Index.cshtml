@@ -1,0 +1,23 @@
+@{
+    ViewData["Title"] = "Wishlist";
+}
+
+<div class="container py-4">
+    <h4 class="fw-bold mb-3"><i class="bi bi-heart"></i> Wishlist Saya</h4>
+
+    <div id="wishlistLoading" class="text-center py-5">
+        <div class="spinner-border" style="color:var(--mp-green);" role="status"></div>
+    </div>
+    <div id="wishlistEmpty" class="text-center py-5" style="display:none;">
+        <i class="bi bi-heart" style="font-size:4rem;color:#ccc;"></i>
+        <p class="text-muted mt-3">Wishlist Anda masih kosong.</p>
+        <a href="/Catalog" class="btn btn-warning"><i class="bi bi-grid"></i> Jelajahi Katalog</a>
+    </div>
+    <div id="wishlistContent" style="display:none;">
+        <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3" id="wishlistGrid"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Wishlist/Index.js" asp-append-version="true"></script>
+}

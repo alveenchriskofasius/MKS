@@ -57,6 +57,8 @@ public class PurchaseReturnRepository : BaseRepository, IPurchaseReturnRepositor
                     var prod = await _context.Products.FindAsync(item.ProductID);
                     if (prod != null)
                     {
+                        if (item.Quantity > prod.StockQuantity)
+                            return new { success = false, result = $"Qty for {prod.Name} ({item.Quantity}) exceeds available stock ({prod.StockQuantity})." };
                         prod.StockQuantity -= item.Quantity;
                         _context.Products.Update(prod);
                         await WriteLedgerSafe(prod.ID, -item.Quantity, trade);
@@ -131,6 +133,9 @@ public class PurchaseReturnRepository : BaseRepository, IPurchaseReturnRepositor
             foreach (var d in model.Details)
             {
                 if (d.Quantity <= 0) return new { success = false, result = "Qty must >0" };
+                var prod = await _context.Products.FindAsync(d.ProductID);
+                if (prod != null && d.Quantity > prod.StockQuantity)
+                    return new { success = false, result = $"Qty for {prod.Name} ({d.Quantity}) exceeds available stock ({prod.StockQuantity})." };
                 if (d.ID == 0)
                 {
                     var item = new PurchaseReturnItem { TradeID = tradeID, ProductID = d.ProductID, Quantity = d.Quantity };

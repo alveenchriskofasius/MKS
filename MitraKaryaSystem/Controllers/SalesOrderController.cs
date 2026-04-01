@@ -23,7 +23,8 @@ namespace MitraKaryaSystem.Controllers
 
         public async Task<IActionResult> FillForm(int id)
         {
-            var customers = await _customerService.GetListModel();
+            var allCustomers = await _customerService.GetListModel();
+            var customers = allCustomers.Where(c => !c.IsSupplier && !c.IsSales).ToList();
             var salesOrder = new SalesOrderViewModel
             {
                 Customers = customers.Select(x => new SelectListItem { Value = x.ID.ToString(), Text = x.Name }).ToList(),
@@ -43,7 +44,7 @@ namespace MitraKaryaSystem.Controllers
             }
             return Json(await _salesOrderService.Save(salesOrder));
         }
-        public async Task<JsonResult> FillGrid() => Json(await _salesOrderService.GetSearchList());
+        public async Task<JsonResult> FillGrid(short? tradeType) => Json(await _salesOrderService.GetSearchList(tradeType));
         public async Task<JsonResult> GetDetailListById(int id) => Json(await _salesOrderService.GetSalesOrderDetailById(id));
         public async Task<object> DeleteItem(int id) => Json(await _salesOrderService.DeleteProductById(id));
         public async Task<object> Delete(int id) => Json(await _salesOrderService.Delete(id));

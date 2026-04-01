@@ -1,4 +1,7 @@
-﻿$(document).ready(function () { POControl.Init(); POButtons.Init(); });
+﻿$(document).ready(function () {
+    POControl.Init();
+    POButtons.Init();
+});
 
 const POStatus = { 1: 'Draft', 2: 'Submitted', 3: 'Approved', 4: 'Rejected' };
 const POStatusBadge = { 1: 'badge-draft', 2: 'badge-submitted', 3: 'badge-approved', 4: 'badge-rejected' };
@@ -38,20 +41,48 @@ function UpdatePOButtons(statusID) {
     $('#buttonCreateStockIn').toggleClass('d-none', !(hasId && statusID === 3));
     // Lock editing when submitted or approved
     $('#buttonSave').prop('disabled', isLocked);
-    $('#selectProduct').prop('disabled', isLocked);
     $('#filterSupplier').prop('disabled', isLocked);
+    if (isLocked) { $('#productPickerPanel').addClass('d-none'); }
 }
 
-let POButtons = { Init: function () { $('#buttonSave').click(function (e) { e.preventDefault(); 
-        // Validate supplier is selected
-        const supplierId = $('#filterSupplier').val();
-        if (!supplierId || supplierId === '' || supplierId === '0') {
-            $('#filterSupplier').addClass('is-invalid');
-            toastr.warning('Please select a supplier', 'Supplier required');
-            return;
-        }
-        $('#filterSupplier').removeClass('is-invalid');
-        let table = $('#tablePurchaseOrderProduct').DataTable(); if (table.rows().count() <= 0) { toastr.info('Insert at least 1 product', 'Cannot save'); return; } PurchaseOrderForm.Save(); }); $('#buttonNew').click(function () { PurchaseOrderForm.Reset(); }); $('#buttonSearch').click(function () { POTable.Search(); }); $('#buttonPrint').click(function () { const id = parseInt($('#purchaseOrderID').val() || '0', 10); if (!id) { toastr.info('Save Purchase Order first'); return; } MksPrint.purchaseOrder(); }); } };
+let POButtons = {
+    Init: function () {
+        $('#buttonSave').click(function (e) {
+            e.preventDefault();
+            // Validate supplier is selected
+            const supplierId = $('#filterSupplier').val();
+            if (!supplierId || supplierId === '' || supplierId === '0') {
+                $('#filterSupplier').addClass('is-invalid');
+                toastr.warning('Please select a supplier', 'Supplier required');
+                return;
+            }
+            $('#filterSupplier').removeClass('is-invalid');
+            let table = $('#tablePurchaseOrderProduct').DataTable();
+            if (table.rows().count() <= 0) {
+                toastr.info('Insert at least 1 product', 'Cannot save');
+                return;
+            }
+            PurchaseOrderForm.Save();
+        });
+
+        $('#buttonNew').click(function () {
+            PurchaseOrderForm.Reset();
+        });
+
+        $('#buttonSearch').click(function () {
+            POTable.Search();
+        });
+
+        $('#buttonPrint').click(function () {
+            const id = parseInt($('#purchaseOrderID').val() || '0', 10);
+            if (!id) {
+                toastr.info('Save Purchase Order first');
+                return;
+            }
+            MksPrint.purchaseOrder();
+        });
+    }
+};
 
 // Approval workflow actions (require server permission + Admin role)
 async function POChangeStatus(action, extra) {
@@ -136,7 +167,19 @@ let POTable = {
             const thCount = tableID.find('thead tr th').length;
             console.log('POTable.Init: header th count =', thCount, 'columns defined =', columns.length);
         } catch (e) { console.warn('POTable.Init: failed to compute header th count', e); }
-        let table = tableID.DataTable({ deferRender: true, processing: true, serverSide: false, destroy: true, filter: true, searching: false, responsive: true, columns: columns, decimal: ',', thousands: '.', data: dataList && dataList.length > 0 ? dataList : null });
+        let table = tableID.DataTable({
+            deferRender: true,
+            processing: true,
+            serverSide: false,
+            destroy: true,
+            filter: true,
+            searching: false,
+            responsive: true,
+            columns: columns,
+            decimal: ',',
+            thousands: '.',
+            data: dataList && dataList.length > 0 ? dataList : null
+        });
         tableID.find('tbody').unbind();
         // Normalize id property for all existing rows (if coming as ID from SP)
         table.rows().every(function () { let r = this.data(); if (r && r.ID && !r.id) { r.id = r.ID; this.data(r); } });
@@ -209,23 +252,73 @@ let POTable = {
                 return `<span class="badge-status ${cls}">${statusText || ''}</span>`;
             } },
              { data: 'supplierName' }, { data: 'createdBy' }, { data: 'updatedBy' },
-             { data: null, orderable: false, render: () => `<div class="btn-group btn-group-sm"><button class="btn btn-outline-primary po-edit" title="Edit"><i class="fa fa-pencil"></i></button><button class="btn btn-outline-danger po-delete-row" title="Delete"><i class="fa fa-trash"></i></button></div>` }
+             {
+                data: null,
+                orderable: false,
+                render: () => `<div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary po-edit" title="Edit"><i class="fa fa-pencil"></i></button>
+                    <button class="btn btn-outline-danger po-delete-row" title="Delete"><i class="fa fa-trash"></i></button>
+                </div>`
+             }
         ];
         try {
             const thCount = $('#tableSearchPO').find('thead tr th').length;
             console.log('POTable.Search: tableSearchPO header th count =', thCount, 'columns defined =', columns.length);
         } catch (e) { console.warn('POTable.Search: failed to compute header th count', e); }
-        let table = tableID.DataTable({ deferRender: true, processing: true, serverSide: false, destroy: true, filter: true, searching: false, responsive: true, data: data, columns: columns });
+        let table = tableID.DataTable({
+            deferRender: true,
+            processing: true,
+            serverSide: false,
+            destroy: true,
+            filter: true,
+            searching: true,
+            responsive: true,
+            data: data,
+            columns: columns
+        });
         tableID.find('tbody').unbind();
-        tableID.find('tbody').on('click', '.po-edit', function () { let row = table.row($(this).parents('tr')).data(); PurchaseOrderForm.Fill(row.id || row.ID); $('#searchModal').modal('hide'); });
-        tableID.find('tbody').on('click', '.po-delete-row', function () { let row = table.row($(this).parents('tr')).data(); const rowId = row.id || row.ID; Swal.fire({ title: 'Are you sure?', text: "You won't be able to revert this!", icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, delete it', showLoaderOnConfirm: true, preConfirm: () => fetch(`/PurchaseOrder/Delete?id=${rowId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }).then(r => r.json()).then(j => { if (!j.success) throw new Error(j.result || 'Delete failed'); return j; }).catch(err => Swal.showValidationMessage(`Request failed: ${err.message}`)), allowOutsideClick: () => !Swal.isLoading() }).then(res => { if (res.isConfirmed && res.value && res.value.success) { toastr.success('Data has been deleted'); POTable.Search(); } }); });
+        tableID.find('tbody').on('click', '.po-edit', function () {
+            let row = table.row($(this).parents('tr')).data();
+            PurchaseOrderForm.Fill(row.id || row.ID);
+            $('#searchModal').modal('hide');
+        });
+
+        tableID.find('tbody').on('click', '.po-delete-row', function () {
+            let row = table.row($(this).parents('tr')).data();
+            const rowId = row.id || row.ID;
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it',
+                showLoaderOnConfirm: true,
+                preConfirm: () => fetch(`/PurchaseOrder/Delete?id=${rowId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                    .then(r => r.json())
+                    .then(j => {
+                        if (!j.success) throw new Error(j.result || 'Delete failed');
+                        return j;
+                    })
+                    .catch(err => Swal.showValidationMessage(`Request failed: ${err.message}`)),
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then(res => {
+                if (res.isConfirmed && res.value && res.value.success) {
+                    toastr.success('Data has been deleted');
+                    POTable.Search();
+                }
+            });
+        });
     }
 };
 
 let POControl = {
-    _search: null,
     Init: function () {
-        this.LoadForm(0); this.InitProductSearch(); POTable.Init(); // wire page-level filterSupplier into form submission
+        this.LoadForm(0);
+        POTable.Init();
+        // wire page-level filterSupplier into form submission
         // store previous supplier value for cancel behavior
         const $filter = $('#filterSupplier');
         $filter.data('prev', $filter.val());
@@ -257,10 +350,12 @@ let POControl = {
                                     $('<input>').attr({ type: 'hidden', id: 'purchaseOrderSupplierID', name: 'SupplierID', value: v }).appendTo('#purchaseOrderForm');
                                 }
                                 $filter.data('prev', v);
+                                POProductPicker.ShowPanel(v);
                             } else {
                                 // revert selection
                                 const prev = $filter.data('prev');
                                 $filter.val(prev).trigger('change.select2');
+                                POProductPicker.ShowPanel(prev);
                             }
                         });
                         return;
@@ -275,6 +370,30 @@ let POControl = {
                 $('<input>').attr({ type: 'hidden', id: 'purchaseOrderSupplierID', name: 'SupplierID', value: v }).appendTo('#purchaseOrderForm');
             }
             $filter.data('prev', v);
+            POProductPicker.ShowPanel(v);
+        });
+        // add selected from picker
+        $(document).on('click', '#buttonAddPickedProducts', function () {
+            POProductPicker.AddSelected();
+        });
+        // select all toggle
+        $(document).on('change', '#pickerSelectAll', function () {
+            $('#pickerTableBody .picker-check').prop('checked', $(this).is(':checked'));
+            POProductPicker.UpdateSelectedCount();
+        });
+        // individual checkbox: sync select-all state
+        $(document).on('change', '#pickerTableBody .picker-check', function () {
+            POProductPicker.UpdateSelectedCount();
+            const total = $('#pickerTableBody .picker-check').length;
+            const checked = $('#pickerTableBody .picker-check:checked').length;
+            $('#pickerSelectAll').prop('checked', total > 0 && total === checked);
+        });
+        // live search inside picker
+        $(document).on('input', '#pickerSearch', function () {
+            const q = $(this).val().toLowerCase();
+            POProductPicker.Render(
+                POProductPicker._products.filter(p => p.name && p.name.toLowerCase().includes(q))
+            );
         });
     },
     LoadForm: function (id) {
@@ -291,11 +410,15 @@ let POControl = {
             if (loadedSupplierId && loadedSupplierId !== '0') {
                 $('#filterSupplier').val(loadedSupplierId).trigger('change.select2');
                 $('#filterSupplier').data('prev', loadedSupplierId);
+                if (!IsPOLockedForEdit(statusID)) {
+                    POProductPicker.ShowPanel(loadedSupplierId);
+                }
             } else if (id === 0) {
                 // New PO: reset to placeholder
                 $('#filterSupplier').val('').trigger('change.select2');
                 $('#filterSupplier').removeClass('is-invalid');
                 $('#filterSupplier').data('prev', '');
+                POProductPicker.ShowPanel('');
             }
 
             // apply UI locking: hide delete buttons and make qty read-only when status is Paid or PartialPaid accordingly
@@ -322,7 +445,12 @@ let POControl = {
                 }
             }, 200);
         });
-        if (id && id > 0) { this.LoadDetails(id); } else { POTable.Init(); $('#poTotal').text('0.00'); }
+        if (id && id > 0) {
+            this.LoadDetails(id);
+        } else {
+            POTable.Init();
+            $('#poTotal').text('0.00');
+        }
     },
     LoadDetails: function (id) {
         let details = Common.GetData.Get('/PurchaseOrder/GetDetailListById?id=' + id);
@@ -335,29 +463,75 @@ let POControl = {
             unitPrice: d.unitPrice || d.UnitPrice,
             subTotal: d.subTotal || d.SubTotal || ((d.unitPrice || d.UnitPrice || 0) * (d.quantity || d.Quantity || 0))
         }));
-        POTable.Init(mapped); POControl.CalcTotal();
+        POTable.Init(mapped);
+        POControl.CalcTotal();
     },
-    InitProductSearch: function () {
-        if (this._search) this._search.destroy();
-        this._search = MksProductSearch.attach('#selectProduct', {
-            showPrice: true,
-            showStock: true,
-            blockZeroStock: false,
-            usePurchasePrice: true,
-            supplierId: function () { return $('#filterSupplier').val() || null; },
-            onSelect: (prod) => this.AddOrIncrease(prod)
+    AddOrIncrease: function (prod) {
+        let table = $('#tablePurchaseOrderProduct').DataTable();
+        let exists = false;
+        let rows = table.rows().nodes();
+        $(rows).each(function () {
+            let rowData = table.row(this).data();
+            if (rowData.productID == prod.id) {
+                exists = true;
+                let newQuantity = parseInt(rowData.quantity) + 1;
+                rowData.quantity = newQuantity;
+                rowData.subTotal = newQuantity * rowData.unitPrice;
+                table.row(this).data(rowData).invalidate();
+            }
         });
+        if (!exists) {
+            const price = Number(prod.purchasePrice || 0) > 0
+                ? Number(prod.purchasePrice)
+                : Number(prod.unitPrice || 0);
+            table.row.add({
+                productID: prod.id,
+                product: prod.name,
+                quantity: 1,
+                unitPrice: price,
+                subTotal: price,
+                id: 0
+            }).draw();
+        }
+        table.draw(false);
+        this.CalcTotal();
     },
-    AddOrIncrease: function (prod) { let table = $('#tablePurchaseOrderProduct').DataTable(); let exists = false; let rows = table.rows().nodes(); $(rows).each(function () { let rowData = table.row(this).data(); if (rowData.productID == prod.id) { exists = true; let newQuantity = parseInt(rowData.quantity) + 1; rowData.quantity = newQuantity; rowData.subTotal = newQuantity * rowData.unitPrice; table.row(this).data(rowData).invalidate(); } }); if (!exists) { const price = Number(prod.purchasePrice || 0) > 0 ? Number(prod.purchasePrice) : Number(prod.unitPrice || 0); table.row.add({ productID: prod.id, product: prod.name, quantity: 1, unitPrice: price, subTotal: price, id: 0 }).draw(); } table.draw(false); this.CalcTotal(); },
-    CalcTotal: function () { let table = $('#tablePurchaseOrderProduct').DataTable(); let total = 0; table.rows().every(function () { let r = this.data(); total += (parseFloat(r.unitPrice) || 0) * (parseInt(r.quantity) || 0); }); $('#poTotal').text(total.toFixed(2)); }
+    CalcTotal: function () {
+        let table = $('#tablePurchaseOrderProduct').DataTable();
+        let total = 0;
+        table.rows().every(function () {
+            let r = this.data();
+            total += (parseFloat(r.unitPrice) || 0) * (parseInt(r.quantity) || 0);
+        });
+        $('#poTotal').text(total.toFixed(2));
+    }
 };
 
 let PurchaseOrderForm = {
     Fill: function (id) { POControl.LoadForm(id); },
     Save: function () {
-        let table = $('#tablePurchaseOrderProduct').DataTable(); if (!$.fn.DataTable.isDataTable('#tablePurchaseOrderProduct')) return;
-        let dataArray = []; let idx = 0; table.rows().every(function () { let r = this.data(); if (r && r.productID && r.quantity) { dataArray.push({ index: idx, row: r }); idx++; } }); if (dataArray.length === 0) { toastr.info('No detail'); return; }
-        let formData = {}; formData['ID'] = $('#purchaseOrderID').val(); formData['Date'] = $('#purchaseOrderDate').val(); formData['No'] = $('#purchaseOrderNumber').val(); formData['Note'] = $('#purchaseOrderNote').val();
+        let table = $('#tablePurchaseOrderProduct').DataTable();
+        if (!$.fn.DataTable.isDataTable('#tablePurchaseOrderProduct')) return;
+
+        let dataArray = [];
+        let idx = 0;
+        table.rows().every(function () {
+            let r = this.data();
+            if (r && r.productID && r.quantity) {
+                dataArray.push({ index: idx, row: r });
+                idx++;
+            }
+        });
+        if (dataArray.length === 0) {
+            toastr.info('No detail');
+            return;
+        }
+
+        let formData = {};
+        formData['ID'] = $('#purchaseOrderID').val();
+        formData['Date'] = $('#purchaseOrderDate').val();
+        formData['No'] = $('#purchaseOrderNumber').val();
+        formData['Note'] = $('#purchaseOrderNote').val();
         // Ensure SupplierID is included when saving Purchase Order (several possible element ids)
         // normalize supplier id: treat 0/empty as null so server doesn't store 0
         var supVal = $('#purchaseOrderSupplierID').val() || $('#supplierId').val() || $('#selectSupplier').val() || $('#filterSupplier').val();
@@ -366,25 +540,68 @@ let PurchaseOrderForm = {
         } else {
             formData['SupplierID'] = Number(supVal);
         }
-        for (let i = 0; i < dataArray.length; i++) { let r = dataArray[i].row; formData[`PurchaseOrderDetails[${i}].ID`] = r.id || r.ID || 0; formData[`PurchaseOrderDetails[${i}].ProductID`] = r.productID; formData[`PurchaseOrderDetails[${i}].Quantity`] = r.quantity; formData[`PurchaseOrderDetails[${i}].UnitPrice`] = r.unitPrice; formData[`PurchaseOrderDetails[${i}].Subtotal`] = r.subTotal; }
-        $('#buttonSave').prop('disabled', true); $('#buttonSave .spinner-border').show();
-        $.ajax({ url: '/PurchaseOrder/Save', type: 'POST', data: formData }).done(result => {
+        for (let i = 0; i < dataArray.length; i++) {
+            let r = dataArray[i].row;
+            formData[`PurchaseOrderDetails[${i}].ID`] = r.id || r.ID || 0;
+            formData[`PurchaseOrderDetails[${i}].ProductID`] = r.productID;
+            formData[`PurchaseOrderDetails[${i}].Quantity`] = r.quantity;
+            formData[`PurchaseOrderDetails[${i}].UnitPrice`] = r.unitPrice;
+            formData[`PurchaseOrderDetails[${i}].Subtotal`] = r.subTotal;
+        }
+
+        $('#buttonSave').prop('disabled', true);
+        $('#buttonSave .spinner-border').show();
+
+        $.ajax({
+            url: '/PurchaseOrder/Save',
+            type: 'POST',
+            data: formData
+        }).done(result => {
             if (result.success) {
-                toastr.success('Data saved'); if (result.id) {
-                    $('#purchaseOrderID').val(result.id); if (result.no) $('#purchaseOrderNumber').val(result.no); if (result.statusID) UpdatePOStatusBadge(result.statusID); // Reload header form so supplier and other header fields reflect saved values
+                toastr.success('Data saved');
+                if (result.id) {
+                    $('#purchaseOrderID').val(result.id);
+                    if (result.no) $('#purchaseOrderNumber').val(result.no);
+                    if (result.statusID) UpdatePOStatusBadge(result.statusID);
                     POControl.LoadForm(result.id);
                     POControl.LoadDetails(result.id);
-                    // Trigger global event so other UI (PaymentOut) can react and prefill
                     try {
-                        const supplierId = Number(formData['SupplierID']) || Number($('#purchaseOrderSupplierID').val() || 0) || null;
-                        const payload = { id: result.id, supplierID: supplierId, amount: result.amount || 0, supplierName: ($('#purchaseOrderHeaderBody').find('#selectSupplier option:selected').text() || $('#purchaseOrderHeaderBody').find('#purchaseOrderSupplierID').val() || '') };
+                        const supplierId = Number(formData['SupplierID'])
+                            || Number($('#purchaseOrderSupplierID').val() || 0)
+                            || null;
+                        const payload = {
+                            id: result.id,
+                            supplierID: supplierId,
+                            amount: result.amount || 0,
+                            supplierName: (
+                                $('#purchaseOrderHeaderBody').find('#selectSupplier option:selected').text()
+                                || $('#purchaseOrderHeaderBody').find('#purchaseOrderSupplierID').val()
+                                || ''
+                            )
+                        };
                         $(document).trigger('purchaseorder:saved', payload);
-                    } catch (e) { console.warn('purchaseorder:saved trigger failed', e); }
+                    } catch (e) {
+                        console.warn('purchaseorder:saved trigger failed', e);
+                    }
                 }
-            } else { toastr.error(result.result || 'Data not saved'); }
-        }).fail(err => toastr.error(err.responseText || err.statusText || 'Error', 'Data not saved')).always(() => { $('#buttonSave').prop('disabled', false); $('#buttonSave .spinner-border').hide(); });
+            } else {
+                toastr.error(result.result || 'Data not saved');
+            }
+        }).fail(err => {
+            toastr.error(err.responseText || err.statusText || 'Error', 'Data not saved');
+        }).always(() => {
+            $('#buttonSave').prop('disabled', false);
+            $('#buttonSave .spinner-border').hide();
+        });
     },
-    Reset: function () { POControl.LoadForm(0); let table = $('#tablePurchaseOrderProduct').DataTable(); table.clear().draw(); $('#poTotal').text('0.00'); UpdatePOStatusBadge(1); UpdatePOButtons(1); }
+    Reset: function () {
+        POControl.LoadForm(0);
+        let table = $('#tablePurchaseOrderProduct').DataTable();
+        table.clear().draw();
+        $('#poTotal').text('0.00');
+        UpdatePOStatusBadge(1);
+        UpdatePOButtons(1);
+    }
 };
 
 // Refresh related payments table helper
@@ -392,9 +609,27 @@ function refreshRelatedPaymentsTable(poId) {
     try {
         if (!poId) return;
         $.get('/PaymentOut/RelatedByPO', { purchaseOrderId: poId }, function (list) {
-            let rows = (list || []).map(p => `<tr><td>${p.no || ''}</td><td>${Common.Format.Date(p.date)}</td><td class="text-end">${(Number(p.amount || 0)).toFixed(2)}</td><td>${p.method || ''}</td><td>${p.type || ''}</td><td>${p.statusID == 2 ? '<span class="badge bg-success">Submitted</span>' : '<span class="badge bg-secondary">Draft</span>'}</td></tr>`).join('');
-            $('#tablePaymentOutRelated tbody').html(rows || '<tr><td colspan="6" class="text-center text-muted">No payments</td></tr>');
-        }).fail(() => $('#tablePaymentOutRelated tbody').html('<tr><td colspan="6" class="text-center text-muted">Failed load</td></tr>'));
+            let rows = (list || []).map(p =>
+                `<tr>
+                    <td>${p.no || ''}</td>
+                    <td>${Common.Format.Date(p.date)}</td>
+                    <td class="text-end">${(Number(p.amount || 0)).toFixed(2)}</td>
+                    <td>${p.method || ''}</td>
+                    <td>${p.type || ''}</td>
+                    <td>${p.statusID == 2
+                        ? '<span class="badge bg-success">Submitted</span>'
+                        : '<span class="badge bg-secondary">Draft</span>'
+                    }</td>
+                </tr>`
+            ).join('');
+            $('#tablePaymentOutRelated tbody').html(
+                rows || '<tr><td colspan="6" class="text-center text-muted">No payments</td></tr>'
+            );
+        }).fail(() => {
+            $('#tablePaymentOutRelated tbody').html(
+                '<tr><td colspan="6" class="text-center text-muted">Failed load</td></tr>'
+            );
+        });
     } catch (e) { console.error('refreshRelatedPaymentsTable failed', e); }
 }
 
@@ -416,3 +651,82 @@ $(document).on('paymentout:saved', function (e, payload) {
         console.error('Failed handling paymentout:saved', err);
     }
 });
+
+let POProductPicker = {
+    _products: [],
+    ShowPanel: function (supplierId) {
+        const hasSupplier = supplierId && supplierId !== '' && supplierId !== '0';
+        if (!hasSupplier) {
+            $('#productPickerPanel').addClass('d-none');
+            return;
+        }
+        this._products = [];
+        $('#pickerSearch').val('');
+        $('#pickerSelectAll').prop('checked', false);
+        $('#pickerSelectedCount').text('0 selected');
+        $('#pickerEmpty').addClass('d-none');
+        $('#pickerTableBody').html('<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></td></tr>');
+        $('#productPickerPanel').removeClass('d-none');
+        this.Load(parseInt(supplierId, 10));
+    },
+    Load: function (supplierId) {
+        $.get('/Product/GetProductsBySupplier', { supplierId: supplierId }, (data) => {
+            const list = data && data.result && Array.isArray(data.result)
+                ? data.result
+                : (Array.isArray(data) ? data : []);
+            this._products = list;
+            this.Render(list);
+        }).fail(() => {
+            $('#pickerTableBody').html('<tr><td colspan="5" class="text-center text-danger">Failed to load products</td></tr>');
+        });
+    },
+    Render: function (list) {
+        $('#pickerSelectAll').prop('checked', false);
+        if (!list || list.length === 0) {
+            $('#pickerTableBody').html('');
+            $('#pickerEmpty').removeClass('d-none');
+            return;
+        }
+        $('#pickerEmpty').addClass('d-none');
+        const fmt = n => Number(n || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const rows = list.map(p =>
+            `<tr>
+                <td><input type="checkbox" class="picker-check" data-product-id="${p.id}"></td>
+                <td>${p.name || ''}</td>
+                <td class="text-end">${fmt(p.purchasePrice)}</td>
+                <td class="text-center">${p.stockQuantity ?? 0}</td>
+                <td>${p.unitName || ''}</td>
+            </tr>`
+        ).join('');
+        $('#pickerTableBody').html(rows);
+        this.UpdateSelectedCount();
+    },
+    UpdateSelectedCount: function () {
+        const count = $('#pickerTableBody .picker-check:checked').length;
+        $('#pickerSelectedCount').text(count + ' selected');
+    },
+    AddSelected: function () {
+        const checked = $('#pickerTableBody .picker-check:checked');
+        if (checked.length === 0) {
+            toastr.info('Select at least one product', 'Nothing selected');
+            return;
+        }
+        const addedCount = checked.length;
+        checked.each((_, cb) => {
+            const id = parseInt($(cb).data('product-id'), 10);
+            const prod = this._products.find(p => p.id === id);
+            if (prod) {
+                POControl.AddOrIncrease({
+                    id: prod.id,
+                    name: prod.name,
+                    purchasePrice: prod.purchasePrice,
+                    unitPrice: prod.purchasePrice
+                });
+            }
+        });
+        $('#pickerTableBody .picker-check').prop('checked', false);
+        $('#pickerSelectAll').prop('checked', false);
+        this.UpdateSelectedCount();
+        toastr.success(addedCount + ' product(s) added to order');
+    }
+};

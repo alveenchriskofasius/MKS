@@ -78,18 +78,22 @@ namespace API.Repository
         }
 
         public async Task<object> GetSalesPersonsBySupplier(int supplierId)
-            => await _context.SalesPersons.AsNoTracking()
+            => await _context.SalesPeople.AsNoTracking()
                 .Where(sp => sp.SupplierID == supplierId && sp.IsActive)
                 .Select(sp => new { sp.ID, sp.SupplierID, sp.Name, sp.Company, sp.Contact })
                 .ToListAsync();
 
         public async Task<object> GetAllSalesPersons()
-            => await _context.SalesPersons.AsNoTracking()
+            => await _context.SalesPeople.AsNoTracking()
                 .Where(sp => sp.IsActive)
                 .Join(_context.Customers.AsNoTracking().Where(c => c.IsSupplier),
                     sp => sp.SupplierID, s => s.ID, (sp, s) => new
                     {
-                        sp.ID, sp.SupplierID, sp.Name, sp.Company, sp.Contact,
+                        sp.ID,
+                        sp.SupplierID,
+                        sp.Name,
+                        sp.Company,
+                        sp.Contact,
                         SupplierName = s.Name
                     })
                 .ToListAsync();
@@ -100,7 +104,7 @@ namespace API.Repository
             {
                 if (model.ID == 0)
                 {
-                    _context.SalesPersons.Add(new SalesPerson
+                    _context.SalesPeople.Add(new SalesPerson
                     {
                         SupplierID = model.SupplierID,
                         Name = model.Name,
@@ -111,13 +115,13 @@ namespace API.Repository
                 }
                 else
                 {
-                    var entity = await _context.SalesPersons.FindAsync(model.ID);
+                    var entity = await _context.SalesPeople.FindAsync(model.ID);
                     if (entity == null) return new { success = false, error = "Not found" };
                     entity.Name = model.Name;
                     entity.Company = model.Company;
                     entity.Contact = model.Contact;
                     entity.IsActive = model.IsActive;
-                    _context.SalesPersons.Update(entity);
+                    _context.SalesPeople.Update(entity);
                 }
                 await _context.SaveChangesAsync();
                 return new { success = true };
@@ -132,9 +136,9 @@ namespace API.Repository
         {
             try
             {
-                var entity = await _context.SalesPersons.FindAsync(id);
+                var entity = await _context.SalesPeople.FindAsync(id);
                 if (entity == null) return new { success = false, error = "Not found" };
-                _context.SalesPersons.Remove(entity);
+                _context.SalesPeople.Remove(entity);
                 await _context.SaveChangesAsync();
                 return new { success = true };
             }

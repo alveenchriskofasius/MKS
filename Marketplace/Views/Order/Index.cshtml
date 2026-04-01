@@ -1,0 +1,50 @@
+@{
+    ViewData["Title"] = "Pesanan Saya";
+}
+
+<div class="container py-4">
+    <h4 class="fw-bold mb-3"><i class="bi bi-bag"></i> Pesanan Saya</h4>
+
+    <!-- Status Filter Tabs -->
+    <ul class="nav nav-pills gap-2 mb-3" id="orderStatusFilter">
+        <li class="nav-item">
+            <a class="nav-link active order-filter" href="#" data-status="all">Semua</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link order-filter" href="#" data-status="unpaid">
+                <i class="bi bi-clock"></i> Belum Bayar
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link order-filter" href="#" data-status="paid">
+                <i class="bi bi-check-circle"></i> Dibayar
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link order-filter" href="#" data-status="completed">
+                <i class="bi bi-check2-all"></i> Selesai
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link order-filter" href="#" data-status="cancelled">
+                <i class="bi bi-x-circle"></i> Dibatalkan
+            </a>
+        </li>
+    </ul>
+
+    <div id="orderLoading" class="text-center py-5">
+        <div class="spinner-border" style="color:var(--mp-green);" role="status"></div>
+    </div>
+    <div id="orderEmpty" class="text-center py-5" style="display:none;">
+        <i class="bi bi-bag-x" style="font-size:4rem;color:#ccc;"></i>
+        <p class="text-muted mt-3" id="orderEmptyText">Belum ada pesanan.</p>
+        <a href="/Catalog" class="btn btn-warning"><i class="bi bi-grid"></i> Mulai Belanja</a>
+    </div>
+    <div id="orderContent" style="display:none;">
+        <div id="orderCards"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Order/Index.js" asp-append-version="true"></script>
+}

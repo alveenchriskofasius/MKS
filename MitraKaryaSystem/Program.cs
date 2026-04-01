@@ -6,6 +6,7 @@ using API.Services;
 using API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using MitraKaryaSystem.Security;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -102,8 +103,8 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICustomerStatementService, CustomerStatementService>();
 // Promo
 builder.Services.AddScoped<IPromoService, PromoService>();
-// Customer Aging
-builder.Services.AddScoped<ICustomerAgingService, CustomerAgingService>();
+// Customer Aging (REMOVED)
+// builder.Services.AddScoped<ICustomerAgingService, CustomerAgingService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<API.Services.IAuditService, API.Services.AuditService>();
 builder.Services.AddScoped<API.Services.IStockLedgerService, API.Services.StockLedgerService>();
@@ -111,6 +112,9 @@ builder.Services.AddScoped<API.Services.IStockLedgerService, API.Services.StockL
 builder.Services.Configure<API.Services.MidtransSettings>(builder.Configuration.GetSection("Midtrans"));
 builder.Services.AddHttpClient("Midtrans");
 builder.Services.AddScoped<API.Services.Interfaces.IMidtransService, API.Services.MidtransService>();
+// Marketplace Order (for backoffice MarketplaceOrderController)
+builder.Services.AddScoped<API.Repository.Interfaces.IMarketplaceOrderRepository, API.Repository.MarketplaceOrderRepository>();
+builder.Services.AddScoped<API.Services.Interfaces.IMarketplaceOrderService, API.Services.MarketplaceOrderService>();
 builder.Services.AddScoped<MKSSPContextProcedures>();
 builder.Services.AddDbContextPool<MKSTableContext>(options =>
 {
@@ -143,6 +147,14 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+var sharedUploadsPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "Uploads"));
+Directory.CreateDirectory(sharedUploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(sharedUploadsPath),
+    RequestPath = "/uploads"
+});
 
 app.UseRouting();
 app.UseAuthentication();

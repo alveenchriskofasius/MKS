@@ -1,0 +1,84 @@
+@{
+    ViewData["Title"] = "Detail Produk";
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item"><a href="/Catalog">Katalog</a></li>
+            <li class="breadcrumb-item active" id="bcProductName"></li>
+        </ol>
+    </nav>
+
+    <div id="productLoading" class="text-center py-5">
+        <div class="spinner-border" style="color:var(--mp-green);" role="status"></div>
+    </div>
+
+    <div id="productContent" style="display:none;">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-md-5 mb-3 mb-md-0">
+                        <div class="rounded overflow-hidden" style="background:#f3f4f5;min-height:350px;" id="detailImageCard">
+                            <div id="detailImagePlaceholder" style="display:flex;align-items:center;justify-content:center;min-height:350px;">
+                                <i class="bi bi-box-seam" style="font-size:5rem;color:#ccc;"></i>
+                            </div>
+                            <img id="detailImage" class="w-100" style="object-fit:contain;max-height:400px;display:none;" alt="Product" />
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <h4 class="fw-bold mb-2" id="detailName"></h4>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark border me-1" id="detailCategory"></span>
+                            <span class="badge bg-light text-dark border" id="detailUnit"></span>
+                        </div>
+
+                        <div id="discountSection" style="display:none;">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge discount-badge fs-6" id="discountBadge"></span>
+                                <span class="text-muted text-decoration-line-through" style="font-size:1rem;" id="originalPrice"></span>
+                            </div>
+                            <p id="promoInfo" class="mb-1" style="display:none;"></p>
+                        </div>
+                        <h3 class="fw-bold mb-3" id="detailPrice" style="color:var(--mp-red);"></h3>
+
+                        <hr />
+
+                        <p id="detailDescription" class="text-muted" style="display:none;"></p>
+
+                        <p class="mb-3" id="detailStock"></p>
+
+                        <div id="addToCartSection" style="display:none;">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="text-muted small">Jumlah</span>
+                                <div class="input-group" style="max-width:130px;">
+                                    <button class="btn btn-outline-secondary" type="button" id="btnQtyMinus">−</button>
+                                    <input type="number" id="qtyInput" class="form-control text-center" value="1" min="1" />
+                                    <button class="btn btn-outline-secondary" type="button" id="btnQtyPlus">+</button>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <button class="btn btn-warning btn-lg flex-grow-1" id="btnAddToCart">
+                                    <i class="bi bi-cart-plus"></i> Tambah ke Keranjang
+                                </button>
+                                <button class="btn btn-outline-danger btn-lg" id="btnWishlist" title="Tambah ke Wishlist">
+                                    <i class="bi bi-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <a href="/Catalog" class="btn btn-outline-dark mt-3">
+            <i class="bi bi-arrow-left"></i> Kembali ke Katalog
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>var __productId = @ViewData["ProductId"];</script>
+    <script src="~/js/Catalog/Detail.js" asp-append-version="true"></script>
+}

@@ -115,7 +115,7 @@ namespace API.Repository
         public async Task<object> GetSearchList()
         {
             var q = from t in _context.Trades
-                    where t.TradeTypeID == 4
+                    where t.TradeTypeID == 1
                     join c in _context.Customers on t.CustomerID equals c.ID into cgroup
                     from cust in cgroup.DefaultIfEmpty()
                     join l in _context.Lookups.Where(x => x.Entity == "PurchaseOrderStatus") on t.StatusID equals (short?)l.Key into lgroup
@@ -185,7 +185,7 @@ namespace API.Repository
                         Date = model.Date,
                         // initially Draft (Purchase Order workflow)
                         StatusID = PO_Draft,
-                        TradeTypeID = 4,
+                        TradeTypeID = 1,
                         CreatedAt = DateTime.Now,
                         Note = model.Note
                     };

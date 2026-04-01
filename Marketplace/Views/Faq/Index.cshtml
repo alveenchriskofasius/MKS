@@ -1,0 +1,150 @@
+@{
+    ViewData["Title"] = "FAQ & Bantuan";
+}
+
+<div class="container py-4" style="max-width:820px;">
+    <h4 class="fw-bold mb-4"><i class="bi bi-question-circle"></i> FAQ & Bantuan</h4>
+
+    <div class="accordion" id="faqAccordion">
+        <!-- 1 -->
+        <div class="accordion-item border mb-2 rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                    Bagaimana cara membuat akun?
+                </button>
+            </h2>
+            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Klik tombol <strong>Masuk</strong> di pojok kanan atas, lalu pilih <strong>Daftar</strong>.
+                    Isi formulir pendaftaran dengan nama, email, nomor telepon, alamat, dan password.
+                    Setelah berhasil, Anda bisa langsung login.
+                </div>
+            </div>
+        </div>
+
+        <!-- 2 -->
+        <div class="accordion-item border mb-2 rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                    Bagaimana cara memesan produk?
+                </button>
+            </h2>
+            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    <ol class="mb-0">
+                        <li>Cari produk di <strong>Katalog</strong> atau gunakan fitur pencarian.</li>
+                        <li>Klik produk untuk melihat detail, lalu klik <strong>Tambah ke Keranjang</strong>.</li>
+                        <li>Buka <strong>Keranjang</strong>, periksa pesanan Anda, lalu klik <strong>Checkout</strong>.</li>
+                        <li>Pilih metode pembayaran dan pengiriman, kemudian konfirmasi pesanan.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3 -->
+        <div class="accordion-item border mb-2 rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                    Metode pembayaran apa saja yang tersedia?
+                </button>
+            </h2>
+            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Saat ini kami mendukung pembayaran melalui:
+                    <ul class="mb-0 mt-1">
+                        <li><strong>QRIS</strong> — Scan QR code menggunakan aplikasi e-wallet atau mobile banking.</li>
+                        <li><strong>Transfer Bank</strong> — Transfer ke rekening yang tertera.</li>
+                        <li><strong>Virtual Account</strong> — Pembayaran melalui kode virtual account.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 -->
+        <div class="accordion-item border mb-2 rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                    Bagaimana cara membayar pesanan?
+                </button>
+            </h2>
+            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Setelah checkout, buka halaman <strong>Pesanan Saya</strong> dan klik tombol <strong>Bayar</strong> pada pesanan
+                    yang berstatus "Belum Bayar". Ikuti instruksi pembayaran sesuai metode yang dipilih.
+                </div>
+            </div>
+        </div>
+
+        <!-- 5 -->
+        <div class="accordion-item border mb-2 rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                    Bagaimana cara membatalkan pesanan?
+                </button>
+            </h2>
+            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Pesanan yang belum dibayar dapat dibatalkan. Buka <strong>Pesanan Saya</strong>, temukan pesanan yang ingin
+                    dibatalkan, lalu klik tombol <strong>Batal</strong>. Pesanan yang sudah dibayar tidak dapat dibatalkan secara mandiri.
+                </div>
+            </div>
+        </div>
+
+        <!-- 6 -->
+        <div class="accordion-item border mb-2 rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                    Apakah ada opsi pengiriman?
+                </button>
+            </h2>
+            <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Ya, kami menyediakan dua opsi:
+                    <ul class="mb-0 mt-1">
+                        <li><strong>Ambil di Toko (Pickup)</strong> — Anda datang langsung ke toko kami.</li>
+                        <li><strong>Diantar (Delivery)</strong> — Pesanan dikirim ke alamat Anda.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7 -->
+        <div class="accordion-item border mb-2 rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
+                    Bagaimana cara mengubah profil saya?
+                </button>
+            </h2>
+            <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Klik ikon profil di pojok kanan atas, pilih <strong>Pengaturan</strong>. Di halaman profil, Anda dapat mengubah
+                    nama, nomor telepon, dan alamat.
+                </div>
+            </div>
+        </div>
+
+        <!-- 8 -->
+        <div class="accordion-item border mb-2 rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq8">
+                    Apa itu Wishlist?
+                </button>
+            </h2>
+            <div id="faq8" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body text-muted">
+                    Wishlist adalah fitur untuk menyimpan produk yang Anda minati. Klik ikon <i class="bi bi-heart"></i> pada produk
+                    untuk menambahkannya ke wishlist. Anda dapat melihat daftar wishlist melalui menu di navbar.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-body text-center">
+            <h6 class="fw-bold mb-2"><i class="bi bi-headset"></i> Masih butuh bantuan?</h6>
+            <p class="text-muted small mb-0">
+                Hubungi kami melalui WhatsApp atau datang langsung ke toko kami.
+            </p>
+        </div>
+    </div>
+</div>

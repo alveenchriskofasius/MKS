@@ -6,6 +6,7 @@
 }
 <form id="productForm">
     <input asp-for="ProductModel.ID" type="text" hidden />
+    <input asp-for="ProductModel.ImageUrl" type="hidden" />
     <div class="row mb-3">
         <label class="form-label col-sm-2">Name<span class="asterisk">*</span></label>
         <div class="col-sm-9">
@@ -97,6 +98,26 @@
             <button type="button" id="buttonAddUnit" class="btn btn-primary">Add</button>
         </div>
     </div>
+
+    <div class="row mb-3">
+        <label class="form-label col-sm-2">Product Image</label>
+        <div class="col-sm-9">
+            @if (!string.IsNullOrEmpty(Model.ProductModel.ImageUrl))
+            {
+                <img id="imagePreview" src="@Model.ProductModel.ImageUrl" alt="Product Image"
+                     style="max-height:120px;max-width:200px;object-fit:contain;"
+                     class="d-block mb-2 border rounded" />
+            }
+            else
+            {
+                <img id="imagePreview" src="#" alt="Product Image"
+                     style="display:none;max-height:120px;max-width:200px;object-fit:contain;"
+                     class="d-block mb-2 border rounded" />
+            }
+            <input type="file" name="ImageFile" id="imageFile" accept="image/*" class="form-control" />
+            <small class="text-muted">Allowed: JPG, PNG, GIF, WebP.</small>
+        </div>
+    </div>
 </form>
 
 
@@ -111,4 +132,13 @@
         $chk.on('change', toggle);
         toggle();
     })();
+
+    $('#imageFile').on('change', function () {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) { $('#imagePreview').attr('src', e.target.result).show(); };
+            reader.readAsDataURL(file);
+        }
+    });
 </script>

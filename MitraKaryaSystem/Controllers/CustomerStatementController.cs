@@ -21,7 +21,15 @@ public class CustomerStatementController : Controller
     public IActionResult Index() => View();
 
     [HttpGet]
-    public async Task<JsonResult> GetCustomers() => Json(await _customerService.GetList());
+    public async Task<JsonResult> GetCustomers()
+    {
+        var customers = await _customerService.GetListModel();
+        var filtered = customers
+            .Where(c => !c.IsSupplier && !c.IsSales)
+            .Select(c => new { c.ID, c.Name })
+            .ToList();
+        return Json(filtered);
+    }
 
     [HttpGet]
     public async Task<JsonResult> GetStatement(int customerId, DateTime? from, DateTime? to)

@@ -115,6 +115,74 @@ public class MidtransService : IMidtransService
         }
     }
 
+    public async Task<MidtransVAResult> CreateVA(string orderId, decimal amount, string bank, string productSummary)
+    {
+        var payload = new
+        {
+            payment_type = "bank_transfer",
+            transaction_details = new
+            {
+                order_id = orderId,
+                gross_amount = (long)Math.Ceiling(amount)
+            },
+            bank_transfer = new
+            {
+                bank = bank.ToLowerInvariant()
+            },
+            item_details = new[]
+            {
+                new { id = "ITEMS", price = (long)Math.Ceiling(amount), quantity = 1, name = Truncate(productSummary, 50) }
+            }
+        };
+
+        try
+        {
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _http.PostAsync($"{_cfg.BaseUrl}/charge", content);
+            var body = await response.Content.ReadAsStringAsync();
+
+            _log.LogInformation("Midtrans VA charge response: {Status} {Body}", response.StatusCode, body);
+
+            var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+
+            var statusCode = root.GetProperty("status_code").GetString();
+            if (statusCode == "201")
+            {
+                var vaNumber = string.Empty;
+                if (root.TryGetProperty("va_numbers", out var vaNumbers))
+                {
+                    foreach (var va in vaNumbers.EnumerateArray())
+                    {
+                        vaNumber = va.GetProperty("va_number").GetString() ?? string.Empty;
+                        break;
+                    }
+                }
+                else if (root.TryGetProperty("permata_va_number", out var permataVa))
+                {
+                    vaNumber = permataVa.GetString() ?? string.Empty;
+                }
+
+                return new MidtransVAResult
+                {
+                    Success = true,
+                    OrderId = orderId,
+                    Bank = bank.ToUpperInvariant(),
+                    VANumber = vaNumber
+                };
+            }
+
+            var msg = root.TryGetProperty("status_message", out var sm) ? sm.GetString() : "Unknown error";
+            return new MidtransVAResult { Success = false, ErrorMessage = msg ?? "Failed" };
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Midtrans VA charge failed for {OrderId}", orderId);
+            return new MidtransVAResult { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+
     public bool ValidateSignature(string orderId, string statusCode, string grossAmount, string signatureKey)
     {
         var raw = orderId + statusCode + grossAmount + _cfg.ServerKey;

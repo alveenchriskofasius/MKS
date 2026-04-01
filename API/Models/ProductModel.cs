@@ -15,5 +15,6 @@
         public string? Barcode { get; set; }
         public bool HasDiscount { get; set; }
         public decimal DiscountPercentage { get; set; }
+        public string? ImageUrl { get; set; }
     }
 }

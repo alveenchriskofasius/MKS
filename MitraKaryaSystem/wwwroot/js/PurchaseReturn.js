@@ -94,19 +94,29 @@ const PurchaseReturnPage = {
             const r = this.data();
             if (r.productID == prod.id) {
                 exists = true;
-                r.quantity += 1;
+                const newQty = r.quantity + 1;
+                if (newQty > (prod.stockQuantity || 0)) {
+                    toastr.info('Quantity exceeds available stock (' + (prod.stockQuantity || 0) + ')');
+                    return;
+                }
+                r.quantity = newQty;
                 r.subTotal = r.quantity * r.unitPrice;
                 t.row(this).data(r).invalidate();
             }
         });
         if (!exists) {
+            if ((prod.stockQuantity || 0) <= 0) {
+                toastr.info('Stock is empty for this product');
+                return;
+            }
             t.row.add({
                 id: 0,
                 productID: prod.id,
                 product: prod.name,
                 quantity: 1,
                 unitPrice: prod.unitPrice,
-                subTotal: prod.unitPrice
+                subTotal: prod.unitPrice,
+                stockQuantity: prod.stockQuantity || 0
             }).draw();
         }
         t.draw(false);
@@ -143,6 +153,12 @@ const PurchaseReturnPage = {
             const row = t.row(idx.row).data();
             let q = parseInt($(this).val(), 10);
             if (isNaN(q) || q < 1) q = 1;
+            const maxStock = row.stockQuantity || 0;
+            if (maxStock > 0 && q > maxStock) {
+                q = maxStock;
+                $(this).val(q);
+                toastr.info('Quantity limited to available stock (' + maxStock + ')');
+            }
             row.quantity = q;
             row.subTotal = row.unitPrice * q;
             t.row(idx.row).data(row).invalidate();

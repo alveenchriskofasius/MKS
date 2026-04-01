@@ -35,7 +35,7 @@
                 </li>
             }
 
-            @if(CanSee("Sales Order") || CanSee("Sales Invoice") || CanSee("Delivery Order") || CanSee("Sales Return") || CanSee("Payment In"))
+            @if(CanSee("Sales Order") || CanSee("Sales Invoice") || CanSee("Delivery Order") || CanSee("Sales Return") || CanSee("Payment In") || CanSee("Marketplace Order"))
             {
                 <!-- Sales -->
                 <li class="nav-item">
@@ -50,6 +50,15 @@
                                 <a asp-action="Index" asp-controller="SalesOrder" class="nav-link">
                                     <i class="fa-solid fa-circle nav-icon sub-icon"></i>
                                     <p>Sales Order</p>
+                                </a>
+                            </li>
+                        }
+                        @if(CanSee("Marketplace Order"))
+                        {
+                            <li class="nav-item">
+                                <a asp-action="Index" asp-controller="MarketplaceOrder" class="nav-link">
+                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
+                                    <p>Marketplace Order</p>
                                 </a>
                             </li>
                         }
@@ -240,7 +249,7 @@
                 </li>
             }
 
-            @if(CanSee("Customer Deposit") || CanSee("Debt") || CanSee("Expense") || CanSee("Customer Statement") || CanSee("Customer Aging"))
+            @if(CanSee("Customer Deposit") || CanSee("Debt") || CanSee("Expense") || CanSee("Customer Statement"))
             {
                 <!-- Finance -->
                 <li class="nav-item">
@@ -282,15 +291,6 @@
                                 <a asp-action="Index" asp-controller="CustomerStatement" class="nav-link">
                                     <i class="fa-solid fa-circle nav-icon sub-icon"></i>
                                     <p>Customer Statement</p>
-                                </a>
-                            </li>
-                        }
-                        @if(CanSee("Customer Aging"))
-                        {
-                            <li class="nav-item">
-                                <a asp-action="Index" asp-controller="CustomerAging" class="nav-link">
-                                    <i class="fa-solid fa-circle nav-icon sub-icon"></i>
-                                    <p>Customer Aging</p>
                                 </a>
                             </li>
                         }

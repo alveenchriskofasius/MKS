@@ -142,30 +142,28 @@ let TableStockIn = {
  });
  let columns = [
  { 
-   data: null,
+   data: 'id',
    visible: false,
-   render: function(data, type, row) {
-     return row.id || row.ID || null;
-   }
+   defaultContent: ''
  },
  { 
-   data: null,
+   data: 'productID',
    visible: false,
-   render: function(data, type, row) {
-     return row.productID || row.ProductID;
-   }
+   defaultContent: ''
  },
  { 
-   data: null,
+   data: 'product',
+   defaultContent: '',
    render: function(data, type, row) {
-     return row.product || row.Product;
+     return row.product || row.Product || '';
    }
  },
  // Ordered Qty (from PO, readonly)
  { 
-   data: null,
+   data: 'orderedQty',
    className: 'text-end',
    visible: hasPO,
+   defaultContent: '-',
    render: function(data, type, row) {
      const oq = row.orderedQty;
      return oq != null ? oq : '-';
@@ -173,24 +171,27 @@ let TableStockIn = {
  },
  // Received Qty (editable)
  canEdit ? { 
-   data: null,
+   data: 'quantity',
    className: 'text-end',
+   defaultContent: '0',
    render: function(data, type, row) {
      const qty = row.quantity || row.Quantity;
      return type === 'display' ? `<input type="number" class="form-control change" value="${qty}" min="1" />` : qty;
    }
  } : { 
-   data: null,
+   data: 'quantity',
    className: 'text-end',
+   defaultContent: '0',
    render: function(data, type, row) {
-     return row.quantity || row.Quantity;
+     return row.quantity || row.Quantity || 0;
    }
  },
- // Discrepancy
+ // Discrepancy (computed — no single field)
  {
    data: null,
    className: 'text-end',
    visible: hasPO,
+   defaultContent: '-',
    render: function(data, type, row) {
      const oq = row.orderedQty;
      if (oq == null) return '-';
@@ -202,8 +203,9 @@ let TableStockIn = {
    }
  },
  {
-   data: null,
+   data: 'unitPrice',
    className: 'text-end',
+   defaultContent: '0',
    render: function(data, type, row) {
      const price = row.unitPrice || row.UnitPrice || 0;
      if (type === 'display') {
@@ -213,32 +215,31 @@ let TableStockIn = {
    }
  },
  { 
-   data: null,
+   data: 'supplierID',
    visible: false,
-   render: function(data, type, row) {
-     return row.supplierID || row.SupplierID;
-   }
+   defaultContent: ''
  },
  { 
-   data: null,
+   data: 'barcode',
    visible: false,
-   render: function(data, type, row) {
-     return row.barcode || row.Barcode;
-   }
+   defaultContent: ''
  },
  { 
-   data: null,
+   data: 'supplier',
+   defaultContent: '',
    render: function(data, type, row) {
-     return row.supplier || row.Supplier;
+     return row.supplier || row.Supplier || '';
    }
  },
  canEdit ? { 
    data: null, 
    className: 'text-center',
+   defaultContent: '',
    render: () => `<button class="btn btn-sm btn-outline-danger delete" title="Remove"><i class="fa fa-trash"></i></button>`, 
    orderable: false 
  } : { 
-   data: null, 
+   data: null,
+   defaultContent: '',
    render: () => '', 
    orderable: false 
  }
@@ -308,7 +309,7 @@ let TableStockIn = {
  .then(data => {
  let columns = [
  { data: 'no' }, { data: 'date', render: d => Common.Format.Date(d) }, { data: 'amount' }, { data: 'createdBy' }, { data: 'updatedBy' },
- { data: null, render: (d, t, row) => `<div class="btn-group btn-group-sm"><button class="btn btn-outline-primary edit" title="Edit"><i class="fa fa-pencil"></i></button><button class="btn btn-outline-danger delete" title="Delete"><i class="fa fa-trash"></i></button></div>`, orderable: false }
+ { data: null, defaultContent: '', render: (d, t, row) => `<div class="btn-group btn-group-sm"><button class="btn btn-outline-primary edit" title="Edit"><i class="fa fa-pencil"></i></button><button class="btn btn-outline-danger delete" title="Delete"><i class="fa fa-trash"></i></button></div>`, orderable: false }
  ];
 
  let table = tableID.DataTable({

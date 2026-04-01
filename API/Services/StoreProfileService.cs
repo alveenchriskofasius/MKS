@@ -12,10 +12,10 @@ namespace API.Services
         // Key mapping – each setting is a Lookup row with Entity = "StoreProfile"
         private static readonly Dictionary<string, short> KeyMap = new()
         {
-            ["storeName"]    = 1,
-            ["address"]      = 2,
-            ["phone"]        = 3,
-            ["email"]        = 4,
+            ["storeName"] = 1,
+            ["address"] = 2,
+            ["phone"] = 3,
+            ["email"] = 4,
             ["receiptFooter"] = 5,
             ["receiptHeader"] = 6
         };

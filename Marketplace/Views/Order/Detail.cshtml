@@ -1,0 +1,115 @@
+@{
+    ViewData["Title"] = "Detail Pesanan";
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item"><a href="/Order">Pesanan Saya</a></li>
+            <li class="breadcrumb-item active" id="bcOrderNo"></li>
+        </ol>
+    </nav>
+
+    <div id="detailLoading" class="text-center py-5">
+        <div class="spinner-border" style="color:var(--mp-green);" role="status"></div>
+    </div>
+
+    <div id="detailContent" style="display:none;">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0"><i class="bi bi-bag"></i> Order <span id="detailNo"></span></h5>
+                        <small class="text-muted">Tanggal: <span id="detailDate"></span></small>
+                    </div>
+                    <span class="badge fs-6" id="detailStatus"></span>
+                </div>
+                <hr />
+                <table class="table table-sm">
+                    <thead class="bg-light">
+                        <tr><th>Produk</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr>
+                    </thead>
+                    <tbody id="detailItems"></tbody>
+                </table>
+                <div class="text-end fw-bold fs-5">
+                    Total: <span id="detailTotal" style="color:var(--mp-red);"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pay button (shown by JS for unpaid orders) -->
+        <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-warning btn-lg" id="btnPayOrder" style="display:none;">
+                <i class="bi bi-credit-card"></i> Bayar Sekarang
+            </button>
+            <button class="btn btn-outline-danger btn-lg" id="btnCancelOrder" style="display:none;">
+                <i class="bi bi-x-circle"></i> Batalkan
+            </button>
+        </div>
+
+        <!-- Payment Method Info (shown for unpaid orders with bank_transfer) -->
+        <div id="bankPayInfo" class="mt-3" style="display:none;">
+            <div class="card shadow-sm" style="max-width:500px;">
+                <div class="card-header text-white" style="background:var(--mp-green);">
+                    <i class="bi bi-bank"></i> Informasi Transfer Bank
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-2">
+                        <i class="bi bi-info-circle"></i>
+                        Silakan transfer ke rekening berikut:
+                    </div>
+                    <div class="border rounded p-3 mb-2">
+                        <p class="mb-1"><strong>Bank BCA</strong></p>
+                        <p class="mb-1">No. Rekening: <strong>123-456-7890</strong></p>
+                        <p class="mb-0">Atas Nama: <strong>Mitra Karya</strong></p>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Kirim bukti transfer ke WhatsApp atau konfirmasi di halaman pesanan.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- QRIS Payment (shown after clicking Pay for QRIS) -->
+        <div id="qrisPaySection" class="text-center py-4" style="display:none;">
+            <div class="card shadow-sm mx-auto" style="max-width:400px;">
+                <div class="card-header text-white" style="background:var(--mp-green);"><i class="bi bi-qr-code"></i> Pembayaran QRIS</div>
+                <div class="card-body">
+                    <p>Order: <strong id="qrisOrderNo"></strong></p>
+                    <p>Total: <strong id="qrisAmount" style="color:var(--mp-red);"></strong></p>
+                    <img id="qrisImage" src="" alt="QR Code" class="img-fluid mb-3" style="max-width:250px;" />
+                    <p class="text-muted small">Scan QR code di atas untuk membayar</p>
+                    <div id="qrisPayStatus" class="alert alert-info">Menunggu pembayaran...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VA Payment (shown after clicking Pay for VA) -->
+        <div id="vaPaySection" class="py-4" style="display:none;">
+            <div class="card shadow-sm mx-auto" style="max-width:500px;">
+                <div class="card-header text-white" style="background:var(--mp-green);">
+                    <i class="bi bi-wallet2"></i> Virtual Account
+                </div>
+                <div class="card-body">
+                    <p>Order: <strong id="vaPayOrderNo"></strong></p>
+                    <p>Total: <strong id="vaPayAmount" style="color:var(--mp-red);"></strong></p>
+                    <div class="border rounded p-3 mb-3 text-center">
+                        <p class="mb-1 text-muted">Bank</p>
+                        <h5 class="fw-bold mb-2" id="vaPayBankName"></h5>
+                        <p class="mb-1 text-muted">Nomor Virtual Account</p>
+                        <h4 class="fw-bold text-primary" id="vaPayNumber"></h4>
+                    </div>
+                    <div id="vaDetailPayStatus" class="alert alert-info">Menunggu pembayaran...</div>
+                </div>
+            </div>
+        </div>
+
+        <a href="/Order" class="btn btn-outline-dark mt-3"><i class="bi bi-arrow-left"></i> Kembali</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>var __orderId = @ViewData["OrderId"];</script>
+    <script src="~/js/Order/Detail.js" asp-append-version="true"></script>
+}

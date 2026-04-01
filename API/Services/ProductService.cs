@@ -43,5 +43,15 @@ namespace API.Services
         {
             return await _productRepository.GetLowStockProductList(threshold);
         }
+
+        public async Task<object> UpdateProductImage(int id, string imageUrl)
+        {
+            return await _productRepository.UpdateProductImage(id, imageUrl);
+        }
+
+        public async Task<object> GetProductsBySupplier(int supplierId)
+        {
+            return await _productRepository.GetProductsBySupplier(supplierId);
+        }
     }
 }

@@ -239,14 +239,18 @@ const productForms = {
 			});
 	},
 	saveProduct: function () {
-		const formData = $('#productForm').serializeArray().reduce((acc, cur) => { acc[cur.name] = cur.value; return acc; }, {});
-		// Manually handle checkbox - serializeArray with reduce loses checked state due to hidden input
-		formData['ProductModel.HasDiscount'] = $('#chkHasDiscount').is(':checked');
+		const formData = new FormData($('#productForm')[0]);
+		formData.set('ProductModel.HasDiscount', $('#chkHasDiscount').is(':checked'));
 		// Show loading indicator
 		$('#buttonSave').prop('disabled', true);
 		$('#buttonSave .spinner-border').show();
 
-		Common.Api.post('SaveProduct', formData)
+		const headers = { 'Accept': 'application/json, text/plain, */*' };
+		const token = Common.getCsrfToken();
+		if (token) headers['RequestVerificationToken'] = token;
+
+		fetch('SaveProduct', { method: 'POST', credentials: 'same-origin', headers: headers, body: formData })
+			.then(function (r) { return r.json(); })
 			.then(function (result) {
 				if (result && result.success) {
 					toastr.success('Data saved');
@@ -255,7 +259,7 @@ const productForms = {
 					toastr.error((result && result.error) || 'Data not saved');
 				}
 			})
-			.catch(function () { Swal.close(); })
+			.catch(function (err) { toastr.error((err && err.message) || 'Save failed'); })
 			.finally(function () {
 				// Close loading indicator
 				$('#buttonSave').prop('disabled', false);

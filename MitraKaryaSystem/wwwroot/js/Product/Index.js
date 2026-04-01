@@ -1,4 +1,6 @@
-﻿$(document).ready(function () { ProductPage.init(); });
+﻿$(document).ready(function () {
+    ProductPage.init();
+});
 
 const ProductPage = {
     currentId: null,
@@ -97,12 +99,15 @@ const ProductPage = {
             }
 
             const isActive = p.id === this.currentId;
-            const initials = (p.name || '').substring(0, 2).toUpperCase();
-            const stockCls = p.stockQuantity <= 0 ? 'text-danger' : p.stockQuantity <= 5 ? 'text-warning' : 'text-muted';
+            const avatarHtml = p.imageUrl
+                ? `<img src="${p.imageUrl}" class="prod-avatar" style="object-fit:cover;" />`
+                : `<div class="prod-avatar">${(p.name || '').substring(0, 2).toUpperCase()}</div>`;
+            const stockCls = p.stockQuantity <= 0 ? 'text-danger'
+                : p.stockQuantity <= 5 ? 'text-warning' : 'text-muted';
 
             $ul.append(`
                 <li class="prod-list-item${isActive ? ' active' : ''}" data-id="${p.id}">
-                    <div class="prod-avatar">${initials}</div>
+                    ${avatarHtml}
                     <div class="prod-info">
                         <div class="prod-name text-truncate">${p.name}${p.barcode ? ' <code style="font-size:.65rem">' + p.barcode + '</code>' : ''}</div>
                         <div class="prod-detail text-truncate">Rp ${Number(p.unitPrice || 0).toLocaleString('id-ID')}${p.hasDiscount && p.discountPercentage > 0 ? ' <span class="badge bg-success" style="font-size:.55rem">' + p.discountPercentage + '%</span>' : ''}</div>
@@ -122,7 +127,13 @@ const ProductPage = {
         $('.prod-list-item').removeClass('active');
         $(`.prod-list-item[data-id="${id}"]`).addClass('active');
 
-        let product = { id: 0, name: '', barcode: '', description: '', unitPrice: '', purchasePrice: '', categoryID: '', unitID: '', supplierID: '', stockQuantity: 0, lowStockThreshold: '', hasDiscount: false, discountPercentage: 0 };
+        let product = {
+            id: 0, name: '', barcode: '', description: '',
+            unitPrice: '', purchasePrice: '', categoryID: '',
+            unitID: '', supplierID: '', stockQuantity: 0,
+            lowStockThreshold: '', hasDiscount: false,
+            discountPercentage: 0, imageUrl: ''
+        };
         if (id) {
             const found = this.allProducts.find(p => p.id === id);
             if (found) product = found;
@@ -156,6 +167,18 @@ const ProductPage = {
                     <div class="col-md-12">
                         <label class="form-label fw-semibold small">Description</label>
                         <input type="text" class="form-control" id="prodDescription" value="${this.esc(product.description)}" placeholder="Description" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold small">Product Image</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="prodImagePreview" style="width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid #dee2e6;display:flex;align-items:center;justify-content:center;background:#f8f9fa;">
+                                ${product.imageUrl ? '<img src="' + product.imageUrl + '" style="width:100%;height:100%;object-fit:cover;" />' : '<i class="fa fa-image text-muted" style="font-size:1.5rem"></i>'}
+                            </div>
+                            <div>
+                                <input type="file" class="form-control form-control-sm" id="prodImageFile" accept=".jpg,.jpeg,.png,.webp" style="max-width:280px;" ${!product.id ? 'disabled title="Save product first"' : ''} />
+                                <small class="text-muted">${product.id ? 'JPG, PNG, or WebP. Max 2MB.' : 'Save product first to upload image.'}</small>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Unit Price (Sell) <span class="text-danger">*</span></label>
@@ -245,9 +268,48 @@ const ProductPage = {
             $('#prodDiscountPct').prop('disabled', !enabled);
             if (!enabled) $('#prodDiscountPct').val(0);
         });
+        $('#prodImageFile').off('change').on('change', function () {
+            ProductPage.uploadImage(this);
+        });
+    },
+
+    async uploadImage(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+            toastr.error('File too large. Max 2MB.');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('id', this.currentId);
+        formData.append('file', file);
+        try {
+            const res = await fetch('/Product/UploadProductImage', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+            });
+            const result = await res.json();
+            if (result && result.success) {
+                toastr.success('Image uploaded');
+                $('#prodImagePreview').html(
+                    '<img src="' + result.imageUrl +
+                    '" style="width:100%;height:100%;object-fit:cover;" />');
+                // Update in allProducts cache
+                const p = this.allProducts.find(
+                    x => x.id === this.currentId);
+                if (p) p.imageUrl = result.imageUrl;
+            } else {
+                toastr.error(
+                    (result && result.error) || 'Upload failed');
+            }
+        } catch (e) {
+            toastr.error(e.message || 'Upload failed');
+        }
     },
 
     async save() {
+        const currentProduct = this.allProducts.find(x => x.id === this.currentId);
         const data = {
             'ProductModel.ID': parseInt($('#prodID').val()) || 0,
             'ProductModel.Name': $('#prodName').val(),
@@ -261,6 +323,7 @@ const ProductPage = {
             'ProductModel.CategoryID': parseInt($('#prodCategory').val()) || 0,
             'ProductModel.UnitID': parseInt($('#prodUnit').val()) || 0,
             'ProductModel.SupplierID': parseInt($('#prodSupplier').val()) || 0,
+            'ProductModel.ImageUrl': (currentProduct && currentProduct.imageUrl) || '',
         };
         const $btn = $('#btnSaveProduct');
         $btn.prop('disabled', true).find('.spinner-border').removeClass('d-none');

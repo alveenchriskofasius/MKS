@@ -48,8 +48,27 @@
 
   function render(){
     const $tb = $('#posOrderTable tbody').empty();
-    if(state.items.length===0){ $tb.append('<tr><td colspan="5" class="text-center text-muted small">No items</td></tr>'); }
-    else state.items.forEach((it,idx)=> $tb.append(`<tr data-id='${it.id}'><td>${it.name}</td><td><div class='pos-qty-group'><button class='btn btn-outline-secondary btn-sm pos-qty-btn pos-minus' data-idx='${idx}' type='button'>-</button><input type='number' class='form-control form-control-sm pos-qty' data-idx='${idx}' value='${it.qty}' min='1'/><button class='btn btn-outline-secondary btn-sm pos-qty-btn pos-plus' data-idx='${idx}' type='button'>+</button></div></td><td class='text-end'>${fmt(it.price)}</td><td class='text-end'>${fmt(it.price*it.qty)}</td><td class='text-end'><button class='btn btn-sm btn-danger pos-del'><i class='fa fa-trash'></i></button></td></tr>`));
+    if(state.items.length===0){
+      $tb.append('<tr><td colspan="5" class="text-center text-muted small">No items</td></tr>');
+    } else {
+      state.items.forEach((it, idx) => {
+        $tb.append(`<tr data-id='${it.id}'>
+          <td>${it.name}</td>
+          <td>
+            <div class='pos-qty-group'>
+              <button class='btn btn-outline-secondary btn-sm pos-qty-btn pos-minus' data-idx='${idx}' type='button'>-</button>
+              <input type='number' class='form-control form-control-sm pos-qty' data-idx='${idx}' value='${it.qty}' min='1'/>
+              <button class='btn btn-outline-secondary btn-sm pos-qty-btn pos-plus' data-idx='${idx}' type='button'>+</button>
+            </div>
+          </td>
+          <td class='text-end'>${fmt(it.price)}</td>
+          <td class='text-end'>${fmt(it.price*it.qty)}</td>
+          <td class='text-end'>
+            <button class='btn btn-sm btn-danger pos-del'><i class='fa fa-trash'></i></button>
+          </td>
+        </tr>`);
+      });
+    }
     recalc();
   }
 
@@ -60,7 +79,9 @@
       toastr.warning('Stok 0 / habis. Tidak bisa ditambahkan ke cart.');
       return;
     }
-    const id = p.id; const name = p.text||p.name; let price = Number(p.unitPrice||p.price||0);
+    const id = p.id;
+    const name = p.text || p.name;
+    let price = Number(p.unitPrice || p.price || 0);
     const unit = p.unit || p.Unit || '';
     const hasDiscount = p.hasDiscount || p.HasDiscount || false;
     const discPct = Number(p.discountPercentage || p.DiscountPercentage || 0);
@@ -109,7 +130,13 @@
     });
     return $wrap;
   }
-  function setActiveSuggestion(){ const $items = $('.pos-suggest-item'); $items.removeClass('active'); if(state.suggestIndex>=0 && state.suggestIndex<$items.length){ $($items[state.suggestIndex]).addClass('active'); } }
+  function setActiveSuggestion() {
+    const $items = $('.pos-suggest-item');
+    $items.removeClass('active');
+    if (state.suggestIndex >= 0 && state.suggestIndex < $items.length) {
+      $($items[state.suggestIndex]).addClass('active');
+    }
+  }
   function highlightMatch(text, query){ if(!query) return text; const esc = query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); const reg = new RegExp(esc,'ig'); return text.replace(reg, m=>`<span class='match'>${m}</span>`); }
 
   function searchProductsAsync(query){
@@ -158,16 +185,58 @@
   }
 
   function wireSearch(){
-    let typingTimer = null; const $input = $('#posSearch');
+    let typingTimer = null;
+    const $input = $('#posSearch');
     $input.on('input', function(){
-      clearTimeout(typingTimer); destroySuggest(); const q = this.value.trim();
-      if (!q) return; const seq = ++state._searchSeq; typingTimer = setTimeout(() => { searchProductsAsync(q).then(list => { if (seq !== state._searchSeq) return; if (list.length > 0) { $input.after(buildSuggest(list, q)); state.suggestIndex = -1; } }); }, 200);
+      clearTimeout(typingTimer);
+      destroySuggest();
+      const q = this.value.trim();
+      if (!q) return;
+      const seq = ++state._searchSeq;
+      typingTimer = setTimeout(() => {
+        searchProductsAsync(q).then(list => {
+          if (seq !== state._searchSeq) return;
+          if (list.length > 0) {
+            $input.after(buildSuggest(list, q));
+            state.suggestIndex = -1;
+          }
+        });
+      }, 200);
     });
     $input.on('keydown', function(e){
       const $items = $('.pos-suggest-item');
       if(e.key==='ArrowDown'){ e.preventDefault(); if($items.length){ state.suggestIndex = Math.min(state.suggestIndex+1, $items.length-1); setActiveSuggestion(); } }
       else if(e.key==='ArrowUp'){ e.preventDefault(); if($items.length){ state.suggestIndex = Math.max(state.suggestIndex-1, 0); setActiveSuggestion(); } }
-      else if(e.key==='Enter'){ e.preventDefault(); clearTimeout(typingTimer); if($items.length && state.suggestIndex>=0){ $items.eq(state.suggestIndex).trigger('click'); return; } destroySuggest(); const q=this.value.trim(); if(!q) return; const seq=++state._searchSeq; searchProductsAsync(q).then(list=>{ if(seq!==state._searchSeq) return; if(list.length>0){ const p=list[0]; addOrInc({ id:p.id||p.ID, text:p.name||p.Name, unitPrice:Number(p.unitPrice||p.UnitPrice||0), stockQuantity: (p.stockQuantity ?? p.StockQuantity), unit: p.unit||p.Unit||'', hasDiscount: p.hasDiscount || p.HasDiscount || false, discountPercentage: p.discountPercentage || p.DiscountPercentage || 0 }); if (typeof MksSound !== 'undefined') MksSound.success(); } else { if (typeof MksSound !== 'undefined') MksSound.error(); } }); }
+      else if(e.key==='Enter'){
+        e.preventDefault();
+        clearTimeout(typingTimer);
+        if($items.length && state.suggestIndex>=0){
+          $items.eq(state.suggestIndex).trigger('click');
+          return;
+        }
+        destroySuggest();
+        const q = this.value.trim();
+        if(!q) return;
+        const seq = ++state._searchSeq;
+        searchProductsAsync(q).then(list => {
+          if(seq !== state._searchSeq) return;
+          if(list.length > 0){
+            const p = list[0];
+            addOrInc({
+              id: p.id || p.ID,
+              text: p.name || p.Name,
+              unitPrice: Number(p.unitPrice || p.UnitPrice || 0),
+              stockQuantity: (p.stockQuantity ?? p.StockQuantity),
+              unit: p.unit || p.Unit || '',
+              hasDiscount: p.hasDiscount || p.HasDiscount || false,
+              discountPercentage: p.discountPercentage || p.DiscountPercentage || 0
+            });
+            if (typeof MksSound !== 'undefined') MksSound.success();
+          } else {
+            if (typeof MksSound !== 'undefined') MksSound.error();
+          }
+        });
+      }
       else if(e.key==='Escape'){ destroySuggest(); }
     });
     $input.on('blur', ()=> setTimeout(destroySuggest, 180));
@@ -175,10 +244,32 @@
 
   function wireTable(){
     $('#posOrderTable')
-      .on('change', '.pos-qty', function(){ const i=parseInt($(this).data('idx')); let v=parseInt($(this).val()); if(!v||v<1) v=1; state.items[i].qty=v; render(); setTimeout(()=> $('#posSearch').focus(), 30); })
-      .on('click', '.pos-minus', function(){ const i=parseInt($(this).data('idx')); if(state.items[i].qty>1) state.items[i].qty--; render(); setTimeout(()=> $('#posSearch').focus(), 30); })
-      .on('click', '.pos-plus', function(){ const i=parseInt($(this).data('idx')); state.items[i].qty++; render(); setTimeout(()=> $('#posSearch').focus(), 30); })
-      .on('click', '.pos-del', function(){ const id=$(this).closest('tr').data('id'); state.items = state.items.filter(x=>x.id!==id); render(); setTimeout(()=> $('#posSearch').focus(), 30); });
+      .on('change', '.pos-qty', function() {
+        const i = parseInt($(this).data('idx'));
+        let v = parseInt($(this).val());
+        if(!v || v < 1) v = 1;
+        state.items[i].qty = v;
+        render();
+        setTimeout(() => $('#posSearch').focus(), 30);
+      })
+      .on('click', '.pos-minus', function() {
+        const i = parseInt($(this).data('idx'));
+        if(state.items[i].qty > 1) state.items[i].qty--;
+        render();
+        setTimeout(() => $('#posSearch').focus(), 30);
+      })
+      .on('click', '.pos-plus', function() {
+        const i = parseInt($(this).data('idx'));
+        state.items[i].qty++;
+        render();
+        setTimeout(() => $('#posSearch').focus(), 30);
+      })
+      .on('click', '.pos-del', function() {
+        const id = $(this).closest('tr').data('id');
+        state.items = state.items.filter(x => x.id !== id);
+        render();
+        setTimeout(() => $('#posSearch').focus(), 30);
+      });
   }
 
   function captureReceiptData(payResponse){
@@ -376,10 +467,18 @@
       .fail(xhr => {
         $('#posCustomer').empty().append('<option value="0">Umum</option>');
       });
-    wireSearch(); wireTable();
+    wireSearch();
+    wireTable();
     $('#posTender').on('input change', recalc);
     $('#posBtnPay').on('click', submit);
-    $('#posBtnCancel').on('click', ()=> { state.items=[]; $('#posPayFull').prop('checked', true); $('#posTender').val(''); updatePaymentUI(); render(); $('#posSearch').val('').focus(); });
+    $('#posBtnCancel').on('click', () => {
+      state.items = [];
+      $('#posPayFull').prop('checked', true);
+      $('#posTender').val('');
+      updatePaymentUI();
+      render();
+      $('#posSearch').val('').focus();
+    });
     $('#posBtnHistory').on('click', openHistory);
     // autofocus search on payment type change
     $('input[name="posPayType"]').on('change', ()=> { updatePaymentUI(); setTimeout(()=> $('#posSearch').focus(), 30); });
@@ -400,8 +499,26 @@
   }
 
   // ==================== HISTORY ====================
-  const statusMap = { 1:'Draft', 2:'Paid', 3:'Debt' };
-  const statusBadgeMap = { 1:'bg-secondary', 2:'bg-success', 3:'bg-warning text-dark' };
+  const statusMap = {
+    1: 'Draft',
+    2: 'Paid',
+    3: 'Debt',
+    4: 'PartialRefund',
+    5: 'Refund',
+    6: 'PartialExchange',
+    7: 'Exchange',
+    8: 'Completed'
+  };
+  const statusBadgeMap = {
+    1: 'bg-secondary',
+    2: 'bg-success',
+    3: 'bg-warning text-dark',
+    4: 'bg-info',
+    5: 'bg-danger',
+    6: 'bg-info',
+    7: 'bg-info',
+    8: 'bg-primary'
+  };
 
   function openHistory(){
     const modal = new bootstrap.Modal(document.getElementById('posHistoryModal'));

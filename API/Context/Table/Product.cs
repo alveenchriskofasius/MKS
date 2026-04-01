@@ -41,6 +41,8 @@ public partial class Product
 
     public decimal PurchasePrice { get; set; }
 
+    public string ImageUrl { get; set; }
+
     public virtual ICollection<ConsignmentItem> ConsignmentItems { get; set; } = new List<ConsignmentItem>();
 
     public virtual ICollection<StockCountItem> StockCountItems { get; set; } = new List<StockCountItem>();

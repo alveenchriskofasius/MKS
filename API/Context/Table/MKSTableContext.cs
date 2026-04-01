@@ -35,6 +35,8 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<Lookup> Lookups { get; set; }
 
+    public virtual DbSet<MarketplaceAccount> MarketplaceAccounts { get; set; }
+
     public virtual DbSet<Numbering> Numberings { get; set; }
 
     public virtual DbSet<PaymentIn> PaymentIns { get; set; }
@@ -324,6 +326,30 @@ public partial class MKSTableContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<MarketplaceAccount>(entity =>
+        {
+            entity.ToTable("MarketplaceAccount");
+
+            entity.HasIndex(e => e.CustomerID, "UQ_MarketplaceAccount_CustomerID").IsUnique();
+
+            entity.HasIndex(e => e.Email, "UQ_MarketplaceAccount_Email").IsUnique();
+
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(e => e.PasswordHash)
+                .IsRequired()
+                .HasMaxLength(64);
+            entity.Property(e => e.PasswordSalt)
+                .IsRequired()
+                .HasMaxLength(128);
+
+            entity.HasOne(d => d.Customer).WithOne(p => p.MarketplaceAccount)
+                .HasForeignKey<MarketplaceAccount>(d => d.CustomerID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MarketplaceAccount_Customer");
+        });
+
         modelBuilder.Entity<Numbering>(entity =>
         {
             entity.HasKey(e => new { e.Prefix, e.DateKey });
@@ -448,6 +474,7 @@ public partial class MKSTableContext : DbContext
                 .HasAnnotation("Relational:DefaultConstraintName", "DF__Product__Discoun__40C49C62")
                 .HasColumnType("decimal(5, 2)");
             entity.Property(e => e.HasDiscount).HasAnnotation("Relational:DefaultConstraintName", "DF__Product__HasDisc__3FD07829");
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
             entity.Property(e => e.LowStockThreshold)
                 .HasDefaultValue(0)
                 .HasAnnotation("Relational:DefaultConstraintName", "DF__Product__LowStoc__2CBDA3B5");
@@ -671,6 +698,7 @@ public partial class MKSTableContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.Date).HasColumnType("date");
+            entity.Property(e => e.DeliveryMethod).HasMaxLength(50);
             entity.Property(e => e.NetDifference).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.No)
                 .IsRequired()
@@ -680,6 +708,7 @@ public partial class MKSTableContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.PaidAmount).HasColumnType("decimal(18, 0)");
+            entity.Property(e => e.PaymentMethod).HasMaxLength(50);
             entity.Property(e => e.UpdatedAt).HasColumnType("date");
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)

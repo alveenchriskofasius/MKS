@@ -39,9 +39,9 @@ namespace API.Services
             return _salesOrderRepository.GetSalesOrderDetailModelById(id);
         }
 
-        public async Task<object> GetSearchList()
+        public async Task<object> GetSearchList(short? tradeTypeFilter = null)
         {
-            return await _salesOrderRepository.GetSearchList();
+            return await _salesOrderRepository.GetSearchList(tradeTypeFilter);
         }
 
         public async Task<object> Save(SalesOrderModel salesOrder)
