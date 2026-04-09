@@ -53,5 +53,20 @@ namespace API.Services
         {
             return await _productRepository.GetProductsBySupplier(supplierId);
         }
+
+        public async Task<List<ProductVariantModel>> GetVariants(int productId)
+        {
+            return await _productRepository.GetVariants(productId);
+        }
+
+        public async Task<object> SaveVariant(ProductVariantModel model)
+        {
+            return await _productRepository.SaveVariant(model);
+        }
+
+        public async Task<object> DeleteVariant(int id)
+        {
+            return await _productRepository.DeleteVariant(id);
+        }
     }
 }

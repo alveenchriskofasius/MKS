@@ -14,6 +14,7 @@ namespace API.Models
         public string? ImageUrl { get; set; }
         public string? PromoName { get; set; }
         public DateTime? PromoEndDate { get; set; }
+        public bool HasVariants { get; set; }
         public decimal FinalPrice => HasDiscount
             ? UnitPrice - (UnitPrice * DiscountPercentage / 100)
             : UnitPrice;
@@ -43,5 +44,14 @@ namespace API.Models
             ? UnitPrice - (UnitPrice * DiscountPercentage / 100)
             : UnitPrice;
         public bool InStock => StockQuantity > 0;
+        public bool HasVariants { get; set; }
+        public List<CatalogVariantItem> Variants { get; set; } = new();
+    }
+
+    public class CatalogVariantItem
+    {
+        public int ID { get; set; }
+        public string Name { get; set; } = "";
+        public int StockQuantity { get; set; }
     }
 }

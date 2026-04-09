@@ -78,6 +78,33 @@
     </div>
 
     <div class="row mb-3">
+        <label class="form-label col-sm-2">Varian</label>
+        <div class="col-sm-9">
+            <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="chkHasVariants" asp-for="ProductModel.HasVariants" />
+                <label class="form-check-label" for="chkHasVariants">Produk ini memiliki varian</label>
+            </div>
+            <div id="variantSection" style="display:none;">
+                <div class="d-flex gap-2 mb-2">
+                    <input type="text" id="newVariantName" class="form-control form-control-sm" placeholder="Nama varian (e.g. Merah, 1 Liter...)" style="max-width:260px;" />
+                    <button type="button" id="btnAddVariant" class="btn btn-sm btn-primary">
+                        <i class="fa fa-plus"></i> Tambah
+                    </button>
+                </div>
+                <table class="table table-sm table-bordered" id="tableVariants" style="max-width:520px;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nama Varian</th>
+                            <th style="width:60px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="variantTbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
         <label asp-for="ProductModel.CategoryID" class="form-label col-sm-2">Category<span class="asterisk">*</span></label>
         <div class="col-sm-9">
             <select asp-for="ProductModel.CategoryID" id="comboBoxCategory" required class="form-control"></select>

@@ -52,7 +52,9 @@ namespace Marketplace.Controllers
                     ProductID = c.ProductID,
                     ProductName = c.ProductName,
                     Quantity = c.Quantity,
-                    UnitPrice = c.UnitPrice
+                    UnitPrice = c.UnitPrice,
+                    VariantID = c.VariantID,
+                    VariantName = c.VariantName
                 }).ToList()
             };
 

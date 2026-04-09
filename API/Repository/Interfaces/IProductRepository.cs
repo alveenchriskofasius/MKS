@@ -12,5 +12,8 @@ namespace API.Repository.Interfaces
         Task<object> GetLowStockProductList(int threshold = 5);
         Task<object> UpdateProductImage(int id, string imageUrl);
         Task<object> GetProductsBySupplier(int supplierId);
+        Task<List<ProductVariantModel>> GetVariants(int productId);
+        Task<object> SaveVariant(ProductVariantModel model);
+        Task<object> DeleteVariant(int id);
     }
 }

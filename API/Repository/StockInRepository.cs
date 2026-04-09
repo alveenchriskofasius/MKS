@@ -122,7 +122,40 @@ namespace API.Repository
         }
         public async Task<object> GetStockInList() => await _procedure.GetStockInListAsync();
 
-        public Task<List<uspGetDetailListByIdResult>> GetDetailListById(int id) => _procedure.uspGetDetailListByIdAsync(id);
+        public async Task<object> GetDetailListById(int id)
+        {
+            var spResult = await _procedure.uspGetDetailListByIdAsync(id);
+            // Overlay VariantID + VariantName from StockInItems + ProductVariants
+            var itemIds = spResult.Select(x => x.ID).ToList();
+            var variantIdMap = await _context.StockInItems
+                .Where(si => itemIds.Contains(si.ID))
+                .Select(si => new { si.ID, si.VariantID })
+                .ToDictionaryAsync(x => x.ID, x => x.VariantID);
+            var usedVariantIds = variantIdMap.Values.Where(v => v.HasValue).Select(v => v!.Value).Distinct().ToList();
+            var variantNameMap = usedVariantIds.Count > 0
+                ? await _context.ProductVariants.AsNoTracking()
+                    .Where(v => usedVariantIds.Contains(v.ID))
+                    .ToDictionaryAsync(v => v.ID, v => v.Name)
+                : new Dictionary<int, string>();
+            return spResult.Select(item =>
+            {
+                variantIdMap.TryGetValue(item.ID, out var variantId);
+                string? variantName = variantId.HasValue && variantNameMap.TryGetValue(variantId.Value, out var vn) ? vn : null;
+                return new
+                {
+                    id = item.ID,
+                    productID = item.ProductID,
+                    product = item.Product,
+                    supplier = item.Supplier,
+                    supplierID = item.SupplierID,
+                    barcode = item.Barcode,
+                    unitPrice = item.UnitPrice,
+                    quantity = item.Quantity,
+                    variantID = variantId,
+                    variantName
+                };
+            }).ToList();
+        }
         public async Task<object> Save(StockInModel stockInModel)
         {
             try
@@ -207,7 +240,8 @@ namespace API.Repository
                     {
                         TradeID = tradeID,
                         ProductID = stockInDetailModel.ProductID,
-                        Quantity = stockInDetailModel.Quantity
+                        Quantity = stockInDetailModel.Quantity,
+                        VariantID = stockInDetailModel.VariantID
                     };
 
                     await _context.StockInItems.AddAsync(newItem);
@@ -220,6 +254,7 @@ namespace API.Repository
                         return new { success = false, result = "Stock In item not found." };
                     }
                     existingItem.Quantity = stockInDetailModel.Quantity;
+                    existingItem.VariantID = stockInDetailModel.VariantID;
                     _context.StockInItems.Update(existingItem);
                 }
                 await _context.SaveChangesAsync();
@@ -292,12 +327,27 @@ namespace API.Repository
                 {
                     if (item.ProductID == null) continue;
                     var product = await _context.Products.FindAsync(item.ProductID);
-                    if (product != null)
+                    if (product == null) continue;
+
+                    if (item.VariantID.HasValue)
+                    {
+                        // Variant product: increment variant stock, then sync product total
+                        var variant = await _context.ProductVariants.FindAsync(item.VariantID.Value);
+                        if (variant != null)
+                        {
+                            variant.StockQuantity += item.Quantity;
+                            _context.ProductVariants.Update(variant);
+                        }
+                        product.StockQuantity = await _context.ProductVariants
+                            .Where(v => v.ProductID == product.ID)
+                            .SumAsync(v => v.StockQuantity);
+                    }
+                    else
                     {
                         product.StockQuantity += item.Quantity;
-                        _context.Products.Update(product);
-                        await WriteLedgerSafe(product.ID, item.Quantity, trade);
                     }
+                    _context.Products.Update(product);
+                    await WriteLedgerSafe(product.ID, item.Quantity, trade);
                 }
 
                 trade.StatusID = 3; // Verified
@@ -437,7 +487,8 @@ namespace API.Repository
                     {
                         TradeID = trade.ID,
                         ProductID = poItem.ProductID,
-                        Quantity = remainingQty
+                        Quantity = remainingQty,
+                        VariantID = poItem.VariantID
                     };
                     await _context.StockInItems.AddAsync(siItem);
                 }
@@ -461,21 +512,30 @@ namespace API.Repository
 
         public async Task<object> GetApprovedPurchaseOrders()
         {
-            // Get all approved POs (TradeTypeID=4, StatusID=3)
+            // Get all approved POs (TradeTypeID=1, StatusID=3)
             var approvedPOs = await _context.Trades
-                .Where(t => t.TradeTypeID == 4 && t.StatusID == 3)
+                .Where(t => t.TradeTypeID == 1 && t.StatusID == 3)
                 .OrderByDescending(t => t.ID)
                 .ToListAsync();
 
             var result = new List<object>();
             foreach (var po in approvedPOs)
             {
-                // Check if this PO is fully received (all items have verified stock ins)
                 var poItems = await _context.PurchaseOrderItems
                     .Where(pi => pi.TradeID == po.ID)
                     .ToListAsync();
 
                 if (!poItems.Any()) continue;
+
+                // Always include POs that have an unverified SI linked (so editing that SI shows the PO)
+                var hasUnverifiedSI = await _context.Trades
+                    .AnyAsync(t => t.PurchaseOrderID == po.ID && t.TradeTypeID == 3 && (t.StatusID ?? 1) < 3);
+
+                if (hasUnverifiedSI)
+                {
+                    result.Add(new { id = po.ID, no = po.No, date = po.Date.ToString("yyyy-MM-dd"), amount = po.Amount });
+                    continue;
+                }
 
                 // Get verified Stock In IDs linked to this PO
                 var verifiedSIIds = await _context.Trades
@@ -489,7 +549,7 @@ namespace API.Repository
                     .Select(g => new { ProductID = g.Key, TotalQty = g.Sum(x => x.Quantity) })
                     .ToListAsync();
 
-                // Check if all items are fully received
+                // Only include if not fully received
                 bool fullyReceived = poItems.All(poItem =>
                 {
                     var received = receivedByProduct.FirstOrDefault(x => x.ProductID == poItem.ProductID)?.TotalQty ?? 0;

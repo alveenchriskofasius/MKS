@@ -1,0 +1,80 @@
+@{
+    ViewData["Title"] = "Ajukan Komplain";
+    var orderId = ViewData["OrderId"];
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item"><a href="/Order">Pesanan Saya</a></li>
+            <li class="breadcrumb-item active">Ajukan Komplain</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">
+                        <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                        Ajukan Komplain
+                    </h5>
+
+                    <div id="orderInfo" class="mp-loading">
+                        <div class="spinner-border" role="status"></div>
+                        <p>Memuat detail pesanan...</p>
+                    </div>
+
+                    <div id="complaintForm" style="display:none;">
+                        <div class="alert" style="background:var(--mp-green-light);border:none;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong id="formOrderNo"></strong>
+                                    <span class="text-muted ms-2" id="formOrderDate"></span>
+                                </div>
+                                <span class="fw-bold" id="formOrderAmount" style="color:var(--mp-red);"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Alasan Komplain <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control"
+                                      id="complaintReason"
+                                      rows="5"
+                                      placeholder="Jelaskan masalah yang kamu alami dengan pesanan ini..."></textarea>
+                            <div class="form-text">Minimal 10 karakter</div>
+                        </div>
+
+                        <div id="formError" class="alert alert-danger" style="display:none;"></div>
+
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-warning px-4" id="btnSubmitComplaint">
+                                <span class="spinner-border spinner-border-sm"
+                                      style="display:none;" id="submitSpinner"></span>
+                                <i class="bi bi-send"></i> Kirim Komplain
+                            </button>
+                            <a href="/Order" class="btn btn-outline-dark">Batal</a>
+                        </div>
+                    </div>
+
+                    <div id="alreadyExists" class="text-center py-4" style="display:none;">
+                        <i class="bi bi-info-circle" style="font-size:2rem;color:var(--mp-green);"></i>
+                        <p class="mt-2">Komplain untuk pesanan ini sudah pernah diajukan.</p>
+                        <a href="/Complaint" class="btn btn-warning">
+                            <i class="bi bi-list"></i> Lihat Komplain Saya
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="hdnOrderId" value="@orderId" />
+
+@section Scripts {
+    <script src="~/js/Complaint/Create.js" asp-append-version="true"></script>
+}

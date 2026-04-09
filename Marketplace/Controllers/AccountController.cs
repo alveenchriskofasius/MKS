@@ -119,5 +119,20 @@ namespace Marketplace.Controllers
                 customerId, name, phone, address);
             return Json(result);
         }
+
+        [HttpPost]
+        public async Task<JsonResult> ChangePassword(
+            string currentPassword,
+            string newPassword)
+        {
+            var customerId = int.TryParse(
+                User.FindFirst("CustomerId")?.Value, out var id) ? id : 0;
+            if (customerId == 0)
+                return Json(new { success = false, message = "Not authenticated." });
+
+            var result = await _authService.ChangePassword(
+                customerId, currentPassword, newPassword);
+            return Json(result);
+        }
     }
 }

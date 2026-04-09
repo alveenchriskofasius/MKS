@@ -241,6 +241,7 @@ const productForms = {
 	saveProduct: function () {
 		const formData = new FormData($('#productForm')[0]);
 		formData.set('ProductModel.HasDiscount', $('#chkHasDiscount').is(':checked'));
+		formData.set('ProductModel.HasVariants', $('#chkHasVariants').is(':checked'));
 		// Show loading indicator
 		$('#buttonSave').prop('disabled', true);
 		$('#buttonSave .spinner-border').show();
@@ -274,7 +275,7 @@ const productForms = {
 };
 
 const productControl = {
-	init: function () { this.category(); this.unit(); this.supplier(); },
+	init: function () { this.category(); this.unit(); this.supplier(); productVariants.init(); },
 	category: function () {
 		const id = '#comboBoxCategory';
 		Common.Api.get('GetCategoryList').then(data => {
@@ -297,6 +298,75 @@ const productControl = {
 			const list = (data && data.result) ? data.result : data || [];
 			$(id).empty().append('<option selected value="">Select supplier</option>');
 			list.forEach(item => { $(id).append(`<option value='${item.id}'${(typeof supplierID !== 'undefined' && supplierID == item.id) ? ' selected' : ''}>${item.supplierName}</option>`); });
+		});
+	}
+};
+
+const productVariants = {
+	productID: 0,
+	init: function () {
+		this.productID = parseInt($('#ProductModel_ID').val() || '0', 10);
+		const $chk = $('#chkHasVariants'), $section = $('#variantSection');
+		function toggleSection() {
+			$section.toggle($chk.is(':checked'));
+			if ($chk.is(':checked') && productVariants.productID > 0) productVariants.load();
+		}
+		$chk.off('change.variants').on('change.variants', toggleSection);
+		toggleSection();
+
+		$('#btnAddVariant').off('click').on('click', function () { productVariants.add(); });
+		$('#newVariantName').off('keydown').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); productVariants.add(); } });
+		$('#variantTbody').off('click.varDel').on('click.varDel', '.btn-del-variant', function () {
+			const id = parseInt($(this).data('id'), 10);
+			productVariants.delete(id, $(this).closest('tr'));
+		});
+		if (this.productID > 0 && $chk.is(':checked')) this.load();
+	},
+	load: function () {
+		Common.Api.get('GetVariants?productId=' + this.productID).then(function (data) {
+			const list = Array.isArray(data) ? data : (data && data.result ? data.result : []);
+			productVariants.renderRows(list);
+		}).catch(function (e) { console.error('Failed loading variants', e); });
+	},
+	renderRows: function (list) {
+		const $tbody = $('#variantTbody').empty();
+		if (!list.length) {
+			$tbody.append('<tr><td colspan="2" class="text-muted text-center small">Belum ada varian.</td></tr>');
+			return;
+		}
+		list.forEach(function (v) {
+			$tbody.append(
+				'<tr data-id="' + v.id + '">' +
+				'<td>' + $('<span>').text(v.name).html() + '</td>' +
+				'<td class="text-center"><button class="btn btn-sm btn-outline-danger btn-del-variant" data-id="' + v.id + '"><i class="fa fa-trash"></i></button></td>' +
+				'</tr>'
+			);
+		});
+	},
+	add: function () {
+		const name = $('#newVariantName').val().trim();
+		if (!name) { toastr.warning('Isi nama varian terlebih dahulu'); return; }
+		const pid = this.productID;
+		if (!pid) { toastr.warning('Simpan produk terlebih dahulu sebelum menambah varian'); return; }
+		Common.Api.post('SaveVariant', { ID: 0, ProductID: pid, Name: name, StockQuantity: 0 })
+			.then(function (res) {
+				if (res && res.success) {
+					$('#newVariantName').val('');
+					productVariants.load();
+					toastr.success('Varian ditambahkan');
+				} else {
+					toastr.error((res && res.error) || 'Gagal menyimpan varian');
+				}
+			}).catch(function (e) { toastr.error(e && e.message ? e.message : 'Request failed'); });
+	},
+	delete: function (id, $row) {
+		if (!id) { $row.remove(); return; }
+		Swal.fire({ title: 'Hapus varian ini?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, hapus' }).then(function (r) {
+			if (!r.isConfirmed) return;
+			Common.Api.get('DeleteVariant?id=' + id).then(function (res) {
+				if (res && res.success) { $row.remove(); toastr.success('Varian dihapus'); }
+				else toastr.error((res && res.error) || 'Gagal menghapus');
+			});
 		});
 	}
 };

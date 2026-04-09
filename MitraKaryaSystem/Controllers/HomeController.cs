@@ -35,6 +35,10 @@ namespace MitraKaryaSystem.Controllers
 
         public IActionResult Index() => View();
 
+        [AllowAnonymous]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public new IActionResult NotFound() => View("~/Views/Shared/NotFound.cshtml");
+
         [HttpGet]
         public JsonResult WhoAmI()
         {

@@ -10,6 +10,9 @@ const ProfilePage = {
         $('#btnSaveProfile').on('click', function () {
             ProfilePage.saveProfile();
         });
+        $('#btnChangePassword').on('click', function () {
+            ProfilePage.changePassword();
+        });
     },
 
     async loadProfile() {
@@ -72,6 +75,53 @@ const ProfilePage = {
         } finally {
             $('#profileSpinner').hide();
             $('#btnSaveProfile').prop('disabled', false);
+        }
+    },
+
+    async changePassword() {
+        var currentPw = $('#currentPassword').val();
+        var newPw = $('#newPassword').val();
+        var confirmPw = $('#confirmPassword').val();
+
+        $('#pwError').hide();
+        $('#pwSuccess').hide();
+
+        if (!currentPw) {
+            $('#pwError').text('Password saat ini harus diisi.').show();
+            return;
+        }
+        if (!newPw || newPw.length < 6) {
+            $('#pwError').text('Password baru minimal 6 karakter.').show();
+            return;
+        }
+        if (newPw !== confirmPw) {
+            $('#pwError').text('Konfirmasi password tidak cocok.').show();
+            return;
+        }
+
+        $('#pwSpinner').show();
+        $('#btnChangePassword').prop('disabled', true);
+
+        try {
+            var res = await Common.Api.post('/Account/ChangePassword', {
+                currentPassword: currentPw,
+                newPassword: newPw
+            });
+
+            if (res.success) {
+                $('#pwSuccess').text(res.message || 'Password berhasil diubah.').show();
+                $('#currentPassword').val('');
+                $('#newPassword').val('');
+                $('#confirmPassword').val('');
+            } else {
+                $('#pwError').text(res.message || 'Gagal mengubah password.').show();
+            }
+        } catch (e) {
+            console.error('Failed changing password', e);
+            $('#pwError').text('Terjadi kesalahan.').show();
+        } finally {
+            $('#pwSpinner').hide();
+            $('#btnChangePassword').prop('disabled', false);
         }
     }
 };

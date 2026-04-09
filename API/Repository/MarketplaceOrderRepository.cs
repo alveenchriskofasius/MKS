@@ -11,16 +11,19 @@ namespace API.Repository
     {
         private readonly MKSSPContextProcedures _procedure;
         private readonly IStockLedgerService _stockLedger;
+        private readonly IDeliveryOrderRepository _deliveryOrderRepo;
 
         public MarketplaceOrderRepository(
             MKSTableContext context,
             IHttpContextAccessor http,
             MKSSPContextProcedures procedures,
-            IStockLedgerService stockLedger)
+            IStockLedgerService stockLedger,
+            IDeliveryOrderRepository deliveryOrderRepo)
             : base(context, http)
         {
             _procedure = procedures;
             _stockLedger = stockLedger;
+            _deliveryOrderRepo = deliveryOrderRepo;
         }
 
         public async Task<object> PlaceOrder(MarketplaceCheckoutModel model)
@@ -86,7 +89,8 @@ namespace API.Repository
                     {
                         TradeID = trade.ID,
                         ProductID = item.ProductID,
-                        Quantity = item.Quantity
+                        Quantity = item.Quantity,
+                        VariantID = item.VariantID
                     };
                     _context.SalesOrderItems.Add(soItem);
                 }
@@ -215,8 +219,34 @@ namespace API.Repository
                 {
                     if (item.ProductID == null) continue;
                     var product = await _context.Products.FindAsync(item.ProductID);
-                    if (product != null)
+                    if (product == null) continue;
+
+                    if (item.VariantID.HasValue)
                     {
+                        // Variant product: deduct variant stock, then sync product total
+                        var variant = await _context.ProductVariants.FindAsync(item.VariantID.Value);
+                        if (variant != null)
+                        {
+                            if (variant.StockQuantity < item.Quantity)
+                            {
+                                await transaction.RollbackAsync();
+                                return new
+                                {
+                                    success = false,
+                                    message = $"Stok varian '{variant.Name}' untuk '{product.Name}' tidak mencukupi."
+                                };
+                            }
+                            variant.StockQuantity -= item.Quantity;
+                            _context.ProductVariants.Update(variant);
+                        }
+                        // Sync product.StockQuantity as sum of all variants
+                        product.StockQuantity = await _context.ProductVariants
+                            .Where(v => v.ProductID == product.ID)
+                            .SumAsync(v => v.StockQuantity);
+                    }
+                    else
+                    {
+                        // Non-variant product: deduct product stock directly
                         if (product.StockQuantity < item.Quantity)
                         {
                             await transaction.RollbackAsync();
@@ -227,22 +257,29 @@ namespace API.Repository
                             };
                         }
                         product.StockQuantity -= item.Quantity;
-                        _context.Products.Update(product);
-                        try
-                        {
-                            await _stockLedger.WriteAsync(
-                                product.ID,
-                                -item.Quantity,
-                                "MarketplaceOrder",
-                                trade.ID,
-                                trade.No);
-                        }
-                        catch { }
                     }
+                    _context.Products.Update(product);
+                    try
+                    {
+                        await _stockLedger.WriteAsync(
+                            product.ID,
+                            -item.Quantity,
+                            "MarketplaceOrder",
+                            trade.ID,
+                            trade.No);
+                    }
+                    catch { }
                 }
 
                 await SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                // Auto-create Delivery Order when delivery method is "delivery"
+                if (string.Equals(trade.DeliveryMethod, "delivery", StringComparison.OrdinalIgnoreCase))
+                {
+                    try { await _deliveryOrderRepo.CreateFromSalesOrder(orderId, "System"); }
+                    catch { /* DO creation is best-effort; payment already succeeded */ }
+                }
 
                 return new { success = true };
             }

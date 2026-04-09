@@ -54,7 +54,8 @@ namespace API.Repository
                         p.DiscountPercentage,
                         p.LowStockThreshold,
                         p.PurchasePrice,
-                        p.ImageUrl
+                        p.ImageUrl,
+                        p.HasVariants
                     })
                     .ToDictionaryAsync(x => x.ID);
                 return list.Select(p =>
@@ -78,7 +79,8 @@ namespace API.Repository
                         lowStockThreshold = extra?.LowStockThreshold,
                         hasDiscount = extra?.HasDiscount ?? false,
                         discountPercentage = extra?.DiscountPercentage ?? 0m,
-                        imageUrl = extra?.ImageUrl
+                        imageUrl = extra?.ImageUrl,
+                        hasVariants = extra?.HasVariants ?? false
                     };
                 }).ToList();
             }
@@ -159,12 +161,15 @@ namespace API.Repository
                 if (productModel.Barcode != null && productModel.Barcode.Length > 50)
                     return new { success = false, error = "Barcode maximum is 50 length" };
 
+                int savedId;
                 if (productModel.ID == 0)
                 {
                     var createdBy = GetCurrentUserName();
                     var now = DateTime.Now;
-
-                    _context.Products.Add(CreateProductFromModel(productModel, createdBy, now));
+                    var newProduct = CreateProductFromModel(productModel, createdBy, now);
+                    _context.Products.Add(newProduct);
+                    await SaveChangesAsync();
+                    savedId = newProduct.ID;
                 }
                 else
                 {
@@ -175,9 +180,10 @@ namespace API.Repository
                     product.UpdatedBy = GetCurrentUserName();
                     product.UpdatedAt = DateTime.Now;
                     _context.Products.Update(product);
+                    await SaveChangesAsync();
+                    savedId = productModel.ID;
                 }
-                await SaveChangesAsync();
-                return new { success = true };
+                return new { success = true, id = savedId };
             }
             catch (Exception e)
             {
@@ -208,18 +214,27 @@ namespace API.Repository
                 var ids = filtered.Select(x => x.ID).ToList();
                 var extraMap = await _context.Products.AsNoTracking()
                     .Where(p => ids.Contains(p.ID))
-                    .Select(p => new { p.ID, p.PurchasePrice })
+                    .Select(p => new { p.ID, p.PurchasePrice, p.HasVariants })
                     .ToDictionaryAsync(x => x.ID);
+                var variantsByProduct = await _context.ProductVariants.AsNoTracking()
+                    .Where(v => ids.Contains(v.ProductID))
+                    .GroupBy(v => v.ProductID)
+                    .ToDictionaryAsync(
+                        g => g.Key,
+                        g => g.Select(v => new { id = v.ID, name = v.Name, stockQuantity = v.StockQuantity }).ToList());
                 return filtered.Select(p =>
                 {
                     var extra = extraMap.TryGetValue(p.ID, out var e) ? e : null;
+                    variantsByProduct.TryGetValue(p.ID, out var variants);
                     return new
                     {
                         id = p.ID,
                         name = p.Name,
                         purchasePrice = extra?.PurchasePrice ?? 0m,
                         stockQuantity = p.StockQuantity,
-                        unitName = p.UnitName
+                        unitName = p.UnitName,
+                        hasVariants = extra?.HasVariants ?? false,
+                        variants = variants ?? new List<object>() as object
                     };
                 }).ToList();
             }
@@ -263,7 +278,8 @@ namespace API.Repository
                 LowStockThreshold = product.LowStockThreshold,
                 HasDiscount = product.HasDiscount,
                 DiscountPercentage = product.DiscountPercentage,
-                ImageUrl = product.ImageUrl
+                ImageUrl = product.ImageUrl,
+                HasVariants = product.HasVariants
             };
         }
 
@@ -285,7 +301,8 @@ namespace API.Repository
                 Barcode = model.Barcode,
                 HasDiscount = model.HasDiscount,
                 DiscountPercentage = model.DiscountPercentage,
-                ImageUrl = model.ImageUrl
+                ImageUrl = model.ImageUrl,
+                HasVariants = model.HasVariants
             };
         }
 
@@ -304,6 +321,7 @@ namespace API.Repository
             entity.HasDiscount = model.HasDiscount;
             entity.DiscountPercentage = model.DiscountPercentage;
             entity.ImageUrl = model.ImageUrl;
+            entity.HasVariants = model.HasVariants;
         }
 
         public async Task<object> UpdateProductImage(int id, string imageUrl)
@@ -325,6 +343,86 @@ namespace API.Repository
             {
                 return CreateErrorResponse(e);
             }
+        }
+
+        public async Task<List<ProductVariantModel>> GetVariants(int productId)
+        {
+            return await _context.ProductVariants
+                .Where(v => v.ProductID == productId)
+                .OrderBy(v => v.ID)
+                .Select(v => new ProductVariantModel { ID = v.ID, ProductID = v.ProductID, Name = v.Name, StockQuantity = v.StockQuantity })
+                .ToListAsync();
+        }
+
+        public async Task<object> SaveVariant(ProductVariantModel model)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(model.Name))
+                    return new { success = false, error = "Variant name is required" };
+
+                if (model.ID == 0)
+                {
+                    _context.ProductVariants.Add(new ProductVariant
+                    {
+                        ProductID = model.ProductID,
+                        Name = model.Name.Trim(),
+                        StockQuantity = model.StockQuantity
+                    });
+                }
+                else
+                {
+                    var v = await _context.ProductVariants.FindAsync(model.ID);
+                    if (v == null) return new { success = false, error = "Variant not found" };
+                    v.Name = model.Name.Trim();
+                    v.StockQuantity = model.StockQuantity;
+                }
+                await SaveChangesAsync();
+
+                // Sync product.StockQuantity = sum of all its variants
+                await SyncProductStockFromVariantsAsync(model.ProductID);
+
+                return new { success = true };
+            }
+            catch (Exception e)
+            {
+                return CreateErrorResponse(e);
+            }
+        }
+
+        public async Task<object> DeleteVariant(int id)
+        {
+            try
+            {
+                var v = await _context.ProductVariants.FindAsync(id);
+                if (v != null)
+                {
+                    int productId = v.ProductID;
+                    _context.ProductVariants.Remove(v);
+                    await SaveChangesAsync();
+                    await SyncProductStockFromVariantsAsync(productId);
+                }
+                else
+                {
+                    await SaveChangesAsync();
+                }
+                return new { success = true };
+            }
+            catch (Exception e)
+            {
+                return CreateErrorResponse(e);
+            }
+        }
+
+        private async Task SyncProductStockFromVariantsAsync(int productId)
+        {
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null) return;
+            product.StockQuantity = await _context.ProductVariants
+                .Where(v => v.ProductID == productId)
+                .SumAsync(v => v.StockQuantity);
+            _context.Products.Update(product);
+            await SaveChangesAsync();
         }
     }
 }

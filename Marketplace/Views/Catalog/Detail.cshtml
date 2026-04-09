@@ -2,15 +2,21 @@
     ViewData["Title"] = "Detail Produk";
 }
 
-<div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/">Home</a></li>
-            <li class="breadcrumb-item"><a href="/Catalog">Katalog</a></li>
-            <li class="breadcrumb-item active" id="bcProductName"></li>
-        </ol>
-    </nav>
+<!-- Breadcrumb Bar -->
+<div class="mp-breadcrumb-bar">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item">
+                    <a href="/"><i class="bi bi-house-door-fill me-1"></i>Home</a>
+                </li>
+                <li class="breadcrumb-item active" id="bcProductName">Detail Produk</li>
+            </ol>
+        </nav>
+    </div>
+</div>
 
+<div class="container py-4">
     <div id="productLoading" class="text-center py-5">
         <div class="spinner-border" style="color:var(--mp-green);" role="status"></div>
     </div>
@@ -49,6 +55,16 @@
 
                         <p class="mb-3" id="detailStock"></p>
 
+                        <div id="variantSection" style="display:none;">
+                            <label class="form-label fw-semibold mb-2">
+                                Pilih Varian <span class="text-danger">*</span>
+                            </label>
+                            <div id="variantOptions" class="d-flex flex-wrap gap-2 mb-2"></div>
+                            <small id="variantWarning" class="text-danger" style="display:none;">
+                                Silakan pilih varian terlebih dahulu.
+                            </small>
+                        </div>
+
                         <div id="addToCartSection" style="display:none;">
                             <div class="d-flex align-items-center gap-3">
                                 <span class="text-muted small">Jumlah</span>
@@ -72,11 +88,10 @@
             </div>
         </div>
 
-        <a href="/Catalog" class="btn btn-outline-dark mt-3">
-            <i class="bi bi-arrow-left"></i> Kembali ke Katalog
-        </a>
-    </div>
-</div>
+            <a href="/" class="btn btn-outline-dark mt-3">
+                <i class="bi bi-arrow-left"></i> Kembali
+            </a>
+        </div>
 
 @section Scripts {
     <script>var __productId = @ViewData["ProductId"];</script>

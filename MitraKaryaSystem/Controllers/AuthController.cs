@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MitraKaryaSystem.Models;
+using System.Security.Claims;
 
 namespace MitraKaryaSystem.Controllers
 {
@@ -10,7 +11,13 @@ namespace MitraKaryaSystem.Controllers
     public class AuthController : Controller
     {
         private readonly IAuthService _authService;
-        public AuthController(IAuthService authService) => _authService = authService;
+        private readonly IUserService _userService;
+        public AuthController(IAuthService authService, IUserService userService)
+        {
+            _authService = authService;
+            _userService = userService;
+        }
+
         [AllowAnonymous]
         public IActionResult Login() => View();
 
@@ -38,6 +45,22 @@ namespace MitraKaryaSystem.Controllers
                 }
             }
             return View();
+        }
+
+        public async Task<IActionResult> Profile()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var model = await _userService.FillForm(userId);
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<JsonResult> UpdateProfile(UserModel model)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            model.ID = userId;
+            model.IsActive = true;
+            return Json(await _userService.SaveUser(model));
         }
 
         [AllowAnonymous]

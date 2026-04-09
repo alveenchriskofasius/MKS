@@ -204,6 +204,14 @@ namespace API.Repository
             }
             var ids = raw.Select(r => r.ID).ToList();
             var entities = await _context.SalesOrderItems.Where(x => ids.Contains(x.ID)).ToListAsync();
+            var variantIds = entities
+                .Where(e => e.VariantID.HasValue && e.VariantID.Value > 0)
+                .Select(e => e.VariantID.Value)
+                .Distinct()
+                .ToList();
+            var variantMap = await _context.ProductVariants
+                .Where(v => variantIds.Contains(v.ID))
+                .ToDictionaryAsync(v => v.ID, v => v.Name);
             var enriched = raw.Select(r =>
             {
                 var ent = entities.FirstOrDefault(e => e.ID == r.ID);
@@ -213,11 +221,14 @@ namespace API.Repository
                 int remaining = qtySold - (qtyRefunded + qtyExchanged);
                 if (remaining < 0) remaining = 0;
                 int productId = r.ProductID ?? 0;
+                int varId = ent?.VariantID ?? 0;
                 return new
                 {
                     id = r.ID,
                     productID = productId,
                     product = r.Product,
+                    variantID = varId,
+                    variantName = varId > 0 && variantMap.ContainsKey(varId) ? variantMap[varId] : "",
                     quantity = qtySold,
                     unitPrice = r.UnitPrice,
                     subTotal = r.SubTotal,

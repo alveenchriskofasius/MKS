@@ -34,7 +34,7 @@ namespace API.Services
             return await _repository.FillFormDetail(id);
         }
 
-        public async Task<List<uspGetDetailListByIdResult>> GetDetailListById(int id)
+        public async Task<object> GetDetailListById(int id)
         {
             return await _repository.GetDetailListById(id);
         }

@@ -153,7 +153,16 @@ let POTable = {
         const isLocked = IsPOLockedForEdit(statusID);
         let columns = [
             { data: 'productID', visible: false },
-            { data: 'product', className: 'text-start' },
+            { data: 'variantID', visible: false, defaultContent: '' },
+            {
+                data: 'product',
+                className: 'text-start',
+                render: function (data, type, row) {
+                    if (type !== 'display') return data;
+                    var vn = row.variantName || row.VariantName;
+                    return vn ? (data + ' <span class="badge text-bg-secondary ms-1">' + $('<span>').text(vn).html() + '</span>') : data;
+                }
+            },
             // quantity: editable only when not locked
             isLocked
                 ? { data: 'quantity', className: 'text-center', render: $.fn.dataTable.render.number(',', '.', 0) }
@@ -395,6 +404,15 @@ let POControl = {
                 POProductPicker._products.filter(p => p.name && p.name.toLowerCase().includes(q))
             );
         });
+        // expand/collapse variant rows in picker
+        $(document).on('click', '.picker-expand', function () {
+            const pid = $(this).data('product-id');
+            const $icon = $(this).find('i');
+            const $rows = $(`#pickerTableBody .picker-variant-row[data-parent-id="${pid}"]`);
+            const isOpen = !$rows.first().hasClass('d-none');
+            $rows.toggleClass('d-none', isOpen);
+            $icon.toggleClass('fa-chevron-right', isOpen).toggleClass('fa-chevron-down', !isOpen);
+        });
     },
     LoadForm: function (id) {
         $('#purchaseOrderHeaderBody').html('<div class="text-center p-2"><div class="spinner-border"></div></div>');
@@ -461,7 +479,9 @@ let POControl = {
             product: d.product || d.Product || d.productName || d.ProductName,
             quantity: d.quantity || d.Quantity,
             unitPrice: d.unitPrice || d.UnitPrice,
-            subTotal: d.subTotal || d.SubTotal || ((d.unitPrice || d.UnitPrice || 0) * (d.quantity || d.Quantity || 0))
+            subTotal: d.subTotal || d.SubTotal || ((d.unitPrice || d.UnitPrice || 0) * (d.quantity || d.Quantity || 0)),
+            variantID: d.variantID || d.VariantID || null,
+            variantName: d.variantName || d.VariantName || null
         }));
         POTable.Init(mapped);
         POControl.CalcTotal();
@@ -470,9 +490,11 @@ let POControl = {
         let table = $('#tablePurchaseOrderProduct').DataTable();
         let exists = false;
         let rows = table.rows().nodes();
+        const targetVariantID = prod.variantID || null;
         $(rows).each(function () {
             let rowData = table.row(this).data();
-            if (rowData.productID == prod.id) {
+            const rowVariantID = rowData.variantID || null;
+            if (rowData.productID == prod.id && rowVariantID == targetVariantID) {
                 exists = true;
                 let newQuantity = parseInt(rowData.quantity) + 1;
                 rowData.quantity = newQuantity;
@@ -490,7 +512,9 @@ let POControl = {
                 quantity: 1,
                 unitPrice: price,
                 subTotal: price,
-                id: 0
+                id: 0,
+                variantID: prod.variantID || null,
+                variantName: prod.variantName || null
             }).draw();
         }
         table.draw(false);
@@ -544,6 +568,7 @@ let PurchaseOrderForm = {
             let r = dataArray[i].row;
             formData[`PurchaseOrderDetails[${i}].ID`] = r.id || r.ID || 0;
             formData[`PurchaseOrderDetails[${i}].ProductID`] = r.productID;
+            formData[`PurchaseOrderDetails[${i}].VariantID`] = r.variantID || '';
             formData[`PurchaseOrderDetails[${i}].Quantity`] = r.quantity;
             formData[`PurchaseOrderDetails[${i}].UnitPrice`] = r.unitPrice;
             formData[`PurchaseOrderDetails[${i}].Subtotal`] = r.subTotal;
@@ -689,15 +714,36 @@ let POProductPicker = {
         }
         $('#pickerEmpty').addClass('d-none');
         const fmt = n => Number(n || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const rows = list.map(p =>
-            `<tr>
-                <td><input type="checkbox" class="picker-check" data-product-id="${p.id}"></td>
-                <td>${p.name || ''}</td>
+        const rows = list.map(p => {
+            const hasV = p.hasVariants && p.variants && p.variants.length > 0;
+            let html = `<tr data-product-id="${p.id}" data-has-variants="${hasV}">
+                <td>${hasV ? '' : `<input type="checkbox" class="picker-check" data-product-id="${p.id}">`}</td>
+                <td>
+                    ${hasV ? `<button type="button" class="btn btn-sm btn-link p-0 me-1 picker-expand" data-product-id="${p.id}" title="Expand variants"><i class="fa fa-chevron-right"></i></button>` : ''}
+                    ${p.name || ''}
+                </td>
                 <td class="text-end">${fmt(p.purchasePrice)}</td>
-                <td class="text-center">${p.stockQuantity ?? 0}</td>
+                <td class="text-center">${hasV ? '<small class="text-muted">per varian</small>' : (p.stockQuantity ?? 0)}</td>
                 <td>${p.unitName || ''}</td>
-            </tr>`
-        ).join('');
+            </tr>`;
+            if (hasV) {
+                p.variants.forEach(v => {
+                    html += `<tr class="picker-variant-row d-none" data-parent-id="${p.id}">
+                        <td class="ps-3"><input type="checkbox" class="picker-check picker-variant-check"
+                            data-product-id="${p.id}"
+                            data-variant-id="${v.id}"
+                            data-variant-name="${$('<span>').text(v.name).html()}"
+                            data-purchase-price="${p.purchasePrice || 0}">
+                        </td>
+                        <td class="ps-4 text-muted"><small>↳ ${$('<span>').text(v.name).html()}</small></td>
+                        <td class="text-end">${fmt(p.purchasePrice)}</td>
+                        <td class="text-center">${v.stockQuantity ?? 0}</td>
+                        <td></td>
+                    </tr>`;
+                });
+            }
+            return html;
+        }).join('');
         $('#pickerTableBody').html(rows);
         this.UpdateSelectedCount();
     },
@@ -711,22 +757,29 @@ let POProductPicker = {
             toastr.info('Select at least one product', 'Nothing selected');
             return;
         }
-        const addedCount = checked.length;
+        let addedCount = 0;
         checked.each((_, cb) => {
-            const id = parseInt($(cb).data('product-id'), 10);
-            const prod = this._products.find(p => p.id === id);
-            if (prod) {
-                POControl.AddOrIncrease({
-                    id: prod.id,
-                    name: prod.name,
-                    purchasePrice: prod.purchasePrice,
-                    unitPrice: prod.purchasePrice
-                });
-            }
+            const $cb = $(cb);
+            const productId = parseInt($cb.data('product-id'), 10);
+            const prod = this._products.find(p => p.id === productId);
+            if (!prod) return;
+            const variantId = $cb.data('variant-id') ? parseInt($cb.data('variant-id'), 10) : null;
+            const variantName = $cb.data('variant-name') || null;
+            const price = Number(prod.purchasePrice || 0);
+            const displayName = variantName ? (prod.name + ' - ' + variantName) : prod.name;
+            POControl.AddOrIncrease({
+                id: prod.id,
+                name: prod.name,
+                purchasePrice: price,
+                unitPrice: price,
+                variantID: variantId,
+                variantName: variantName
+            });
+            addedCount++;
         });
         $('#pickerTableBody .picker-check').prop('checked', false);
         $('#pickerSelectAll').prop('checked', false);
         this.UpdateSelectedCount();
-        toastr.success(addedCount + ' product(s) added to order');
+        if (addedCount > 0) toastr.success(addedCount + ' product(s) added to order');
     }
 };

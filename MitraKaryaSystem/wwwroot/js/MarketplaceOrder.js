@@ -25,6 +25,7 @@ const MOPage = {
     bindEvents() {
         $('#btnRefresh').on('click', () => this.loadGrid());
         $('#moStatusFilter').on('change', () => this.applyFilter());
+        $('#btnCloseDetail').on('click', () => $('#moDetailPanel').slideUp());
     },
 
     loadGrid() {
@@ -114,11 +115,6 @@ const MOPage = {
                                 <i class="fa fa-box"></i> Picked Up
                             </button>`;
                         }
-                        if (sid === 2 && dm === 'delivery' && !row.hasDeliveryOrder) {
-                            btns += ` <button class="btn btn-sm btn-outline-warning mo-delivery" title="Buat Delivery Order">
-                                <i class="fa fa-truck"></i> Delivery
-                            </button>`;
-                        }
                         return `<div class="btn-group btn-group-sm flex-wrap">${btns}</div>`;
                     }
                 }
@@ -146,21 +142,14 @@ const MOPage = {
             const row = MOPage.dt.row($(this).closest('tr')).data();
             if (row) MOPage.confirmPickup(row.id || row.ID, row.no);
         });
-
-        $table.find('tbody').on('click', '.mo-delivery', function () {
-            const row = MOPage.dt.row($(this).closest('tr')).data();
-            if (row) MOPage.createDeliveryOrder(row.id || row.ID, row.no);
-        });
     },
 
     showDetail(id) {
+        const $panel = $('#moDetailPanel');
         const $body = $('#moDetailBody');
-        const $footer = $('#moDetailFooter');
         $body.html('<div class="text-center p-4"><div class="spinner-border"></div></div>');
-        $footer.html('<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>');
-
-        const modal = new bootstrap.Modal(document.getElementById('moDetailModal'));
-        modal.show();
+        $panel.slideDown();
+        $('html, body').animate({ scrollTop: $panel.offset().top - 80 }, 300);
 
         $.get('/MarketplaceOrder/GetDetail', { id: id }, function (items) {
             const list = Array.isArray(items) ? items : (items && items.result ? items.result : []);
@@ -173,8 +162,12 @@ const MOPage = {
             const rows = list.map(item => {
                 const sub = (item.unitPrice || item.UnitPrice || 0) * (item.quantity || item.Quantity || 0);
                 total += sub;
+                const varName = item.variantName || item.VariantName || '';
+                const varBadge = varName
+                    ? `<span class="badge bg-info text-dark ms-1">${varName}</span>`
+                    : '';
                 return `<tr>
-                    <td>${item.product || item.Product || item.productName || item.ProductName || '-'}</td>
+                    <td>${item.product || item.Product || item.productName || item.ProductName || '-'}${varBadge}</td>
                     <td class="text-center">${item.quantity || item.Quantity || 0}</td>
                     <td class="text-end">${Number(item.unitPrice || item.UnitPrice || 0).toLocaleString('id-ID')}</td>
                     <td class="text-end">${Number(sub).toLocaleString('id-ID')}</td>
@@ -285,35 +278,6 @@ const MOPage = {
         }).then(result => {
             if (result.isConfirmed) {
                 toastr.success('Order ditandai sudah diambil');
-                MOPage.loadGrid();
-            }
-        });
-    },
-
-    createDeliveryOrder(id, no) {
-        Swal.fire({
-            title: 'Buat Delivery Order',
-            html: `<p>Buat Delivery Order untuk <strong>${no}</strong>?</p>
-                   <p class="text-muted small">Delivery Order akan dibuat dan dapat di-assign driver di menu Delivery Order.</p>`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: '<i class="fa fa-truck"></i> Ya, Buat DO',
-            cancelButtonText: 'Batal',
-            showLoaderOnConfirm: true,
-            preConfirm: () => {
-                return $.post('/MarketplaceOrder/CreateDeliveryOrder', { id: id })
-                    .then(res => {
-                        if (res && res.success) return res;
-                        throw new Error((res && res.message) || 'Gagal');
-                    })
-                    .catch(err => {
-                        Swal.showValidationMessage(err.message || 'Request failed');
-                    });
-            },
-            allowOutsideClick: () => !Swal.isLoading()
-        }).then(result => {
-            if (result.isConfirmed) {
-                toastr.success('Delivery Order berhasil dibuat. Silakan assign driver di menu Delivery Order.');
                 MOPage.loadGrid();
             }
         });

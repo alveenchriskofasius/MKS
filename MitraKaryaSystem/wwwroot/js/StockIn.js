@@ -131,6 +131,11 @@ let TableStockIn = {
     dataList = Common.GetData.Get('/StockIn/GetDetailListById?id=' + id);
     if (dataList && dataList.result && Array.isArray(dataList.result)) dataList = dataList.result;
     if (!Array.isArray(dataList)) dataList = [];
+    // Normalize variantID + variantName from server response
+    dataList = dataList.map(r => Object.assign(r, {
+      variantID: r.variantID || r.VariantID || null,
+      variantName: r.variantName || r.VariantName || null
+    }));
   }
  const statusID = parseInt($('#stockInStatusID').val()||'1',10);
  const canEdit = statusID < 3; // editable until verified
@@ -155,7 +160,10 @@ let TableStockIn = {
    data: 'product',
    defaultContent: '',
    render: function(data, type, row) {
-     return row.product || row.Product || '';
+     if (type !== 'display') return row.product || row.Product || '';
+     const base = row.product || row.Product || '';
+     const vn = row.variantName || row.VariantName;
+     return vn ? (base + ' <span class="badge text-bg-secondary ms-1">' + $('<span>').text(vn).html() + '</span>') : base;
    }
  },
  // Ordered Qty (from PO, readonly)
@@ -369,10 +377,12 @@ let ControlStockIn = {
  let exists = false;
  const rows = table.rows().nodes();
  const qtyInput = parseInt($('#quantity').val()) ||1;
+ const targetVariantID = selectedProduct.variantID || null;
  $(rows).each(function () { 
    let rowData = table.row(this).data(); 
    const rowProductID = rowData.productID || rowData.ProductID;
-   if (rowProductID == selectedProduct.id) { 
+   const rowVariantID = rowData.variantID || null;
+   if (rowProductID == selectedProduct.id && rowVariantID == targetVariantID) { 
      exists = true; 
      const currentQty = parseInt(rowData.quantity || rowData.Quantity);
      let newQuantity = currentQty + qtyInput; 
@@ -381,11 +391,11 @@ let ControlStockIn = {
      table.row(this).data(rowData).invalidate(); 
    } 
  });
- if (!exists) { ControlStockIn.AddRow(selectedProduct.id, selectedProduct.name, qtyInput, selectedProduct.unitPrice, selectedProduct.barcode, selectedProduct.supplierID, selectedProduct.supplierName); }
+ if (!exists) { ControlStockIn.AddRow(selectedProduct.id, selectedProduct.name, qtyInput, selectedProduct.unitPrice, selectedProduct.barcode, selectedProduct.supplierID, selectedProduct.supplierName, selectedProduct.variantID || null, selectedProduct.variantName || null); }
  table.draw(false);
  ControlStockIn.UpdateSummary();
  },
- AddRow: function (productID, productName, quantity, unitPrice, barcode, supplierID, supplier) { let table = $('#tableProduct').DataTable(); const oq = _poQtyMap[productID] ?? null; table.row.add({ id: undefined, productID, product: productName, quantity, orderedQty: oq, unitPrice, supplierID, barcode, supplier }).draw(); },
+ AddRow: function (productID, productName, quantity, unitPrice, barcode, supplierID, supplier, variantID, variantName) { let table = $('#tableProduct').DataTable(); const oq = _poQtyMap[productID] ?? null; table.row.add({ id: undefined, productID, product: productName, quantity, orderedQty: oq, unitPrice, supplierID, barcode, supplier, variantID: variantID || null, variantName: variantName || null }).draw(); },
  AddProduct: function () { let selectedData = $('#selectProduct').select2('data')[0]; if (!selectedData) { toastr.info('Select a product first'); return; } ControlStockIn.AddOrIncrease(selectedData); $('#quantity').val(1); },
  UpdateSummary: function () {
  let table = $('#tableProduct').DataTable();
@@ -427,7 +437,7 @@ let FormStockIn = {
    let r = this.data(); 
    if (r && r.productID && r.quantity) { 
      const itemId = r.id || r.ID || 0;
-     postData.StockInDetails.push({ productID: r.productID, quantity: r.quantity, ID: itemId }); 
+     postData.StockInDetails.push({ productID: r.productID, quantity: r.quantity, ID: itemId, variantID: r.variantID || null }); 
    } 
  });
  $('#buttonSave').prop('disabled', true); $('#buttonSave .spinner-border').show();

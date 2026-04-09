@@ -196,17 +196,15 @@ const ProductPage = {
                         <small class="text-muted">Alert when stock ≤ this value.</small>
                     </div>
                     <div class="col-md-4">
-                        <div class="d-flex align-items-center mb-1">
-                            <label class="form-label fw-semibold small me-2 mb-0">Discount</label>
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" role="switch" id="prodHasDiscount" ${product.hasDiscount ? 'checked' : ''} />
-                            </div>
-                        </div>
-                        <div class="input-group">
+                        <label class="form-label fw-semibold small">Discount</label>
+                        <div class="input-group mb-1" style="max-width:170px;">
                             <input type="number" class="form-control" id="prodDiscountPct" min="0" max="100" step="0.01" value="${product.discountPercentage || 0}" placeholder="0" ${product.hasDiscount ? '' : 'disabled'} />
                             <span class="input-group-text">%</span>
                         </div>
-                        <small class="text-muted">Enable to apply discount.</small>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="prodHasDiscount" ${product.hasDiscount ? 'checked' : ''} />
+                            <label class="form-check-label small" for="prodHasDiscount">Enable discount</label>
+                        </div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold small">Category <span class="text-danger">*</span></label>
@@ -234,6 +232,35 @@ const ProductPage = {
                             <option value="">Select supplier</option>${supOptions}
                         </select>
                         <div class="invalid-feedback">Please select a supplier.</div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <label class="form-label fw-semibold small mb-0">Varian Produk</label>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="prodHasVariants" ${product.hasVariants ? 'checked' : ''} />
+                                <label class="form-check-label small" for="prodHasVariants">Aktifkan varian</label>
+                            </div>
+                        </div>
+                        <div id="variantSection" style="display:${product.hasVariants ? 'block' : 'none'};max-width:540px;">
+                            <div class="d-flex gap-2 mb-2 align-items-end flex-wrap">
+                                <div>
+                                    <label class="form-label small mb-1">Nama Varian</label>
+                                    <input type="text" id="newVariantName" class="form-control form-control-sm" placeholder="e.g. Merah, 1 Liter..." style="width:200px;" />
+                                </div>
+                                <div>
+                                    <label class="form-label small mb-1">Stok Awal</label>
+                                    <input type="number" id="newVariantStock" class="form-control form-control-sm" min="0" value="0" style="width:80px;" />
+                                </div>
+                                <button type="button" id="btnAddVariant" class="btn btn-sm btn-outline-primary"><i class="fa fa-plus"></i> Tambah</button>
+                            </div>
+                            <table class="table table-sm table-bordered mb-1" id="tableVariants">
+                                <thead class="table-light">
+                                    <tr><th>Nama Varian</th><th style="width:100px;">Stok</th><th style="width:50px;"></th></tr>
+                                </thead>
+                                <tbody id="variantTbody"><tr><td colspan="3" class="text-center text-muted small py-2">Belum ada varian.</td></tr></tbody>
+                            </table>
+                            <small class="text-muted"><i class="fa fa-info-circle me-1"></i>Varian disimpan saat klik tombol Save.</small>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -271,6 +298,19 @@ const ProductPage = {
         $('#prodImageFile').off('change').on('change', function () {
             ProductPage.uploadImage(this);
         });
+        $('#prodHasVariants').off('change').on('change', function () {
+            $('#variantSection').toggle($(this).is(':checked'));
+            if ($(this).is(':checked') && ProductPage.currentId) ProductPage.loadVariants(ProductPage.currentId);
+        });
+        $('#btnAddVariant').off('click').on('click', () => this.addVariant());
+        $('#newVariantName').off('keydown').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); ProductPage.addVariant(); } });
+        $('#variantTbody').off('click.del').on('click.del', '.btn-del-variant', function () {
+            ProductPage.deleteVariant(parseInt($(this).data('id'), 10), $(this).closest('tr'));
+        });
+        $('#variantTbody').off('click.rem').on('click.rem', '.btn-remove-variant', function () {
+            $(this).closest('tr').remove();
+        });
+        if (product.id && product.hasVariants) this.loadVariants(product.id);
     },
 
     async uploadImage(input) {
@@ -324,25 +364,37 @@ const ProductPage = {
             'ProductModel.UnitID': parseInt($('#prodUnit').val()) || 0,
             'ProductModel.SupplierID': parseInt($('#prodSupplier').val()) || 0,
             'ProductModel.ImageUrl': (currentProduct && currentProduct.imageUrl) || '',
+            'ProductModel.HasVariants': $('#prodHasVariants').is(':checked'),
         };
         const $btn = $('#btnSaveProduct');
         $btn.prop('disabled', true).find('.spinner-border').removeClass('d-none');
         try {
             const result = await Common.Api.post('/Product/SaveProduct', data);
             if (result && result.success) {
+                const savedId = result.id || this.currentId;
+                if ($('#prodHasVariants').is(':checked') && savedId)
+                    await this.saveAllVariants(savedId);
                 toastr.success('Product saved');
+                this.currentId = savedId;
                 await this.loadProducts();
                 await this.loadDropdownData();
-                if (this.currentId === 0 || !this.currentId) {
-                    this.resetPanel();
-                } else {
-                    this.loadForm(this.currentId);
-                }
+                this.loadForm(savedId);
             } else {
                 toastr.error((result && result.error) || 'Failed to save');
             }
         } catch (e) { toastr.error(e.message || 'Failed'); }
         finally { $btn.prop('disabled', false).find('.spinner-border').addClass('d-none'); }
+    },
+
+    async saveAllVariants(productId) {
+        const saves = [];
+        $('#variantTbody tr[data-id]').each(function () {
+            const id = parseInt($(this).data('id'), 10) || 0;
+            const name = $(this).find('.variant-name-input').val().trim();
+            const stock = parseInt($(this).find('.variant-stock-input').val(), 10) || 0;
+            if (name) saves.push({ ID: id, ProductID: productId, Name: name, StockQuantity: stock });
+        });
+        for (const v of saves) await Common.Api.post('/Product/SaveVariant', v);
     },
 
     deleteProduct(id) {
@@ -547,5 +599,62 @@ const ProductPage = {
             else toastr.error((r && r.error) || 'Failed');
         } catch (e) { console.error(e); }
         finally { $('#buttonSaveUnit').prop('disabled', false).find('.spinner-border').hide(); }
+    },
+
+    // ===== Variant Management =====
+    async loadVariants(productId) {
+        if (!productId) return;
+        try {
+            const res = await Common.Api.get(`/Product/GetVariants?productId=${productId}`);
+            const list = Array.isArray(res) ? res : (res && res.result ? res.result : res || []);
+            this.renderVariantRows(list);
+        } catch (e) { console.error('Failed load variants', e); }
+    },
+
+    renderVariantRows(list) {
+        const $tbody = $('#variantTbody').empty();
+        if (!list || !list.length) {
+            $tbody.append('<tr><td colspan="3" class="text-muted text-center small py-2">Belum ada varian.</td></tr>');
+            return;
+        }
+        list.forEach(v => {
+            $tbody.append(
+                `<tr data-id="${v.id}">
+                    <td><input type="text" class="form-control form-control-sm variant-name-input" value="${$('<span>').text(v.name).html()}" /></td>
+                    <td><input type="number" class="form-control form-control-sm variant-stock-input" value="${v.stockQuantity}" min="0" /></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger btn-del-variant" data-id="${v.id}" title="Hapus"><i class="fa fa-trash"></i></button>
+                    </td>
+                </tr>`
+            );
+        });
+    },
+
+    addVariant() {
+        const name = $('#newVariantName').val().trim();
+        if (!name) { toastr.warning('Isi nama varian terlebih dahulu'); return; }
+        const stock = parseInt($('#newVariantStock').val(), 10) || 0;
+        $('#variantTbody').find('tr:not([data-id])').remove();
+        const escapedName = $('<span>').text(name).html();
+        $('#variantTbody').append(
+            `<tr data-id="0">
+                <td><input type="text" class="form-control form-control-sm variant-name-input" value="${escapedName}" /></td>
+                <td><input type="number" class="form-control form-control-sm variant-stock-input" value="${stock}" min="0" /></td>
+                <td class="text-center"><button class="btn btn-sm btn-outline-secondary btn-remove-variant" title="Batal"><i class="fa fa-times"></i></button></td>
+            </tr>`
+        );
+        $('#newVariantName').val('');
+        $('#newVariantStock').val('0');
+    },
+
+    async deleteVariant(id, $row) {
+        if (!id) { $row.remove(); return; }
+        const r = await Swal.fire({ title: 'Hapus varian ini?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, hapus' });
+        if (!r.isConfirmed) return;
+        try {
+            const res = await Common.Api.get(`/Product/DeleteVariant?id=${id}`);
+            if (res && res.success) { $row.remove(); toastr.success('Varian dihapus'); }
+            else toastr.error((res && res.error) || 'Gagal menghapus');
+        } catch (e) { toastr.error((e && e.message) || 'Request failed'); }
     }
 };

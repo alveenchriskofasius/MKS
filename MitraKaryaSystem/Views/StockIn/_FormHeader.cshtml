@@ -13,7 +13,7 @@
     <div class="row mb-3">
         <label for="stockInDate" class="form-label col-sm-2">Date</label>
         <div class="col-sm-6">
-            <input type="date" asp-for=Date class="form-control" id="stockInDate">
+            <input type="date" asp-for=Date asp-format="{0:yyyy-MM-dd}" class="form-control" id="stockInDate">
         </div>
     </div>
     <div class="row mb-3">

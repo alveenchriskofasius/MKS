@@ -118,8 +118,6 @@ namespace API.Repository
                     where t.TradeTypeID == 1
                     join c in _context.Customers on t.CustomerID equals c.ID into cgroup
                     from cust in cgroup.DefaultIfEmpty()
-                    join l in _context.Lookups.Where(x => x.Entity == "PurchaseOrderStatus") on t.StatusID equals (short?)l.Key into lgroup
-                    from lp in lgroup.DefaultIfEmpty()
                     orderby t.ID descending
                     select new
                     {
@@ -131,7 +129,11 @@ namespace API.Repository
                         createdBy = t.CreatedBy,
                         updatedBy = t.UpdatedBy,
                         statusID = t.StatusID,
-                        status = lp != null ? lp.Name : null
+                        status = t.StatusID == 1 ? "Draft"
+                               : t.StatusID == 2 ? "Submitted"
+                               : t.StatusID == 3 ? "Approved"
+                               : t.StatusID == 4 ? "Rejected"
+                               : "Draft"
                     };
 
             var list = await q.ToListAsync();
@@ -154,7 +156,40 @@ namespace API.Repository
                     item.SubTotal = purchasePrice * item.Quantity;
                 }
             }
-            return spResult;
+            // Overlay VariantID + VariantName from PurchaseOrderItems + ProductVariants
+            var itemIds = spResult.Select(x => x.ID).ToList();
+            var variantIdMap = await _context.PurchaseOrderItems
+                .Where(pi => itemIds.Contains(pi.ID))
+                .Select(pi => new { pi.ID, pi.VariantID })
+                .ToDictionaryAsync(x => x.ID, x => x.VariantID);
+            var usedVariantIds = variantIdMap.Values.Where(v => v.HasValue).Select(v => v!.Value).Distinct().ToList();
+            var variantNameMap = usedVariantIds.Count > 0
+                ? await _context.ProductVariants.AsNoTracking()
+                    .Where(v => usedVariantIds.Contains(v.ID))
+                    .ToDictionaryAsync(v => v.ID, v => v.Name)
+                : new Dictionary<int, string>();
+
+            return spResult.Select(item =>
+            {
+                variantIdMap.TryGetValue(item.ID, out var variantId);
+                string? variantName = variantId.HasValue && variantNameMap.TryGetValue(variantId.Value, out var vn) ? vn : null;
+                return new
+                {
+                    id = item.ID,
+                    productID = item.ProductID,
+                    product = item.Product,
+                    supplier = item.Supplier,
+                    supplierID = item.SupplierID,
+                    barcode = item.Barcode,
+                    unitPrice = item.UnitPrice,
+                    quantity = item.Quantity,
+                    unit = item.Unit,
+                    stockQuantity = item.StockQuantity,
+                    subTotal = item.SubTotal,
+                    variantID = variantId,
+                    variantName
+                };
+            }).ToList();
         }
 
         public async Task<object> Save(PurchaseOrderModel model)
@@ -281,7 +316,8 @@ namespace API.Repository
                 {
                     TradeID = tradeID,
                     ProductID = detail.ProductID,
-                    Quantity = detail.Quantity
+                    Quantity = detail.Quantity,
+                    VariantID = detail.VariantID
                 };
                 await _context.PurchaseOrderItems.AddAsync(entity);
             }
@@ -291,6 +327,7 @@ namespace API.Repository
                 if (entity == null) return (false, "Detail item not found");
                 entity.ProductID = detail.ProductID;
                 entity.Quantity = detail.Quantity;
+                entity.VariantID = detail.VariantID;
                 _context.PurchaseOrderItems.Update(entity);
             }
             await _context.SaveChangesAsync();

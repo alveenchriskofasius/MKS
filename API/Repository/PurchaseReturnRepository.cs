@@ -89,26 +89,141 @@ public class PurchaseReturnRepository : BaseRepository, IPurchaseReturnRepositor
             Date = t.Date,
             No = t.No,
             SupplierID = t.CustomerID ?? 0,
+            PurchaseOrderID = t.PurchaseOrderID,
             Note = t.Note,
             Amount = t.Amount,
             StatusID = t.StatusID,
-            Details = details.Select(d => new PurchaseReturnDetailModel { ID = d.ID, ProductID = d.ProductID, ProductName = _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.Name).FirstOrDefault(), Quantity = d.Quantity, UnitPrice = _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.UnitPrice).FirstOrDefault() }).ToList()
+            Details = details.Select(d => new PurchaseReturnDetailModel
+            {
+                ID = d.ID,
+                ProductID = d.ProductID,
+                ProductName = _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.Name).FirstOrDefault(),
+                VariantID = d.VariantID,
+                Quantity = d.Quantity,
+                UnitPrice = _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.UnitPrice).FirstOrDefault()
+            }).ToList()
         };
     }
 
+    public async Task<object> GetApprovedPOsForReturn()
+    {
+        // Return POs that are Approved (status 3) AND have at least one Verified Stock In (TradeTypeID=3, status>=3)
+        var approvedPOIds = await _context.Trades
+            .Where(t => t.TradeTypeID == 1 && t.StatusID == 3)
+            .Select(t => t.ID)
+            .ToListAsync();
+
+        var poIdsWithVerifiedSI = await _context.Trades
+            .Where(t => t.TradeTypeID == 3 && t.StatusID >= 3 && t.PurchaseOrderID != null && approvedPOIds.Contains(t.PurchaseOrderID.Value))
+            .Select(t => t.PurchaseOrderID!.Value)
+            .Distinct()
+            .ToListAsync();
+
+        var result = await _context.Trades
+            .Where(t => poIdsWithVerifiedSI.Contains(t.ID))
+            .OrderByDescending(t => t.ID)
+            .Select(t => new
+            {
+                id = t.ID,
+                no = t.No,
+                date = t.Date.ToString("yyyy-MM-dd"),
+                supplierName = _context.Customers.Where(c => c.ID == t.CustomerID).Select(c => c.Name).FirstOrDefault() ?? "-"
+            })
+            .ToListAsync();
+
+        return result;
+    }
+
+    public async Task<object> GetPOItemsForReturn(int poId)
+    {
+        var items = await _context.PurchaseOrderItems
+            .Where(i => i.TradeID == poId)
+            .ToListAsync();
+        var productIds = items.Select(i => i.ProductID ?? 0).Where(id => id > 0).Distinct().ToList();
+        var products = await _context.Products
+            .Where(p => productIds.Contains(p.ID))
+            .ToDictionaryAsync(p => p.ID, p => new { p.Name, p.UnitPrice });
+        var variantIds = items
+            .Where(i => i.VariantID.HasValue && i.VariantID.Value > 0)
+            .Select(i => i.VariantID!.Value)
+            .Distinct()
+            .ToList();
+        var variants = variantIds.Count > 0
+            ? await _context.ProductVariants
+                .Where(v => variantIds.Contains(v.ID))
+                .ToDictionaryAsync(v => v.ID, v => v.Name)
+            : new Dictionary<int, string>();
+        var result = items.Select(i =>
+        {
+            int pid = i.ProductID ?? 0;
+            var prod = pid > 0 && products.ContainsKey(pid) ? products[pid] : null;
+            int vid = i.VariantID ?? 0;
+            return new
+            {
+                id = 0,
+                productID = pid,
+                product = prod?.Name ?? "-",
+                variantID = vid,
+                variantName = vid > 0 && variants.ContainsKey(vid) ? variants[vid] : "",
+                quantity = i.Quantity,
+                unitPrice = prod?.UnitPrice ?? 0m,
+                subTotal = (prod?.UnitPrice ?? 0m) * i.Quantity
+            };
+        }).ToList();
+        return result;
+    }
+
     public async Task<object> GetSearchList() { var list = await _context.Trades.Where(t => t.TradeTypeID == 6).OrderByDescending(t => t.ID).Select(t => new { id = t.ID, no = t.No, date = t.Date.ToString("yyyy-MM-dd"), amount = t.Amount, statusID = t.StatusID, supplier = _context.Customers.Where(c => c.ID == t.CustomerID).Select(c => c.Name).FirstOrDefault() ?? "-" }).ToListAsync(); return list; }
-    public async Task<object> GetDetailList(int id) { var details = await _context.PurchaseReturnItems.Where(i => i.TradeID == id).Select(d => new { id = d.ID, productID = d.ProductID, product = _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.Name).FirstOrDefault(), quantity = d.Quantity, unitPrice = _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.UnitPrice).FirstOrDefault(), subTotal = d.Quantity * _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.UnitPrice).FirstOrDefault() }).ToListAsync(); return details; }
+    public async Task<object> GetDetailList(int id)
+    {
+        var details = await _context.PurchaseReturnItems.Where(i => i.TradeID == id).ToListAsync();
+        var variantIds = details.Where(d => d.VariantID.HasValue && d.VariantID.Value > 0).Select(d => d.VariantID!.Value).Distinct().ToList();
+        var variantMap = variantIds.Count > 0
+            ? await _context.ProductVariants.Where(v => variantIds.Contains(v.ID)).ToDictionaryAsync(v => v.ID, v => v.Name)
+            : new Dictionary<int, string>();
+        return details.Select(d =>
+        {
+            int vid = d.VariantID ?? 0;
+            return new
+            {
+                id = d.ID,
+                productID = d.ProductID,
+                product = _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.Name).FirstOrDefault(),
+                variantID = vid,
+                variantName = vid > 0 && variantMap.ContainsKey(vid) ? variantMap[vid] : "",
+                quantity = d.Quantity,
+                unitPrice = _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.UnitPrice).FirstOrDefault(),
+                subTotal = d.Quantity * _context.Products.Where(p => p.ID == d.ProductID).Select(p => p.UnitPrice).FirstOrDefault()
+            };
+        }).ToList();
+    }
     private async Task<string> GenerateNo(DateTime date) { string prefix = "PR" + date.ToString("yyMMdd"); int seq = await _context.Trades.CountAsync(x => x.TradeTypeID == 6 && x.Date == date.Date) + 1; return prefix + seq.ToString("D3"); }
     public async Task<object> Save(PurchaseReturnModel model)
     {
         try
         {
             model.Details ??= new();
+
+            // Validate PO is required and must be Approved with at least one Verified Stock In
+            if (model.PurchaseOrderID == null || model.PurchaseOrderID == 0)
+                return new { success = false, result = "Purchase Order is required. Please select an Approved PO with a verified Stock In." };
+
+            var po = await _context.Trades.FindAsync(model.PurchaseOrderID.Value);
+            if (po == null)
+                return new { success = false, result = "Selected Purchase Order not found." };
+            if ((po.StatusID ?? 1) != 3)
+                return new { success = false, result = "Selected Purchase Order must have Approved status." };
+
+            var hasVerifiedSI = await _context.Trades
+                .AnyAsync(t => t.PurchaseOrderID == model.PurchaseOrderID && t.TradeTypeID == 3 && t.StatusID >= 3);
+            if (!hasVerifiedSI)
+                return new { success = false, result = "Selected Purchase Order does not have a Verified Stock In." };
+
             Trade trade;
             var user = GetCurrentUserName();
             if (model.ID == 0)
             {
-                trade = new Trade { Date = model.Date, No = await GenerateNo(model.Date), TradeTypeID = 6, StatusID = 1, CustomerID = model.SupplierID, Note = model.Note, Amount = model.Details.Sum(d => d.Subtotal), CreatedAt = DateTime.Now, CreatedBy = user };
+                trade = new Trade { Date = model.Date, No = await GenerateNo(model.Date), TradeTypeID = 6, StatusID = 1, CustomerID = po.CustomerID, PurchaseOrderID = model.PurchaseOrderID, Note = model.Note, Amount = model.Details.Sum(d => d.Subtotal), CreatedAt = DateTime.Now, CreatedBy = user };
                 await _context.Trades.AddAsync(trade);
                 await SaveChangesAsync();
             }
@@ -116,7 +231,8 @@ public class PurchaseReturnRepository : BaseRepository, IPurchaseReturnRepositor
             {
                 trade = await _context.Trades.FindAsync(model.ID) ?? throw new Exception("Purchase Return not found");
                 trade.Date = model.Date;
-                trade.CustomerID = model.SupplierID;
+                trade.CustomerID = po.CustomerID;
+                trade.PurchaseOrderID = model.PurchaseOrderID;
                 trade.Note = model.Note;
                 trade.Amount = model.Details.Sum(d => d.Subtotal);
                 trade.UpdatedAt = DateTime.Now;
@@ -138,14 +254,14 @@ public class PurchaseReturnRepository : BaseRepository, IPurchaseReturnRepositor
                     return new { success = false, result = $"Qty for {prod.Name} ({d.Quantity}) exceeds available stock ({prod.StockQuantity})." };
                 if (d.ID == 0)
                 {
-                    var item = new PurchaseReturnItem { TradeID = tradeID, ProductID = d.ProductID, Quantity = d.Quantity };
+                    var item = new PurchaseReturnItem { TradeID = tradeID, ProductID = d.ProductID, Quantity = d.Quantity, VariantID = d.VariantID };
                     await _context.PurchaseReturnItems.AddAsync(item);
                 }
                 else
                 {
                     var item = await _context.PurchaseReturnItems.FindAsync(d.ID);
                     if (item == null) return new { success = false, result = "Detail not found" };
-                    item.ProductID = d.ProductID; item.Quantity = d.Quantity; _context.PurchaseReturnItems.Update(item);
+                    item.ProductID = d.ProductID; item.Quantity = d.Quantity; item.VariantID = d.VariantID; _context.PurchaseReturnItems.Update(item);
                 }
             }
             await SaveChangesAsync();

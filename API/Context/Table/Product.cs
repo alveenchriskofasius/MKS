@@ -43,7 +43,11 @@ public partial class Product
 
     public string ImageUrl { get; set; }
 
+    public bool HasVariants { get; set; }
+
     public virtual ICollection<ConsignmentItem> ConsignmentItems { get; set; } = new List<ConsignmentItem>();
+
+    public virtual ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
 
     public virtual ICollection<StockCountItem> StockCountItems { get; set; } = new List<StockCountItem>();
 }

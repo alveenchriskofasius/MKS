@@ -2,6 +2,7 @@ $(document).ready(function () { DetailPage.init(); });
 
 const DetailPage = {
     product: null,
+    selectedVariant: null,
 
     init() {
         this.loadProduct();
@@ -16,19 +17,46 @@ const DetailPage = {
 
         $('#btnQtyPlus').on('click', function () {
             var val = parseInt($('#qtyInput').val()) || 1;
-            var max = DetailPage.product ? DetailPage.product.stockQuantity : 999;
+            var max;
+            if (DetailPage.selectedVariant) {
+                max = DetailPage.selectedVariant.stockQuantity;
+            } else if (DetailPage.product && !DetailPage.product.hasVariants) {
+                max = DetailPage.product.stockQuantity;
+            } else {
+                max = 0; // must pick variant first
+            }
             if (val < max) $('#qtyInput').val(val + 1);
         });
 
         $('#btnAddToCart').on('click', function () {
             if (!DetailPage.product) return;
+
+            if (DetailPage.product.hasVariants
+                && DetailPage.product.variants
+                && DetailPage.product.variants.length > 0
+                && !DetailPage.selectedVariant) {
+                $('#variantWarning').show();
+                return;
+            }
+
             Common.Api.get('/Account/WhoAmI').then(function (who) {
                 if (!who.loggedIn) {
                     window.location.href = '/Account/Login';
                     return;
                 }
                 var qty = parseInt($('#qtyInput').val()) || 1;
-                DetailPage.addToCart(DetailPage.product.id, qty);
+                var variantId = DetailPage.selectedVariant
+                    ? DetailPage.selectedVariant.id
+                    : null;
+                var variantName = DetailPage.selectedVariant
+                    ? DetailPage.selectedVariant.name
+                    : null;
+                DetailPage.addToCart(
+                    DetailPage.product.id,
+                    qty,
+                    variantId,
+                    variantName
+                );
             }).catch(function () {
                 window.location.href = '/Account/Login';
             });
@@ -37,6 +65,27 @@ const DetailPage = {
         $('#btnWishlist').on('click', function () {
             if (!DetailPage.product) return;
             Common.toggleWishlist(DetailPage.product.id, $(this));
+        });
+
+        $(document).on('click', '.variant-option', function () {
+            var $btn = $(this);
+            $('.variant-option').removeClass('active btn-success').addClass('btn-outline-secondary');
+            $btn.removeClass('btn-outline-secondary').addClass('active btn-success');
+            var variantStock = parseInt($btn.data('stock'), 10) || 0;
+            DetailPage.selectedVariant = {
+                id: parseInt($btn.data('id')),
+                name: $btn.data('name'),
+                stockQuantity: variantStock
+            };
+            $('#variantWarning').hide();
+            // Update qty max and stock display to reflect chosen variant
+            $('#qtyInput').attr('max', variantStock).val(1);
+            if (variantStock > 0) {
+                $('#detailStock').html('Stok: <span class="text-success fw-bold">Tersedia (' + variantStock + ')</span>');
+                $('#addToCartSection').show();
+            } else {
+                $('#detailStock').html('Stok: <span class="text-danger fw-bold">Habis</span>');
+            }
         });
     },
 
@@ -91,6 +140,28 @@ const DetailPage = {
                 $('#detailStock').html('Stok: <span class="text-danger fw-bold">Habis</span>');
             }
 
+            if (data.hasVariants && data.variants && data.variants.length > 0) {
+                var html = '';
+                data.variants.forEach(function (v) {
+                    var safeName = $('<span>').text(v.name).html();
+                    var stockLabel = v.stockQuantity > 0
+                        ? ' <small class="text-muted">(stok: ' + v.stockQuantity + ')</small>'
+                        : ' <small class="text-danger">(habis)</small>';
+                    html += '<button type="button"'
+                        + ' class="btn btn-sm btn-outline-secondary variant-option"'
+                        + ' data-id="' + v.id + '"'
+                        + ' data-name="' + safeName + '"'
+                        + ' data-stock="' + v.stockQuantity + '">'  
+                        + safeName + stockLabel
+                        + '</button>';
+                });
+                $('#variantOptions').html(html);
+                $('#variantSection').show();
+                // Hide addToCartSection until a variant is chosen
+                $('#addToCartSection').hide();
+                $('#detailStock').html('Stok: <span class="text-muted">Pilih varian untuk melihat stok</span>');
+            }
+
             $('#productLoading').hide();
             $('#productContent').show();
 
@@ -107,9 +178,17 @@ const DetailPage = {
         }
     },
 
-    async addToCart(productId, qty) {
+    async addToCart(productId, qty, variantId, variantName) {
         try {
-            var res = await Common.Api.post('/Cart/Add', { productId: productId, quantity: qty });
+            var payload = {
+                productId: productId,
+                quantity: qty
+            };
+            if (variantId) {
+                payload.variantId = variantId;
+                payload.variantName = variantName;
+            }
+            var res = await Common.Api.post('/Cart/Add', payload);
             if (res.success) {
                 Common.updateCartBadge(res.cartCount);
                 Common.showToast('Produk ditambahkan ke keranjang!');

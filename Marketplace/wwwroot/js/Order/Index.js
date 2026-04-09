@@ -102,6 +102,11 @@ const OrderPage = {
                     ' data-no="' + o.orderNo + '">' +
                     '<i class="bi bi-x-circle"></i> Batal</button>';
             }
+            if ((o.isPaid || o.isCompleted) && !o.isCancelled) {
+                actions += ' <a href="/Complaint/Create?orderId=' + o.orderID +
+                    '" class="btn btn-sm btn-outline-warning">' +
+                    '<i class="bi bi-exclamation-triangle"></i> Komplain</a>';
+            }
 
             html += '<div class="card shadow-sm mb-3 order-card">' +
                 '  <div class="card-body">' +

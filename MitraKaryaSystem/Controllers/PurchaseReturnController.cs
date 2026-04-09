@@ -14,6 +14,8 @@ public class PurchaseReturnController : Controller
     public async Task<IActionResult> FillForm(int id) => PartialView("_Form", await _svc.FillForm(id));
     public async Task<JsonResult> GetDetailList(int id) => Json(await _svc.GetDetailList(id));
     public async Task<JsonResult> GetSearchList() => Json(await _svc.GetSearchList());
+    public async Task<JsonResult> GetApprovedPOsForReturn() => Json(await _svc.GetApprovedPOsForReturn());
+    public async Task<JsonResult> GetPOItemsForReturn(int poId) => Json(await _svc.GetPOItemsForReturn(poId));
     [HttpPost] public async Task<JsonResult> Save(PurchaseReturnModel model) => Json(await _svc.Save(model));
     public async Task<JsonResult> Delete(int id) => Json(await _svc.Delete(id));
     public async Task<JsonResult> DeleteItem(int id) => Json(await _svc.DeleteItem(id));

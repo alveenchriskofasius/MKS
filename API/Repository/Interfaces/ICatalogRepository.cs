@@ -9,6 +9,7 @@ namespace API.Repository.Interfaces
         Task<List<CatalogCategoryItem>> GetCategoryList();
         Task<List<CatalogProductItem>> SearchProducts(string query, int take = 10);
         Task<CatalogProductItem?> GetProductById(int id);
+        Task<CatalogVariantItem?> GetVariantById(int variantId);
         Task<List<CatalogProductItem>> GetPopularProducts(int take = 8);
         Task<List<CatalogProductItem>> GetProductsPaged(int skip, int take);
     }

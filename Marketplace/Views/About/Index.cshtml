@@ -1,0 +1,67 @@
+@{
+    ViewData["Title"] = "Tentang Kami – Mitra Karya";
+}
+
+<!-- Breadcrumb -->
+<div class="mp-breadcrumb-bar">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/"><i class="bi bi-house-door-fill me-1"></i>Home</a></li>
+                <li class="breadcrumb-item active">Tentang Kami</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <partial name="_StoreStory" />
+        <partial name="_StoreMap" />
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(function () {
+    $.get('/Home/GetStoreProfile', function (p) {
+        var name = p.storeName || 'TB. Mitra Karya';
+        var year = parseInt(p.foundingYear) || 1997;
+        var exp = new Date().getFullYear() - year;
+
+        $('#aboutStoreName').text(name);
+        $('#aboutSubtitle').text('Berdiri sejak ' + year + ' \u00B7 Melayani dengan sepenuh hati');
+        $('#aboutYears').text(exp + '+');
+
+        var desc = p.description || '';
+        if (desc) {
+            var paragraphs = desc.split('\n').filter(function (l) { return l.trim(); });
+            var html = paragraphs.map(function (para) {
+                return '<p class="mb-3">' + $('<span>').text(para).html() + '</p>';
+            }).join('');
+            $('#aboutDescription').html(html);
+        } else {
+            $('#aboutDescription').html('<p class="text-muted">Deskripsi toko belum diisi.</p>');
+        }
+
+        $('#aboutAddress').text(p.address || '-');
+        var phone = p.phone || '-';
+        $('#aboutPhone').text(phone).attr('href', 'tel:' + phone);
+
+        var schedule = p.schedule || '';
+        if (schedule) {
+            var lines = schedule.split('\n').filter(function (l) { return l.trim(); });
+            var schedHtml = lines.map(function (line) {
+                return '<li class="mb-1"><i class="bi bi-clock me-2 text-muted"></i><span>' +
+                    $('<span>').text(line).html() + '</span></li>';
+            }).join('');
+            $('#aboutScheduleContainer').replaceWith(schedHtml);
+        } else {
+            $('#aboutScheduleContainer').html(
+                '<i class="bi bi-clock me-2 text-muted"></i><span>Jadwal belum diisi</span>'
+            );
+        }
+    });
+});
+</script>
+}

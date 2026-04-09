@@ -3,6 +3,7 @@
  <div class="card-body">
   <input type="hidden" id="prID" value="@Model.ID" />
   <input type="hidden" id="prFormStatusID" value="@(Model.StatusID ?? 1)" />
+  <input type="hidden" id="prFormPurchaseOrderID" value="@(Model.PurchaseOrderID ?? 0)" />
   <div class="row g-3 align-items-end">
    <div class="col-auto">
     <label class="form-label small mb-0 fw-semibold">No</label>
@@ -13,11 +14,10 @@
     <input type="date" id="prDate" class="form-control form-control-sm" value="@Model.Date.ToString("yyyy-MM-dd")" />
    </div>
    <div class="col-md-3">
-    <label class="form-label small mb-0 fw-semibold">Supplier</label>
-    <select id="prSupplierID" class="form-select form-select-sm">
-     <option value="">-- Select Supplier --</option>
+    <label class="form-label small mb-0 fw-semibold">Purchase Order <span class="text-danger">*</span></label>
+    <select id="prPurchaseOrderID" class="form-select form-select-sm">
+     <option value="">-- Select Purchase Order --</option>
     </select>
-    <span id="prSupplierName" class="d-none"></span>
    </div>
    <div class="col-md-3">
     <label class="form-label small mb-0 fw-semibold">Note</label>
@@ -26,19 +26,3 @@
   </div>
  </div>
 </div>
-<script>
-(function(){
- var selVal = '@Model.SupplierID';
- $.get('/Product/GetSupplierList', function(data){
-  var list = (data && data.result) ? data.result : (Array.isArray(data) ? data : []);
-  var $sel = $('#prSupplierID');
-  list.forEach(function(s){
-   var id = s.id || s.ID;
-   var name = s.supplierName || s.SupplierName || s.name || s.Name;
-   $sel.append('<option value="' + id + '"' + (String(id) === String(selVal) ? ' selected' : '') + '>' + name + '</option>');
-  });
-  var selectedText = $sel.find('option:selected').text();
-  if (selectedText && selectedText !== '-- Select Supplier --') $('#prSupplierName').text(selectedText);
- });
-})();
-</script>

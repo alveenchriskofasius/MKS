@@ -30,6 +30,7 @@ function UpdatePRStatusBadge(statusID) {
     // Lock editing when submitted or approved
     $('#prSave').prop('disabled', isLocked);
     $('#prProduct').prop('disabled', isLocked);
+    $('#prPurchaseOrderID').prop('disabled', isLocked);
     if (isLocked) {
         $('#tablePurchaseReturnItems').find('input.pr-qty').prop('disabled', true);
         $('#tablePurchaseReturnItems').find('.pr-del').prop('disabled', true);
@@ -45,7 +46,6 @@ const PurchaseReturnPage = {
         this.Bind();
         this.LoadForm(0);
         this.InitTable();
-        this.InitProductSearch();
     },
     Bind() {
         $('#prNew').click(() => this.LoadForm(0));
@@ -78,49 +78,16 @@ const PurchaseReturnPage = {
             }
         } catch (e) { toastr.error(e && e.message ? e.message : 'Request failed'); }
     },
-    InitProductSearch() {
-        if (this._search) this._search.destroy();
-        this._search = MksProductSearch.attach('#prProduct', {
-            showPrice: true,
-            showStock: false,
-            blockZeroStock: false,
-            onSelect: (prod) => this.AddOrIncrease(prod)
-        });
-    },
-    AddOrIncrease(prod) {
+    LoadPOItems(poId) {
         const t = $('#tablePurchaseReturnItems').DataTable();
-        let exists = false;
-        t.rows().every(function () {
-            const r = this.data();
-            if (r.productID == prod.id) {
-                exists = true;
-                const newQty = r.quantity + 1;
-                if (newQty > (prod.stockQuantity || 0)) {
-                    toastr.info('Quantity exceeds available stock (' + (prod.stockQuantity || 0) + ')');
-                    return;
-                }
-                r.quantity = newQty;
-                r.subTotal = r.quantity * r.unitPrice;
-                t.row(this).data(r).invalidate();
-            }
-        });
-        if (!exists) {
-            if ((prod.stockQuantity || 0) <= 0) {
-                toastr.info('Stock is empty for this product');
-                return;
-            }
-            t.row.add({
-                id: 0,
-                productID: prod.id,
-                product: prod.name,
-                quantity: 1,
-                unitPrice: prod.unitPrice,
-                subTotal: prod.unitPrice,
-                stockQuantity: prod.stockQuantity || 0
-            }).draw();
-        }
-        t.draw(false);
-        this.RefreshTotal();
+        if (!poId) { t.clear().draw(); this.RefreshTotal(); return; }
+        $.get('/PurchaseReturn/GetPOItemsForReturn', { poId: poId }, res => {
+            const list = Array.isArray(res) ? res : (res && res.result ? res.result : []);
+            t.clear();
+            t.rows.add(list);
+            t.draw();
+            this.RefreshTotal();
+        }).fail(() => toastr.error('Failed to load PO items'));
     },
     LoadForm(id) {
         $('#prHeader').html('<div class="p-2 text-center"><div class="spinner-border spinner-border-sm"></div></div>');
@@ -128,7 +95,26 @@ const PurchaseReturnPage = {
             $('#prHeader').html(html);
             const statusID = parseInt($('#prFormStatusID').val() || '1', 10);
             UpdatePRStatusBadge(statusID);
+            this.LoadApprovedPOs();
             this.LoadDetails(id);
+        });
+    },
+    LoadApprovedPOs() {
+        const savedID = $('#prFormPurchaseOrderID').val();
+        $.get('/PurchaseReturn/GetApprovedPOsForReturn', function (data) {
+            const list = Array.isArray(data) ? data : (data && data.result ? data.result : []);
+            const $sel = $('#prPurchaseOrderID');
+            $sel.empty().append('<option value="">-- Select Purchase Order --</option>');
+            list.forEach(function (po) {
+                $sel.append('<option value="' + po.id + '">' + po.no + ' – ' + po.supplierName + '</option>');
+            });
+            if (savedID && savedID !== '0') $sel.val(savedID);
+        });
+        $('#prPurchaseOrderID').off('change.poItems').on('change.poItems', () => {
+            const poId = parseInt($('#prPurchaseOrderID').val() || '0', 10);
+            const prId = parseInt($('#prID').val() || '0', 10);
+            if (prId > 0) return;
+            this.LoadPOItems(poId);
         });
     },
     InitTable() {
@@ -137,7 +123,17 @@ const PurchaseReturnPage = {
             searching: false, paging: false, info: false,
             columns: [
                 { data: 'productID', visible: false },
-                { data: 'product' },
+                { data: 'variantID', visible: false, defaultContent: '' },
+                {
+                    data: 'product',
+                    render: function (data, type, row) {
+                        if (type !== 'display') return data;
+                        var vn = row.variantName || row.VariantName;
+                        return vn
+                            ? (data + ' <span class="badge text-bg-secondary ms-1">' + $('<span>').text(vn).html() + '</span>')
+                            : data;
+                    }
+                },
                 { data: 'quantity', className: 'text-end', render: (d, t) => t === 'display' ? `<input type="number" class="form-control form-control-sm pr-qty" value="${d}" min="1" />` : d },
                 { data: 'unitPrice', className: 'text-end', render: $.fn.dataTable.render.number(',', '.', 2) },
                 { data: 'subTotal', className: 'text-end', render: $.fn.dataTable.render.number(',', '.', 2) },
@@ -196,14 +192,23 @@ const PurchaseReturnPage = {
         const arr = [];
         t.rows().every(function () {
             const r = this.data();
-            arr.push({ ID: r.id || 0, ProductID: r.productID, Quantity: r.quantity, UnitPrice: r.unitPrice });
+            arr.push({
+                ID: r.id || 0,
+                ProductID: r.productID,
+                VariantID: r.variantID || 0,
+                Quantity: r.quantity,
+                UnitPrice: r.unitPrice
+            });
         });
         return arr;
     },
     Save() {
+        const poID = parseInt($('#prPurchaseOrderID').val() || '0', 10);
+        if (!poID) { toastr.warning('Please select a Purchase Order'); return; }
         const model = {
             ID: $('#prID').val(), Date: $('#prDate').val(), No: $('#prNo').val(),
-            SupplierID: $('#prSupplierID').val(), Note: $('#prNote').val(),
+            Note: $('#prNote').val(),
+            PurchaseOrderID: poID,
             Details: this.Collect()
         };
         $('#prSave').prop('disabled', true);

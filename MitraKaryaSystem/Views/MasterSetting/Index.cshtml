@@ -80,6 +80,20 @@
 									<label class="form-label fw-semibold">Receipt Footer</label>
 									<input type="text" id="spReceiptFooter" class="form-control form-control-sm" placeholder="e.g. Terima kasih atas kunjungan Anda!" />
 								</div>
+								<hr />
+								<h6 class="fw-semibold"><i class="fa fa-globe me-1 text-muted"></i> Marketplace / About</h6>
+								<div class="mb-3">
+									<label class="form-label fw-semibold">Jadwal Toko</label>
+									<textarea id="spSchedule" class="form-control form-control-sm" rows="3" placeholder="e.g. Senin–Sabtu: 08.00–17.00 WIB&#10;Minggu: 08.00–14.00 WIB"></textarea>
+								</div>
+								<div class="mb-3">
+									<label class="form-label fw-semibold">Deskripsi Toko</label>
+									<textarea id="spDescription" class="form-control form-control-sm" rows="4" placeholder="Deskripsi tentang toko untuk halaman Tentang Kami"></textarea>
+								</div>
+								<div class="mb-3">
+									<label class="form-label fw-semibold">Tahun Berdiri</label>
+									<input type="number" id="spFoundingYear" class="form-control form-control-sm" placeholder="e.g. 1997" style="max-width:150px" />
+								</div>
 								<button class="btn btn-primary" id="spBtnSave"><i class="fa fa-save me-1"></i> Save Store Profile</button>
 							</div>
 						</div>
@@ -161,13 +175,16 @@
 	<script>
 		(function(){
 			MksStoreProfile.load(true).then(function(p){
-				$('#spStoreName').val(p.storeName||'');
-				$('#spAddress').val(p.address||'');
-				$('#spPhone').val(p.phone||'');
-				$('#spEmail').val(p.email||'');
-				$('#spReceiptHeader').val(p.receiptHeader||'');
-				$('#spReceiptFooter').val(p.receiptFooter||'');
-			});
+					$('#spStoreName').val(p.storeName||'');
+					$('#spAddress').val(p.address||'');
+					$('#spPhone').val(p.phone||'');
+					$('#spEmail').val(p.email||'');
+					$('#spReceiptHeader').val(p.receiptHeader||'');
+					$('#spReceiptFooter').val(p.receiptFooter||'');
+					$('#spSchedule').val(p.schedule||'');
+					$('#spDescription').val(p.description||'');
+					$('#spFoundingYear').val(p.foundingYear||'');
+				});
 			$('#spBtnSave').on('click', function(){
 				var $btn = $(this).prop('disabled',true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
 				MksStoreProfile.save({
@@ -176,7 +193,10 @@
 					phone: $('#spPhone').val().trim(),
 					email: $('#spEmail').val().trim(),
 					receiptHeader: $('#spReceiptHeader').val().trim(),
-					receiptFooter: $('#spReceiptFooter').val().trim()
+					receiptFooter: $('#spReceiptFooter').val().trim(),
+					schedule: $('#spSchedule').val().trim(),
+					description: $('#spDescription').val().trim(),
+					foundingYear: $('#spFoundingYear').val().trim()
 				}).then(function(res){
 					if(res && res.success) toastr.success('Store profile saved');
 					else toastr.error((res && res.error) || 'Failed');

@@ -108,7 +108,8 @@ namespace API.Repository
                         StockQuantity = pc.Product.StockQuantity,
                         HasDiscount = pc.Product.HasDiscount,
                         DiscountPercentage = pc.Product.DiscountPercentage,
-                        ImageUrl = pc.Product.ImageUrl
+                        ImageUrl = pc.Product.ImageUrl,
+                        HasVariants = pc.Product.HasVariants
                     })
                 .FirstOrDefaultAsync();
 
@@ -119,6 +120,21 @@ namespace API.Repository
                 {
                     detail.PromoName = promo.Name;
                     detail.PromoEndDate = promo.EndDate;
+                }
+
+                if (detail.HasVariants)
+                {
+                    detail.Variants = await _context.ProductVariants
+                        .AsNoTracking()
+                        .Where(v => v.ProductID == detail.ID)
+                        .OrderBy(v => v.ID)
+                        .Select(v => new CatalogVariantItem
+                        {
+                            ID = v.ID,
+                            Name = v.Name,
+                            StockQuantity = v.StockQuantity
+                        })
+                        .ToListAsync();
                 }
             }
             return detail;
@@ -191,7 +207,8 @@ namespace API.Repository
                         StockQuantity = pc.Product.StockQuantity,
                         HasDiscount = pc.Product.HasDiscount,
                         DiscountPercentage = pc.Product.DiscountPercentage,
-                        ImageUrl = pc.Product.ImageUrl
+                        ImageUrl = pc.Product.ImageUrl,
+                        HasVariants = pc.Product.HasVariants
                     })
                 .FirstOrDefaultAsync();
 
@@ -205,6 +222,20 @@ namespace API.Repository
                 }
             }
             return item;
+        }
+
+        public async Task<CatalogVariantItem?> GetVariantById(int variantId)
+        {
+            return await _context.ProductVariants
+                .AsNoTracking()
+                .Where(v => v.ID == variantId)
+                .Select(v => new CatalogVariantItem
+                {
+                    ID = v.ID,
+                    Name = v.Name,
+                    StockQuantity = v.StockQuantity
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<List<CatalogProductItem>> GetPopularProducts(int take = 8)

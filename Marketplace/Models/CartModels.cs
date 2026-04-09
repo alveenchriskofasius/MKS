@@ -7,6 +7,8 @@ namespace Marketplace.Models
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }
         public decimal Subtotal => UnitPrice * Quantity;
+        public int? VariantID { get; set; }
+        public string? VariantName { get; set; }
     }
 
     public class CartViewModel

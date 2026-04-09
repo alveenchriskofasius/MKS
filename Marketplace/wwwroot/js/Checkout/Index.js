@@ -63,8 +63,12 @@ const CheckoutPage = {
             data.items.forEach(function (item) {
                 var subtotal = item.unitPrice * item.quantity;
                 total += subtotal;
+                var displayName = item.productName;
+                if (item.variantName) {
+                    displayName += ' <small class="text-muted">(' + item.variantName + ')</small>';
+                }
                 html += '<tr>' +
-                    '<td>' + item.productName + '</td>' +
+                    '<td>' + displayName + '</td>' +
                     '<td>' + item.quantity + '</td>' +
                     '<td>' + Common.formatRupiah(item.unitPrice) + '</td>' +
                     '<td>' + Common.formatRupiah(subtotal) + '</td>' +

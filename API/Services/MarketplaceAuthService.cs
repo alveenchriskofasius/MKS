@@ -56,5 +56,10 @@ namespace API.Services
         {
             return await _repository.GetWishlist(customerId);
         }
+
+        public async Task<object> ChangePassword(int customerId, string currentPassword, string newPassword)
+        {
+            return await _repository.ChangePassword(customerId, currentPassword, newPassword);
+        }
     }
 }

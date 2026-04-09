@@ -17,6 +17,8 @@ public partial class MKSTableContext : DbContext
 
     public virtual DbSet<Category> Categories { get; set; }
 
+    public virtual DbSet<Complaint> Complaints { get; set; }
+
     public virtual DbSet<Consignment> Consignments { get; set; }
 
     public virtual DbSet<ConsignmentItem> ConsignmentItems { get; set; }
@@ -48,6 +50,8 @@ public partial class MKSTableContext : DbContext
     public virtual DbSet<PriceHistory> PriceHistories { get; set; }
 
     public virtual DbSet<Product> Products { get; set; }
+
+    public virtual DbSet<ProductVariant> ProductVariants { get; set; }
 
     public virtual DbSet<Promo> Promos { get; set; }
 
@@ -115,6 +119,31 @@ public partial class MKSTableContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<Complaint>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Complain__3214EC270C63D9BF");
+
+            entity.HasIndex(e => e.CustomerID, "IX_Complaints_CustomerID");
+
+            entity.HasIndex(e => e.OrderID, "IX_Complaints_OrderID");
+
+            entity.HasIndex(e => e.Status, "IX_Complaints_Status");
+
+            entity.Property(e => e.AdminNote).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Reason)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.ResolvedAt).HasColumnType("datetime");
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("Pending");
         });
 
         modelBuilder.Entity<Consignment>(entity =>
@@ -488,6 +517,19 @@ public partial class MKSTableContext : DbContext
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<ProductVariant>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__ProductV__3214EC277D6857F7");
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasOne(d => d.Product).WithMany(p => p.ProductVariants)
+                .HasForeignKey(d => d.ProductID)
+                .HasConstraintName("FK_ProductVariants_Product");
         });
 
         modelBuilder.Entity<Promo>(entity =>

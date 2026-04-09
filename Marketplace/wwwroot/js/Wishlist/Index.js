@@ -30,13 +30,6 @@ const WishlistPage = {
                 WishlistPage.removeItem(productId);
             });
 
-            // Bind add-to-cart buttons
-            $(document).off('click', '.btn-wish-cart').on('click', '.btn-wish-cart', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                var productId = $(this).data('id');
-                WishlistPage.addToCart(productId);
-            });
         } catch (e) {
             console.error('Failed loading wishlist', e);
             $('#wishlistLoading').html('<p class="text-danger">Gagal memuat wishlist.</p>');
@@ -60,19 +53,16 @@ const WishlistPage = {
         return '<div class="col" id="wish-item-' + p.id + '">' +
             '<div class="card h-100 product-card shadow-sm border-0 rounded-3 overflow-hidden">' +
             '  <div class="position-relative">' + imageHtml +
-            '    <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle btn-remove-wish" data-id="' + p.id + '" title="Hapus dari wishlist">' +
+            '    <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle btn-remove-wish" data-id="' + p.id + '" title="Hapus dari wishlist" style="z-index:3;">' +
             '      <i class="bi bi-heart-fill"></i>' +
             '    </button>' +
             '  </div>' +
             '  <div class="card-body d-flex flex-column">' +
             '    <span class="badge bg-light text-dark border mb-1">' + (p.categoryName || '') + '</span>' +
             '    <h6 class="card-title mb-1">' +
-            '      <a href="/Catalog/Detail/' + p.id + '" class="text-decoration-none text-dark">' + p.name + '</a>' +
+            '      <a href="/Catalog/Detail/' + p.id + '" class="text-decoration-none text-dark stretched-link">' + p.name + '</a>' +
             '    </h6>' +
             '    <div class="mt-auto">' + priceHtml +
-            '      <button class="btn btn-warning btn-sm w-100 mt-2 btn-wish-cart" data-id="' + p.id + '">' +
-            '        <i class="bi bi-cart-plus"></i> Keranjang' +
-            '      </button>' +
             '    </div>' +
             '  </div>' +
             '</div>' +
@@ -95,20 +85,6 @@ const WishlistPage = {
             }
         } catch (e) {
             Common.showToast('Gagal menghapus dari wishlist.', true);
-        }
-    },
-
-    async addToCart(productId) {
-        try {
-            var res = await Common.Api.post('/Cart/Add', { productId: productId, quantity: 1 });
-            if (res.success) {
-                Common.updateCartBadge(res.cartCount);
-                Common.showToast('Ditambahkan ke keranjang!');
-            } else {
-                Common.showToast(res.message || 'Gagal menambahkan.', true);
-            }
-        } catch (e) {
-            Common.showToast('Gagal menambahkan ke keranjang.', true);
         }
     }
 };

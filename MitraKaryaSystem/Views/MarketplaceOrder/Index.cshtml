@@ -48,22 +48,20 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Detail Modal -->
-<div class="modal fade" id="moDetailModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header mks-modal-header">
-                <h5 class="modal-title"><i class="fa fa-store me-2"></i>Order Detail</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <!-- Inline Detail Panel -->
+    <div class="card mt-3" id="moDetailPanel" style="display:none;">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-store"></i>
+                <h5 class="mb-0">Order Detail</h5>
             </div>
-            <div class="modal-body" id="moDetailBody">
-                <div class="text-center p-4"><div class="spinner-border"></div></div>
-            </div>
-            <div class="modal-footer" id="moDetailFooter">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
+            <button type="button" class="btn btn-sm btn-outline-light" id="btnCloseDetail">
+                <i class="fa fa-times"></i> Tutup
+            </button>
+        </div>
+        <div class="card-body" id="moDetailBody">
+            <div class="text-center p-4"><div class="spinner-border"></div></div>
         </div>
     </div>
 </div>

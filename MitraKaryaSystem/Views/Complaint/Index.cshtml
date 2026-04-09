@@ -1,0 +1,112 @@
+@{
+    ViewData["Title"] = "Komplain Pelanggan";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-exclamation-triangle fa-lg"></i>
+                <h5 class="mb-0">Komplain Pelanggan</h5>
+            </div>
+            <div class="d-flex gap-2">
+                <select id="filterStatus" class="form-select form-select-sm" style="width:auto">
+                    <option value="">Semua Status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="InProgress">Diproses</option>
+                    <option value="Resolved">Selesai</option>
+                    <option value="Rejected">Ditolak</option>
+                </select>
+                <button type="button" id="btnRefresh" class="btn btn-sm btn-outline-light">
+                    <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle" id="tableComplaint" width="100%">
+                    <thead>
+                        <tr>
+                            <th>Order No</th>
+                            <th>Pelanggan</th>
+                            <th>Alasan</th>
+                            <th>Status</th>
+                            <th>Tanggal</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail / Response Panel -->
+    <div class="card mt-3" id="detailPanel" style="display:none;">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-exclamation-triangle"></i>
+                <h5 class="mb-0">Detail Komplain</h5>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-light" id="btnCloseDetail">
+                <i class="fa fa-times"></i> Tutup
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-sm table-borderless mb-3">
+                        <tr>
+                            <td class="fw-semibold" style="width:140px">Order No</td>
+                            <td id="detOrderNo"></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Pelanggan</td>
+                            <td id="detCustomer"></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Tanggal Komplain</td>
+                            <td id="detDate"></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Status</td>
+                            <td id="detStatus"></td>
+                        </tr>
+                    </table>
+                    <div class="card bg-light mb-3">
+                        <div class="card-body py-2">
+                            <small class="fw-semibold text-muted">Alasan Komplain:</small>
+                            <p class="mb-0 mt-1" id="detReason"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold mb-2">Tanggapi Komplain</h6>
+                    <input type="hidden" id="detComplaintId" />
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Ubah Status</label>
+                        <select class="form-select form-select-sm" id="detNewStatus">
+                            <option value="Pending">Pending</option>
+                            <option value="InProgress">Diproses</option>
+                            <option value="Resolved">Selesai</option>
+                            <option value="Rejected">Ditolak</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Catatan Admin</label>
+                        <textarea class="form-control form-control-sm"
+                                  id="detAdminNote"
+                                  rows="3"
+                                  placeholder="Tulis balasan untuk pelanggan..."></textarea>
+                    </div>
+                    <button class="btn btn-primary btn-sm" id="btnUpdateStatus">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Complaint.js" asp-append-version="true"></script>
+}

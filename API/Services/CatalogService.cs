@@ -38,6 +38,11 @@ namespace API.Services
             return await _catalogRepository.GetProductById(id);
         }
 
+        public async Task<CatalogVariantItem?> GetVariantById(int variantId)
+        {
+            return await _catalogRepository.GetVariantById(variantId);
+        }
+
         public async Task<List<CatalogProductItem>> GetPopularProducts(int take = 8)
         {
             return await _catalogRepository.GetPopularProducts(take);

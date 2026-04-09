@@ -34,9 +34,13 @@ builder.Services.AddScoped<IStoreProfileService, StoreProfileService>();
 builder.Services.AddScoped<IMarketplaceAuthRepository, MarketplaceAuthRepository>();
 builder.Services.AddScoped<IMarketplaceAuthService, MarketplaceAuthService>();
 // Marketplace Orders
+builder.Services.AddScoped<IDeliveryOrderRepository, DeliveryOrderRepository>();
 builder.Services.AddScoped<IMarketplaceOrderRepository, MarketplaceOrderRepository>();
 builder.Services.AddScoped<IMarketplaceOrderService, MarketplaceOrderService>();
 builder.Services.AddScoped<API.Services.IStockLedgerService, API.Services.StockLedgerService>();
+// Complaint
+builder.Services.AddScoped<IComplaintRepository, ComplaintRepository>();
+builder.Services.AddScoped<IComplaintService, ComplaintService>();
 // Midtrans QRIS
 builder.Services.Configure<MidtransSettings>(builder.Configuration.GetSection("Midtrans"));
 builder.Services.AddHttpClient("Midtrans");
@@ -68,6 +72,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStatusCodePagesWithReExecute("/Home/NotFound");
 app.UseStaticFiles();
 
 var sharedUploadsPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "Uploads"));

@@ -16,6 +16,8 @@ namespace API.Models
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal Subtotal => UnitPrice * Quantity;
+        public int? VariantID { get; set; }
+        public string? VariantName { get; set; }
     }
 
     public class MarketplaceOrderSummary
@@ -42,5 +44,7 @@ namespace API.Models
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal Subtotal { get; set; }
+        public int? VariantID { get; set; }
+        public string? VariantName { get; set; }
     }
 }

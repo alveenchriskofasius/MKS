@@ -52,24 +52,28 @@ const CatalogPage = {
 
     async loadProducts() {
         try {
+            $('#catalogLoading').show();
+            $('#productGrid').empty();
+            $('#emptyState').hide();
+
             var url = '/Catalog/GetProductList?';
             if (this.selectedCategory) url += 'categoryId=' + this.selectedCategory + '&';
             if (this.searchQuery) url += 'q=' + encodeURIComponent(this.searchQuery);
 
             var products = await Common.Api.get(url);
-            var $grid = $('#productGrid');
-            $grid.empty();
+            $('#catalogLoading').hide();
 
             if (!products || !products.length) {
                 $('#emptyState').show();
                 return;
             }
 
-            $('#emptyState').hide();
+            var $grid = $('#productGrid');
             products.forEach(function (p) {
                 $grid.append(Common.buildProductCard(p));
             });
         } catch (e) {
+            $('#catalogLoading').hide();
             console.error('Failed loading products', e);
         }
     }

@@ -193,7 +193,7 @@ $(function () {
     $('#searchForm').on('submit', function (e) {
         e.preventDefault();
         var q = $('#searchInput').val().trim();
-        window.location.href = '/Catalog?q=' + encodeURIComponent(q);
+        window.location.href = '/?q=' + encodeURIComponent(q);
     });
 
     // Wishlist toggle on product cards
@@ -202,5 +202,20 @@ $(function () {
         e.stopPropagation();
         var productId = $(this).data('id');
         Common.toggleWishlist(productId, $(this));
+    });
+
+    // Load footer store profile
+    $.get('/Home/GetStoreProfile', function (p) {
+        if (p.storeName) $('#footerStoreName').text(p.storeName);
+        if (p.address) $('#footerAddress').text(p.address);
+        if (p.phone) $('#footerPhone').text(p.phone);
+        if (p.schedule) {
+            var lines = p.schedule.split('\n').filter(function (l) { return l.trim(); });
+            var html = lines.map(function (line) {
+                return '<p class="text-muted small mb-1"><i class="bi bi-clock me-1"></i> ' +
+                    $('<span>').text(line).html() + '</p>';
+            }).join('');
+            $('#footerSchedule').html(html);
+        }
     });
 });

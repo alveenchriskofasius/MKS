@@ -1,0 +1,111 @@
+@model MitraKaryaSystem.Models.UserModel
+@{
+    ViewData["Title"] = "Pengaturan Profile";
+}
+<div class="fade-slide-up">
+    <div class="card page-header-card">
+        <div class="card-header card-header-accent">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa fa-user-cog fa-lg"></i>
+                <h5 class="mb-0">Pengaturan Profile</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h6 class="fw-semibold mb-3"><i class="fa fa-id-card me-1"></i> Informasi Akun</h6>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Username</label>
+                        <input id="profUsername"
+                               class="form-control form-control-sm"
+                               value="@Model.UserName"
+                               readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Nama Lengkap</label>
+                        <input id="profName"
+                               class="form-control form-control-sm"
+                               value="@Model.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Email</label>
+                        <input id="profEmail"
+                               type="email"
+                               class="form-control form-control-sm"
+                               value="@Model.Email" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">No. Telepon</label>
+                        <input id="profPhone"
+                               class="form-control form-control-sm"
+                               value="@Model.PhoneNumber" />
+                    </div>
+                    <button class="btn btn-primary btn-sm" id="btnSaveProfile">
+                        <i class="fa fa-save me-1"></i> Simpan Perubahan
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-semibold mb-3"><i class="fa fa-key me-1"></i> Ganti Password</h6>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Password Baru</label>
+                        <input id="profNewPassword"
+                               type="password"
+                               class="form-control form-control-sm"
+                               placeholder="Kosongkan jika tidak ingin ganti" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Konfirmasi Password</label>
+                        <input id="profConfirmPassword"
+                               type="password"
+                               class="form-control form-control-sm"
+                               placeholder="Ulangi password baru" />
+                    </div>
+                    <button class="btn btn-warning btn-sm" id="btnChangePassword">
+                        <i class="fa fa-key me-1"></i> Ganti Password
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#btnSaveProfile').click(function () {
+                var model = {
+                    UserName: $('#profUsername').val(),
+                    Name: $('#profName').val(),
+                    Email: $('#profEmail').val(),
+                    PhoneNumber: $('#profPhone').val()
+                };
+                $.post('/Auth/UpdateProfile', model, function (res) {
+                    if (res && res.success) toastr.success('Profile berhasil disimpan');
+                    else toastr.error((res && res.error) || 'Gagal menyimpan');
+                }).fail(function () { toastr.error('Request failed'); });
+            });
+
+            $('#btnChangePassword').click(function () {
+                var newPw = $('#profNewPassword').val();
+                var confirmPw = $('#profConfirmPassword').val();
+                if (!newPw) { toastr.warning('Password baru harus diisi'); return; }
+                if (newPw !== confirmPw) { toastr.warning('Password tidak cocok'); return; }
+                var model = {
+                    UserName: $('#profUsername').val(),
+                    Name: $('#profName').val(),
+                    Email: $('#profEmail').val(),
+                    PhoneNumber: $('#profPhone').val(),
+                    Password: newPw
+                };
+                $.post('/Auth/UpdateProfile', model, function (res) {
+                    if (res && res.success) {
+                        toastr.success('Password berhasil diubah');
+                        $('#profNewPassword').val('');
+                        $('#profConfirmPassword').val('');
+                    }
+                    else toastr.error((res && res.error) || 'Gagal mengubah password');
+                }).fail(function () { toastr.error('Request failed'); });
+            });
+        });
+    </script>
+}

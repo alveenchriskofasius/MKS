@@ -12,5 +12,6 @@ namespace API.Services.Interfaces
         Task<string?> GetCart(int customerId);
         Task SaveWishlist(int customerId, string wishlistJson);
         Task<string?> GetWishlist(int customerId);
+        Task<object> ChangePassword(int customerId, string currentPassword, string newPassword);
     }
 }

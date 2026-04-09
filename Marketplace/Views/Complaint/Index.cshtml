@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Komplain Saya";
+}
+
+<div class="container py-4">
+    <h4 class="fw-bold mb-3"><i class="bi bi-exclamation-triangle"></i> Komplain Saya</h4>
+
+    <div id="complaintLoading" class="mp-loading">
+        <div class="spinner-border" role="status"></div>
+        <p>Memuat komplain...</p>
+    </div>
+    <div id="complaintEmpty" class="text-center py-5" style="display:none;">
+        <i class="bi bi-chat-left-text" style="font-size:4rem;color:#ccc;"></i>
+        <p class="text-muted mt-3">Belum ada komplain.</p>
+        <a href="/Order" class="btn btn-warning">
+            <i class="bi bi-bag"></i> Lihat Pesanan
+        </a>
+    </div>
+    <div id="complaintContent" style="display:none;">
+        <div id="complaintCards"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Complaint/Index.js" asp-append-version="true"></script>
+}

@@ -18,4 +18,6 @@ public partial class SalesOrderItem
     public int? QtyRefunded { get; set; }
 
     public int? QtyExchanged { get; set; }
+
+    public int? VariantID { get; set; }
 }

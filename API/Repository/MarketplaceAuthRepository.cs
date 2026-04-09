@@ -158,6 +158,31 @@ namespace API.Repository
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<object> ChangePassword(int customerId, string currentPassword, string newPassword)
+        {
+            try
+            {
+                var account = await _context.MarketplaceAccounts
+                    .FirstOrDefaultAsync(a => a.CustomerID == customerId);
+                if (account == null)
+                    return new { success = false, message = "Akun tidak ditemukan." };
+
+                if (!VerifyPasswordHash(currentPassword, account.PasswordHash, account.PasswordSalt))
+                    return new { success = false, message = "Password lama salah." };
+
+                CreatePasswordHash(newPassword, out byte[] hash, out byte[] salt);
+                account.PasswordHash = hash;
+                account.PasswordSalt = salt;
+                await SaveChangesAsync();
+
+                return new { success = true, message = "Password berhasil diubah." };
+            }
+            catch (Exception e)
+            {
+                return CreateErrorResponse(e);
+            }
+        }
+
         private static void CreatePasswordHash(string password, out byte[] hash, out byte[] salt)
         {
             using var hmac = new HMACSHA512();

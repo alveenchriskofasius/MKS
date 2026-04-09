@@ -40,12 +40,12 @@ public class DebtRepository : IDebtRepository
     }
 
     /// <summary>
-    /// Payables: Purchase Orders (TradeTypeID=4) with outstanding balance (Amount > PaidAmount).
+    /// Payables: Purchase Orders (TradeTypeID=1) with outstanding balance (Amount > PaidAmount).
     /// </summary>
     public async Task<IEnumerable<DebtSummaryItem>> GetPayables()
     {
         var list = await _ctx.Trades.AsNoTracking()
-            .Where(t => t.TradeTypeID == 4 && t.Amount > (t.PaidAmount ?? 0m))
+            .Where(t => t.TradeTypeID == 1 && t.Amount > (t.PaidAmount ?? 0m))
             .GroupJoin(_ctx.Customers.AsNoTracking(),
                        t => t.CustomerID, c => c.ID,
                        (t, cg) => new { t, cg })

@@ -19,6 +19,9 @@ namespace Marketplace.Controllers
 
         public IActionResult Privacy() => View();
 
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult NotFound() => View("~/Views/Shared/NotFound.cshtml");
+
         [HttpGet]
         public async Task<JsonResult> GetHomeData()
         {
@@ -44,6 +47,14 @@ namespace Marketplace.Controllers
         {
             var products = await _catalogService.GetProductsPaged(skip, take);
             return Json(new { products, hasMore = products.Count == take });
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetStoreProfile()
+        {
+            var profile = await _storeProfileService.GetProfile() as Dictionary<string, string>
+                          ?? new Dictionary<string, string>();
+            return Json(profile);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -149,5 +149,17 @@ namespace MitraKaryaSystem.Controllers
             var result = await _service.UpdateProductImage(id, imageUrl);
             return Json(result);
         }
+
+        [HasPermission("Product")]
+        [HttpGet]
+        public async Task<JsonResult> GetVariants(int productId) => Json(await _service.GetVariants(productId));
+
+        [HasPermission("Product")]
+        [HttpPost]
+        public async Task<JsonResult> SaveVariant(ProductVariantModel model) => Json(await _service.SaveVariant(model));
+
+        [HasPermission("Product")]
+        [HttpGet]
+        public async Task<JsonResult> DeleteVariant(int id) => Json(await _service.DeleteVariant(id));
     }
 }

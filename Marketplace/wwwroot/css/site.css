@@ -328,7 +328,38 @@ a:hover { color: var(--mp-green-dark); }
     border-radius: 3px;
 }
 
-/* === Breadcrumb === */
+/* === Breadcrumb Bar === */
+.mp-breadcrumb-bar {
+    background: #fff;
+    border-bottom: 1px solid var(--mp-border);
+    padding: .6rem 0;
+}
+
+.mp-breadcrumb-bar .breadcrumb {
+    font-size: .82rem;
+    margin: 0;
+}
+
+.mp-breadcrumb-bar .breadcrumb-item a {
+    color: var(--mp-green);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.mp-breadcrumb-bar .breadcrumb-item a:hover {
+    color: var(--mp-green-dark);
+    text-decoration: underline;
+}
+
+.mp-breadcrumb-bar .breadcrumb-item.active {
+    color: var(--mp-text-muted);
+}
+
+.mp-breadcrumb-bar .breadcrumb-item + .breadcrumb-item::before {
+    color: var(--mp-border);
+}
+
+/* === Breadcrumb (legacy, keep for compatibility) === */
 .breadcrumb {
     background: none;
     padding: 0;
@@ -567,5 +598,67 @@ input[type="number"] {
     .product-name { font-size: .78rem; }
     .product-price { font-size: .85rem; }
     .product-img { height: 150px; }
-    .hero-section h1 { font-size: 1.5rem; }
+}
+
+/* === Popular Scroll Strip === */
+.popular-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.popular-scroll::-webkit-scrollbar { display: none; }
+
+.popular-card .card {
+    transition: box-shadow .2s, transform .2s;
+}
+.popular-card .card:hover {
+    box-shadow: 0 4px 12px rgba(49,53,59,.15) !important;
+    transform: translateY(-2px);
+}
+
+/* === Footer Extended === */
+.mp-footer .list-unstyled li a {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+}
+
+/* === About Page === */
+.about-stat {
+    transition: transform .2s;
+}
+.about-stat:hover {
+    transform: translateY(-3px);
+}
+
+/* === Loading Spinner === */
+.mp-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+}
+
+.mp-loading .spinner-border {
+    color: var(--mp-green);
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.mp-loading p {
+    margin-top: .75rem;
+    color: var(--mp-text-muted);
+    font-size: .875rem;
+}
+
+/* === Variant Picker === */
+.variant-option {
+    min-width: 60px;
+    border-radius: 20px;
+    font-weight: 500;
+    transition: all .2s;
+}
+
+.variant-option.active {
+    box-shadow: 0 0 0 2px var(--mp-green);
 }

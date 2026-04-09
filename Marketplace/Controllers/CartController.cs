@@ -22,7 +22,11 @@ namespace Marketplace.Controllers
         public IActionResult Index() => View();
 
         [HttpPost]
-        public async Task<JsonResult> Add(int productId, int quantity = 1)
+        public async Task<JsonResult> Add(
+            int productId,
+            int quantity = 1,
+            int? variantId = null,
+            string? variantName = null)
         {
             if (User.Identity?.IsAuthenticated != true)
                 return Json(new
@@ -36,20 +40,35 @@ namespace Marketplace.Controllers
             if (product == null)
                 return Json(new { success = false, message = "Produk tidak ditemukan." });
 
-            if (product.StockQuantity < quantity)
+            // Enforce variant selection for products that require it
+            if (product.HasVariants && variantId == null)
+                return Json(new { success = false, message = "Silakan pilih varian produk terlebih dahulu." });
+
+            // Determine effective stock: variant stock when variantId is present, otherwise product stock
+            int effectiveStock = product.StockQuantity;
+            if (variantId.HasValue)
+            {
+                var variant = await _catalogService.GetVariantById(variantId.Value);
+                if (variant == null)
+                    return Json(new { success = false, message = "Varian tidak ditemukan." });
+                effectiveStock = variant.StockQuantity;
+            }
+
+            if (effectiveStock < quantity)
                 return Json(new { success = false, message = "Stok tidak mencukupi." });
 
             var cart = GetCart();
-            var existing = cart.FirstOrDefault(c => c.ProductID == productId);
+            var existing = cart.FirstOrDefault(c =>
+                c.ProductID == productId && c.VariantID == variantId);
 
             if (existing != null)
             {
                 var newQty = existing.Quantity + quantity;
-                if (newQty > product.StockQuantity)
+                if (newQty > effectiveStock)
                     return Json(new
                     {
                         success = false,
-                        message = $"Stok tidak mencukupi (tersedia: {product.StockQuantity}, di keranjang: {existing.Quantity})."
+                        message = $"Stok tidak mencukupi (tersedia: {effectiveStock}, di keranjang: {existing.Quantity})."
                     });
                 existing.Quantity = newQty;
             }
@@ -60,7 +79,9 @@ namespace Marketplace.Controllers
                     ProductID = product.ID,
                     ProductName = product.Name,
                     UnitPrice = product.FinalPrice,
-                    Quantity = quantity
+                    Quantity = quantity,
+                    VariantID = variantId,
+                    VariantName = variantName
                 });
             }
 
@@ -70,10 +91,14 @@ namespace Marketplace.Controllers
         }
 
         [HttpPost]
-        public async Task<JsonResult> Update(int productId, int quantity)
+        public async Task<JsonResult> Update(
+            int productId,
+            int quantity,
+            int? variantId = null)
         {
             var cart = GetCart();
-            var item = cart.FirstOrDefault(c => c.ProductID == productId);
+            var item = cart.FirstOrDefault(c =>
+                c.ProductID == productId && c.VariantID == variantId);
 
             if (item != null)
             {
@@ -84,13 +109,19 @@ namespace Marketplace.Controllers
                 else
                 {
                     var product = await _catalogService.GetProductById(productId);
-                    if (product != null && quantity > product.StockQuantity)
+                    int maxStock = product?.StockQuantity ?? int.MaxValue;
+                    if (variantId.HasValue && product != null)
+                    {
+                        var variant = await _catalogService.GetVariantById(variantId.Value);
+                        if (variant != null) maxStock = variant.StockQuantity;
+                    }
+                    if (quantity > maxStock)
                     {
                         return Json(new
                         {
                             success = false,
-                            message = $"Stok tidak mencukupi (tersedia: {product.StockQuantity}).",
-                            maxStock = product.StockQuantity
+                            message = $"Stok tidak mencukupi (tersedia: {maxStock}).",
+                            maxStock
                         });
                     }
                     item.Quantity = quantity;
@@ -108,10 +139,13 @@ namespace Marketplace.Controllers
         }
 
         [HttpPost]
-        public async Task<JsonResult> Remove(int productId)
+        public async Task<JsonResult> Remove(
+            int productId,
+            int? variantId = null)
         {
             var cart = GetCart();
-            cart.RemoveAll(c => c.ProductID == productId);
+            cart.RemoveAll(c =>
+                c.ProductID == productId && c.VariantID == variantId);
             SaveCart(cart);
             await SyncCartToDb(cart);
             return Json(new
@@ -137,6 +171,12 @@ namespace Marketplace.Controllers
             foreach (var item in cart)
             {
                 var product = await _catalogService.GetProductById(item.ProductID);
+                int stockQuantity = product?.StockQuantity ?? 0;
+                if (item.VariantID.HasValue)
+                {
+                    var variant = await _catalogService.GetVariantById(item.VariantID.Value);
+                    if (variant != null) stockQuantity = variant.StockQuantity;
+                }
                 enriched.Add(new
                 {
                     item.ProductID,
@@ -144,7 +184,9 @@ namespace Marketplace.Controllers
                     item.UnitPrice,
                     item.Quantity,
                     item.Subtotal,
-                    stockQuantity = product?.StockQuantity ?? 0
+                    stockQuantity,
+                    item.VariantID,
+                    item.VariantName
                 });
             }
             return Json(new
@@ -174,7 +216,8 @@ namespace Marketplace.Controllers
                 // Merge: DB cart + session items (session wins on duplicates)
                 foreach (var dbItem in dbCart)
                 {
-                    if (!sessionCart.Any(s => s.ProductID == dbItem.ProductID))
+                    if (!sessionCart.Any(s =>
+                        s.ProductID == dbItem.ProductID && s.VariantID == dbItem.VariantID))
                         sessionCart.Add(dbItem);
                 }
                 SaveCart(sessionCart);

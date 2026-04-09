@@ -17,7 +17,10 @@ namespace API.Services
             ["phone"] = 3,
             ["email"] = 4,
             ["receiptFooter"] = 5,
-            ["receiptHeader"] = 6
+            ["receiptHeader"] = 6,
+            ["schedule"] = 7,
+            ["description"] = 8,
+            ["foundingYear"] = 9
         };
 
         public StoreProfileService(MKSTableContext ctx) => _ctx = ctx;

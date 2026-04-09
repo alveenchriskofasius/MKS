@@ -115,6 +115,9 @@ builder.Services.AddScoped<API.Services.Interfaces.IMidtransService, API.Service
 // Marketplace Order (for backoffice MarketplaceOrderController)
 builder.Services.AddScoped<API.Repository.Interfaces.IMarketplaceOrderRepository, API.Repository.MarketplaceOrderRepository>();
 builder.Services.AddScoped<API.Services.Interfaces.IMarketplaceOrderService, API.Services.MarketplaceOrderService>();
+// Complaint
+builder.Services.AddScoped<API.Repository.Interfaces.IComplaintRepository, API.Repository.ComplaintRepository>();
+builder.Services.AddScoped<API.Services.Interfaces.IComplaintService, API.Services.ComplaintService>();
 builder.Services.AddScoped<MKSSPContextProcedures>();
 builder.Services.AddDbContextPool<MKSTableContext>(options =>
 {
@@ -146,6 +149,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStatusCodePagesWithReExecute("/Home/NotFound");
 app.UseStaticFiles();
 
 var sharedUploadsPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "Uploads"));

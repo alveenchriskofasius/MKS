@@ -16,5 +16,14 @@
         public bool HasDiscount { get; set; }
         public decimal DiscountPercentage { get; set; }
         public string? ImageUrl { get; set; }
+        public bool HasVariants { get; set; }
+    }
+
+    public class ProductVariantModel
+    {
+        public int ID { get; set; }
+        public int ProductID { get; set; }
+        public string? Name { get; set; }
+        public int StockQuantity { get; set; }
     }
 }

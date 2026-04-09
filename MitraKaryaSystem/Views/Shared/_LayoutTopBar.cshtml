@@ -69,13 +69,25 @@
             </div>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <span class="user-info">
-                <i class="fa fa-user-circle me-1"></i>
-                <span class="name">@User.Identity?.Name</span>
-            </span>
-            <a asp-controller="Auth" asp-action="Logout" class="btn btn-outline-light btn-sm" title="Logout">
-                <i class="fa fa-sign-out-alt me-1"></i> Logout
-            </a>
+            <div class="dropdown">
+                <a class="btn btn-outline-light btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa fa-user-circle me-1"></i>
+                    <span class="name">@User.Identity?.Name</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li>
+                        <a class="dropdown-item" asp-controller="Auth" asp-action="Profile">
+                            <i class="fa fa-cog me-1"></i> Pengaturan
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                        <a class="dropdown-item text-danger" asp-controller="Auth" asp-action="Logout">
+                            <i class="fa fa-sign-out-alt me-1"></i> Keluar
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 

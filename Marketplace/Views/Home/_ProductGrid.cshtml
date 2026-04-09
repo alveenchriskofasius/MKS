@@ -1,0 +1,24 @@
+<div id="searchInfo" class="mb-3" style="display:none;">
+    <span class="badge rounded-pill px-3 py-2" style="background:var(--mp-green-light);color:var(--mp-green);font-size:.85rem;">
+        <i class="bi bi-search me-1"></i> Hasil untuk: <strong id="searchTerm"></strong>
+        <a href="/" class="ms-2 text-decoration-none" style="color:var(--mp-green);" title="Hapus pencarian">
+            <i class="bi bi-x-circle-fill"></i>
+        </a>
+    </span>
+</div>
+
+<div class="alert border-0 rounded-3" id="emptyState" style="display:none;background:var(--mp-green-light);">
+    <i class="bi bi-info-circle" style="color:var(--mp-green);"></i>
+    <span class="ms-1">Tidak ada produk ditemukan.</span>
+</div>
+
+<div class="row row-cols-2 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3" id="productGrid"></div>
+
+<div id="loadMoreSpinner" class="mp-loading" style="display:none;">
+    <div class="spinner-border" role="status"></div>
+    <p>Memuat produk...</p>
+</div>
+
+<div class="text-center py-3" id="noMoreProducts" style="display:none;">
+    <p class="text-muted small"><i class="bi bi-check-circle me-1"></i>Semua produk sudah ditampilkan.</p>
+</div>
